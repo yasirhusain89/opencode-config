@@ -1035,8 +1035,8 @@ b{font-weight:650}
 <div class="top"><div><h1>Usage &mdash; Opus 5 equivalent</h1>
 <div class="sub">Generated """, gen, """ &middot; opencode &middot; refreshes daily 08:00</div>
 </div><button id="theme" type="button">Theme: System</button></div>
-""", hero, pricing, compare, trend, perday, tools, rel, session_sec, effort,
-             hours_sec, landing, proj_sec, model_sec, prov_sec, notes,
+""", hero, pricing, compare, trend, perday, tools, proj_sec, model_sec,
+             prov_sec, rel, session_sec, effort, hours_sec, landing, notes,
              """<script>
 var cmpData=JSON.parse(document.getElementById("cmp-data").textContent);
 (function(){var s=document.getElementById("cmpsel"),c=document.getElementById("cmpcard");
