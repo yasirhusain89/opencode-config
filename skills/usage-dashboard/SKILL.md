@@ -10,8 +10,10 @@ Source of truth is the generator — edit `generate.py`, never `dashboard.html`.
 
 ## Files
 
-- `~/.opencode/usage-dashboard/generate.py` — stdlib-only generator (must stay
-  python3.9-compatible: no f-strings with nested same-type quotes, use `%` or concat).
+- `<skill dir>/generate.py` — stdlib-only generator (must stay
+  python3.9-compatible: no f-strings with nested same-type quotes, use `%` or
+  concat). Canonical copy lives here; `~/.opencode/usage-dashboard/generate.py`
+  is a thin launcher shim so the old path + launchd keep working.
 - `~/.opencode/usage-dashboard/dashboard.html` — generated output. Do not hand-edit.
 - `~/.opencode/usage-dashboard/history.jsonl` — daily snapshots (365 kept).
 - `~/Library/LaunchAgents/ai.opencode.usage-dashboard.plist` — launchd, daily 08:00 + RunAtLoad.
@@ -23,7 +25,7 @@ Source of truth is the generator — edit `generate.py`, never `dashboard.html`.
 ## Regenerate
 
 ```bash
-python3 ~/.opencode/usage-dashboard/generate.py
+python3 ~/.config/opencode/skills/usage-dashboard/generate.py
 open ~/.opencode/usage-dashboard/dashboard.html
 ```
 
