@@ -231,7 +231,7 @@ def main():
         p["cost"] = cost(p)["total"]
 
     # --- per day ---
-    cur.execute("""SELECT date(time_created/1000,'unixepoch'), count(*),
+    cur.execute("""SELECT date(time_created/1000,'unixepoch','localtime'), count(*),
         coalesce(sum(tokens_input),0), coalesce(sum(tokens_output),0),
         coalesce(sum(tokens_reasoning),0), coalesce(sum(tokens_cache_read),0),
         coalesce(sum(tokens_cache_write),0)
@@ -463,15 +463,21 @@ def main():
         equiv.append({"model": m, "cost": c})
     equiv.sort(key=lambda e: -e["model"]["aa"])
 
-    # --- history (one snapshot per day, update in place) ---
-    snap = {"date": now.strftime("%Y-%m-%d"),
-            "generated": now.isoformat(timespec="seconds"),
-            "sessions": total["sessions"], "messages": total["messages"],
-            "input": total["input"], "output": total["output"],
-            "reasoning": total["reasoning"], "cache_read": total["cache_read"],
-            "cache_write": total["cache_write"],
-            "opus5_total": round(total_cost["total"], 2),
-            "actual_cost": round(actual, 4)}
+    # --- history (one snapshot per day = that day's usage; frozen at day end) ---
+    today = now.strftime("%Y-%m-%d")
+
+    def day_snapshot(d, backfilled=False):
+        rec = {"date": d["day"],
+               "generated": now.isoformat(timespec="seconds"),
+               "sessions": d["sessions"],
+               "input": d["input"], "output": d["output"],
+               "reasoning": d["reasoning"], "cache_read": d["cache_read"],
+               "cache_write": d["cache_write"],
+               "opus5_total": round(d["cost"], 2)}
+        if backfilled:
+            rec["backfilled"] = True
+        return rec
+
     hist = []
     if HISTORY.exists():
         for line in HISTORY.read_text().splitlines():
@@ -481,8 +487,19 @@ def main():
                     hist.append(json.loads(line))
                 except ValueError:
                     pass
-        hist = [h for h in hist if h.get("date") != snap["date"]]
-    hist.append(snap)
+    known = {h.get("date") for h in hist}
+    # backfill days the DB knows about that have no frozen snapshot yet
+    for d in days:
+        if d["day"] not in known:
+            hist.append(day_snapshot(d, backfilled=True))
+    # today's bar: that day's usage, refreshed on every run
+    hist = [h for h in hist if h.get("date") != today]
+    today_row = next((d for d in days if d["day"] == today), None)
+    hist.append(day_snapshot(today_row if today_row else
+                             {"day": today, "sessions": 0, "input": 0,
+                              "output": 0, "reasoning": 0, "cache_read": 0,
+                              "cache_write": 0, "cost": 0.0}))
+    hist = sorted(hist, key=lambda h: h.get("date") or "")
     hist = hist[-365:]
     HISTORY.write_text("\n".join([json.dumps(h) for h in hist]) + "\n")
 
@@ -697,8 +714,10 @@ def render(now, total, total_cost, actual, primary, equiv, projects, models,
                      + money(peak["cost"]) + "</span>")
     trend = ("<h2>Daily Opus-5 trend " + peak_note + "</h2>"
              "<div class='hist'>" + hist_bars + "</div>"
-             "<div class='s'>Snapshots accumulate once a day; intra-day runs update "
-             "today's bar.</div>")
+             "<div class='s'>Each bar is that day's Opus-5-equivalent usage. "
+             "Past days freeze once snapshotted; today's bar refreshes on every "
+             "run. Days before the first snapshot are backfilled from the "
+             "sessions DB.</div>")
 
     # ---- per-session table (collapsed, sorted by cost) ----
     ss_rows = ""
