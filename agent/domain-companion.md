@@ -1,6 +1,8 @@
 ---
 description: Personal-finance domain expert and app-design companion — budgeting, investing, retirement modeling, and UX patterns from Mint, YNAB, Monarch, Copilot. Use for MonArtha feature design, finance domain questions, and UI/UX comparisons. Read-only.
 mode: all
+model: nvidia/deepseek-ai/deepseek-v4-flash
+steps: 15
 temperature: 0.4
 permission:
   edit: deny

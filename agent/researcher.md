@@ -1,6 +1,8 @@
 ---
 description: Deep codebase research subagent — architecture, data flow, call chains, and "how does X work" questions answered with file:line evidence. Use for research delegation. Read-only, cannot edit.
 mode: subagent
+model: nvidia/deepseek-ai/deepseek-v4-pro
+steps: 25
 temperature: 0.2
 permission:
   edit: deny

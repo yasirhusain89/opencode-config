@@ -22,17 +22,72 @@
     }
   },
   "permission": {
-    "edit": "allow",
+    "edit": {
+      "*": "allow",
+      "**/.env*": "deny",
+      "**/*token*": "deny",
+      "**/*.keystore": "deny",
+      "**/*.jks": "deny",
+      "**/*.mobileprovision": "deny",
+      "**/google-services.json": "deny",
+      "**/GoogleService-Info.plist": "deny"
+    },
+    "read": {
+      "*": "allow",
+      "**/.env": "deny",
+      "**/.env.*": "deny",
+      "**/*token*": "ask",
+      "**/*.keystore": "deny",
+      "**/*.jks": "deny",
+      "**/monartha.db*": "ask",
+      "**/myfinances.db*": "ask"
+    },
     "bash": {
       "*": "allow",
-      "git push*": "ask",
+      "rm -rf /*": "deny",
+      "rm -rf ~*": "deny",
       "rm -rf *": "ask",
-      "sudo *": "ask",
+      "rm -r *": "ask",
+      "sudo *": "deny",
+      "su *": "deny",
+      "chown *": "deny",
+      "chmod -R *": "ask",
+      "mkfs *": "deny",
+      "dd *": "deny",
+      "git push --force*": "deny",
+      "git push * --force*": "deny",
+      "git reset --hard*": "ask",
+      "git clean -fd*": "ask",
+      "git push*": "ask",
+      "git commit*": "ask",
+      "git merge*": "ask",
+      "git rebase*": "ask",
+      "gh pr merge*": "ask",
+      "gh release delete*": "ask",
+      "gh api *DELETE*": "ask",
+      "gh variable delete*": "ask",
+      "gh variable set*": "ask",
+      "cargo publish*": "ask",
+      "npm publish*": "ask",
+      "curl *|*sh*": "deny",
+      "wget *|*sh*": "deny",
       "curl *": "ask",
       "wget *": "ask"
     },
+    "external_directory": {
+      "~/PycharmProjects/monartha/**": "allow",
+      "~/PycharmProjects/opencode-config/**": "allow",
+      "~/.config/opencode/**": "allow",
+      "~/.ssh/**": "deny",
+      "~/.aws/**": "deny",
+      "~/.gnupg/**": "deny",
+      "~/Library/Keychains/**": "deny",
+      "*": "ask"
+    },
     "webfetch": "allow",
-    "websearch": "allow"
+    "websearch": "allow",
+    "task": "allow",
+    "skill": "allow"
   },
   "mcp": {
     "gitnexus": {
