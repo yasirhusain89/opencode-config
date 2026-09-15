@@ -48,6 +48,16 @@ Global [opencode](https://opencode.ai) configuration for yasirhusain89. This rep
 
 Everything then auto-loads: skills from `skills/`, agents from `agent/`, commands from `command/`, instructions from `AGENTS.md`.
 
+Optional — track it from PyCharm as a project folder (a symlink; edits write through to the live config):
+
+```bash
+ln -s ~/.config/opencode ~/PycharmProjects/opencode-config
+```
+
+## Search index
+
+zvec-grep indexes this repo for semantic search: `zg index` (run after big changes). The generated `.zvec-grep/` dir is machine-local runtime state — gitignored and PyCharm-excluded, never commit it.
+
 ## Keeping it in sync
 
 Because the repo **is** the live config dir, sync is a plain git sync:
