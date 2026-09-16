@@ -149,7 +149,7 @@ Independent verification against `https://opencode.ai/docs/*` and live `opencode
 | :--- | :--- | :--- | :--- |
 | 1 | Plugins dormant; add `"plugin": ["./plugins/..."]`; add `export default` | **REJECTED** | Per `/docs/plugins/`, files in `~/.config/opencode/plugins/` **auto-load**; the `plugin` array is for npm specs (explicit local paths redundant). Named exports match the docs example exactly. Safety re-graded **B-**, not D+ (permission block + active hooks). No config change; `plugins/` row added to `README.md` instead. |
 | 2 | Missing top-level `model` | **ACCEPTED, different value** | Set to `opencode/muse-spark-1.3-contributor-free` (cheap default), **not** `deepseek-v4-pro` — pinning every session to a frontier reasoning model would maximize cost/latency. Pro/Flash overrides stayed per-agent until §8. |
-| 3 | `temperature: 0.2` breaks reasoning models | **REJECTED as stated** | Valid for DeepSeek-V4; docs bless 0.0–0.2 for analysis. Kept on all analytical agents. Real gap was the unimplementable Max/High/Medium thinking table (actual knobs are provider-specific `reasoningEffort` / `thinking.budgetTokens`) — not added under the single-model setup. |
+| 3 | `temperature: 0.2` breaks reasoning models | **UPDATED (REMOVED)** | Initially kept; subsequently removed across all analytical agents (`reviewer`, `security-reviewer`, `researcher`). Reasoning models (Muse Spark 1.3, Qwen reasoning, DeepSeek R1/V4) rely on unconstrained sampling temperature (default ~1.0) during internal `<think>` generation; forcing 0.2 causes premature probability collapse and repetitive reasoning loops. Kept at 0.4 on `domain-companion`. |
 | 4 | Steps 15–25 abort graph traversals | **ACCEPTED, tuned down** | `reviewer` 25→**35**, `researcher`/`security-reviewer` 25→**40** (not 40–50 across the board); `docs-writer`/`domain-companion` stay 15. Verified in `debug config`. |
 | 5 | `AGENTS.md` is zvec-only | **ACCEPTED, minimal** | 5-line operating constitution prepended (grounding, surgical diffs, plan threshold >2 files, verify, prefer edits). `ZVEC_GREP` block byte-intact — full thresholds stay in the `gitnexus-work` skill to avoid taxing every session's context. |
 | 6 | Missing verifier subagent | **DEFERRED** | Built-in `general` already runs tests; revisit only if the gap is felt. |
@@ -160,3 +160,44 @@ Independent verification against `https://opencode.ai/docs/*` and live `opencode
 | 11 | (Missed) README drift | **FIXED** | 13→14 skills (`model-benchmarks` uncounted), plugin auto-load row, step budgets, gateway auth note. |
 
 **Verification evidence (2026-09-16):** `opencode debug config` parses with all 7 model slots on muse-spark-1.3; `opencode run` returns `ok`/`backup-ok` on 1.3, 1.2, and ollama paths; `git diff` confirms the zvec block untouched and the change footprint limited to `opencode.jsonc`, `AGENTS.md`, `agent/*`, `README.md` (+ this doc).
+
+---
+
+## 6. Reasoning Protocols & Thinking Optimization (2026-09-16)
+
+### 6.1 Temperature Deconfliction on Reasoning Models
+Analytical agents (`agent/reviewer.md`, `agent/security-reviewer.md`, and `agent/researcher.md`) previously specified `temperature: 0.2`. This has been completely removed based on the following mechanics:
+- **Scratchpad Probability Clamping:** Modern reasoning models generate hidden `<think>...</think>` tokens before emitting tool calls or visible text. Forcing `temperature: 0.2` artificially truncates the entropy of the reasoning token distribution. In practice, this manifests as repetitive internal loops, fixation on initial (often false) hypotheses, and syntax degradation in emitted reasoning thoughts.
+- **Provider Alignment:** Both OpenCode's gateway (`muse-spark-1.3`) and local Ollama (`qwen3.8:latest`) have calibrated default sampling temperatures (typically 1.0). Omitting the `temperature` key allows the model to reason without constraint while relying on system prompt instructions and tool schemas for determinism.
+
+### 6.2 Prompt-Enforced Reasoning Protocols
+Because the OpenCode gateway manages reasoning token budgets server-side without client-exposed effort sliders, cognitive effort must be guided through **structured prompt directives**:
+
+#### Reviewer & Security Reviewer (3-Phase Deduction)
+Before emitting any verdicts, the agent's internal reasoning must follow a mandatory phase progression:
+1. **Blast Radius Mapping:** Query GitNexus to map all upstream consumers and dependent execution flows from the modified symbols.
+2. **Adversarial Invariant Analysis:** Evaluate edge cases—null/undefined propagation, concurrency/race conditions, resource lifecycle, and untrusted input taint.
+3. **Evidence Grounding:** Verify suspected vulnerabilities or regressions against the actual source file before reporting. Silence is preferred over false alarms; speculative findings without a concrete `file:line` citation are disallowed.
+
+#### Researcher (Hypothesis-First & Early Pruning)
+To prevent the subagent from burning steps on aimless exploration:
+1. **Hypothesis Formulation:** State 1–2 testable hypotheses regarding where the implementation or flow lives before querying.
+2. **Targeted Graph Traversal:** Execute `query`, `context`, or `trace` to confirm or refute the hypothesis.
+3. **Early Pruning Criterion:** As soon as unambiguous, conclusive `file:line` evidence answers the question, terminate exploration immediately. Do not exhaust remaining step budget verifying already-settled conclusions.
+
+#### Docs Writer (Zero-Deliberation Extraction)
+Direct transcription mode: do not deliberate, theorize, or speculate on architecture. Extract verified source facts and command definitions directly from the codebase.
+
+### 6.3 Local Ollama Reasoning Safeguards (`qwen3.8:latest`)
+When operating offline or under quota exhaustion using local Ollama:
+- **Context Preservation:** Keep `limit.context` at `32768` and `limit.output` at `16384`. Runaway reasoning tokens in local models can rapidly exhaust context memory.
+- **Compaction Loop Prevention:** Local reasoning models tend to ramble and produce internal monologue when tasked with session summarization. Always disable automatic compaction (`"compaction": {"auto": false}`) during Ollama fallback sessions.
+
+### 6.4 Outer-Loop Reasoning Bounds (Step Limits)
+Step caps serve as the physical ceiling on outer-loop ReAct iterations:
+- `reviewer` (35 steps): Provides sufficient headroom for `detect_changes` + `impact` on multiple symbols + full diff file reads without premature cutoff.
+- `security-reviewer` (40 steps): Accommodates multi-step source-to-sink taint tracking.
+- `researcher` (40 steps): Balances breadth-first exploration with rapid hypothesis testing.
+- `docs-writer` & `domain-companion` (15 steps): Keeps non-analytical runs fast, cheap, and strictly bounded.
+
+*Reconciled 2026-09-16: §6.2 protocols implemented into the prompts (`agent/reviewer.md`, `agent/security-reviewer.md`, `agent/researcher.md`, `agent/docs-writer.md`); temperature removal kept — model defaults now govern sampling. §6.3/§6.4 already matched the shipped config (Ollama 32k/16k limits, step budgets).*
