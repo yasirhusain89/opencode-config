@@ -1,8 +1,8 @@
 ---
 description: Security-focused review of code changes, auth flows, input handling, and taint paths. Use for security review requests, "is this safe", secrets/credential checks, and pre-release audits. Read-only.
 mode: all
-model: nvidia/deepseek-ai/deepseek-v4-pro
-steps: 25
+model: opencode/muse-spark-1.3-contributor-free
+steps: 40
 temperature: 0.2
 permission:
   edit: deny

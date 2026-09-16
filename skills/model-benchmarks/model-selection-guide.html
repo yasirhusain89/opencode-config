@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model / Harness / Provider Selection Guide — AA benchmarks + terms + usage</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --line: #ddd;
+    --head: #f4f4f4; --row2: #fafafa; --accent: #1a56db; --warn: #9a6700;
+    --warnbg: #fff8e6; --goodbg: #eef7ee;
+  }
+  [data-theme="dark"] {
+    --bg: #161616; --fg: #e8e8e8; --muted: #aaa; --line: #333;
+    --head: #222; --row2: #1c1c1c; --accent: #7aa5ff; --warn: #e0b34c;
+    --warnbg: #2a230f; --goodbg: #12240f;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg); color: var(--fg); margin: 0; line-height: 1.5; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 1.2rem 1.4rem 4rem; }
+  header.top { display: flex; justify-content: space-between; align-items: baseline;
+    gap: 1rem; flex-wrap: wrap; border-bottom: 2px solid var(--line); padding-bottom: .6rem; }
+  h1 { font-size: 1.35rem; margin: 0; }
+  h2 { font-size: 1.1rem; margin: 2rem 0 .5rem; border-bottom: 1px solid var(--line); padding-bottom: .25rem; }
+  nav.toc { margin: .8rem 0; font-size: .9rem; }
+  nav.toc a { color: var(--accent); margin-right: .9rem; text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  .meta { color: var(--muted); font-size: .85rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .83rem; margin: .6rem 0 1rem; }
+  th, td { border: 1px solid var(--line); padding: .32rem .5rem; text-align: left; vertical-align: top; }
+  thead th { background: var(--head); position: sticky; top: 0; }
+  tbody tr:nth-child(even) { background: var(--row2); }
+  th[data-sort] { cursor: pointer; white-space: nowrap; }
+  th[data-sort]:hover { color: var(--accent); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .warn { background: var(--warnbg); }
+  .note { font-size: .82rem; color: var(--muted); }
+  .tag { display: inline-block; font-size: .72rem; border: 1px solid var(--line);
+    border-radius: 3px; padding: 0 .3rem; margin: .05rem .15rem .05rem 0; white-space: nowrap; }
+  code { font-size: .82em; }
+  pre { background: var(--head); padding: .6rem .8rem; overflow-x: auto; font-size: .78rem; }
+  #themeBtn { background: var(--head); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .25rem .6rem; cursor: pointer; font-size: .8rem; }
+  @media print { nav.toc, #themeBtn { display: none; } thead th { position: static; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <h1>Model / Harness / Provider Selection Guide</h1>
+    <div class="meta">Snapshot 2026-09-16 · Sources: Artificial Analysis (scraped), Zen + Z.ai terms &amp; privacy docs, local opencode usage DB · <span class="tag">refresh via model-benchmarks skill</span></div>
+  </div>
+  <button id="themeBtn" title="toggle theme">theme</button>
+</header>
+
+<nav class="toc">
+  <a href="#how">How to choose</a><a href="#master">Master benchmark table</a><a href="#access">Provider access</a><a href="#free">Free top-tier</a><a href="#deals">Good deals</a>  <a href="#terms">Terms: retention/training/limits/speed</a><a href="#more">More providers</a><a href="#usage">Our usage</a><a href="#recs">Recommendations</a><a href="#caveats">Caveats</a><a href="#sites">Other scoring sites</a><a href="#orvalue">OR value ranking</a>
+</nav>
+
+<h2 id="how">1. How to choose</h2>
+<p>Role → benchmark map: <b>reviewer ≈ DeepSWE v1.1</b> (real SWE tasks) · <b>researcher ≈ Terminal-Bench 4.0</b> (agentic terminal use) · technical Q&amp;A ≈ SWE-Atlas-QnA · general/code knowledge ≈ Engineering Index · latency/price roles (docs, domain chat) ≈ speed + $/1M. Rules: every pinned model must resolve to data (unmatched = unreviewed); a strict-dominance alternative on all six axes is a free switch modulo provider availability; volume decides cost-vs-quality (reviewer runs constantly → $/task; security runs rarely → quality); <b>scores are model×harness</b> — a number earned on Codex only approximately transfers to opencode agents.</p>
+<p class="note">Click any <b>⇅</b> column header to sort. “—” = no data (never read as zero). “~” = inferred, see footnotes.</p>
+
+<h2 id="master">2. Master benchmark table</h2>
+<table id="masterTable">
+<thead><tr>
+  <th data-sort="t">Model (effort/harness) ⇅</th>
+  <th data-sort="n" class="num">Eng ⇅</th><th data-sort="n" class="num">Intel ⇅</th>
+  <th data-sort="n" class="num">CAI ⇅</th><th data-sort="n" class="num">DeepSWE ⇅</th>
+  <th data-sort="n" class="num">T-Bench ⇅</th><th data-sort="n" class="num">QnA ⇅</th>
+  <th data-sort="n" class="num">$/task II ⇅</th><th data-sort="n" class="num">$/task CAI ⇅</th>
+  <th data-sort="n" class="num">tok/s ⇅</th><th data-sort="t">$/1M in/out ⇅</th>
+</tr></thead>
+<tbody>
+<tr><td>Claude Fable 5.1 (max, Claude Code)</td><td class="num">57</td><td class="num">53</td><td class="num">62</td><td class="num">64</td><td class="num">58</td><td class="num">65</td><td class="num">$7.63</td><td class="num">$12.40</td><td class="num">65</td><td>10 / 50 (Z)</td></tr>
+<tr><td>GPT-6 Astra (max, Codex)</td><td class="num">55</td><td class="num">53</td><td class="num">62</td><td class="num">68</td><td class="num">56</td><td class="num">62</td><td class="num">$3.26</td><td class="num">$7.47</td><td class="num">60</td><td>10 / 50 (Z)</td></tr>
+<tr><td>Claude Opus 5 (max, Claude Code)</td><td class="num">54</td><td class="num">51</td><td class="num">60</td><td class="num">63</td><td class="num">55</td><td class="num">62</td><td class="num">$5.86</td><td class="num">$10.80</td><td class="num">50</td><td>5 / 25 (Z)</td></tr>
+<tr><td>Muse Spark 1.3 (max, Muse Code)</td><td class="num">49</td><td class="num">48</td><td class="num">54</td><td class="num">72</td><td class="num">32</td><td class="num">59</td><td class="num">$1.60</td><td class="num">$3.98</td><td class="num">221</td><td>1.25 / 4.25 (FP)</td></tr>
+<tr><td>Muse Spark 1.2 (xhigh)</td><td class="num">—</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">181</td><td>1.25 / 4.25 (FP)</td></tr>
+<tr><td>GLM-5.3 (max, Opencode)</td><td class="num">47</td><td class="num">45</td><td class="num">54</td><td class="num">61</td><td class="num">40</td><td class="num">59</td><td class="num">$2.01</td><td class="num">$4.24</td><td class="num">72</td><td>1.40 / 4.40 (FP)</td></tr>
+<tr><td>Grok 4.6 (high/xhigh)</td><td class="num">45</td><td class="num">44</td><td class="num">47</td><td class="num">65</td><td class="num">18</td><td class="num">58</td><td class="num">$1.86</td><td class="num">$3.57</td><td class="num">59</td><td>2 / 6 (FP)</td></tr>
+<tr><td>GLM-5.3-Flash</td><td class="num">44</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">114</td><td>0.15 / 0.50 (FP)</td></tr>
+<tr><td>Kimi K3 (max)</td><td class="num">43</td><td class="num">44</td><td class="num">52</td><td class="num">68</td><td class="num">21</td><td class="num">66</td><td class="num">$2.00</td><td class="num">$5.05</td><td class="num">35</td><td>3 / 15 (FP)</td></tr>
+<tr><td>Gemini 3.8 Flash (high)</td><td class="num">43</td><td class="num">41</td><td class="num">42</td><td class="num">66</td><td class="num">15</td><td class="num">45</td><td class="num">$1.24</td><td class="num">$2.47</td><td class="num">330</td><td>1.50 / 7.50 (Z)</td></tr>
+<tr><td>Qwen3.8 2.4T A95B</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+<tr><td>Qwen3.8-Flash-Next</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+<tr><td>DeepSeek V4.1 Flash (max)</td><td class="num">39</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">$0.27</td><td class="num">—</td><td class="num">210</td><td>0.30 / 1.20 (FP)</td></tr>
+<tr><td>GLM-5.2</td><td class="num">37</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+<tr><td>DeepSeek V4 Pro 0813 (max, Codex)</td><td class="num">37</td><td class="num">36</td><td class="num">43</td><td class="num">57</td><td class="num">10</td><td class="num">62</td><td class="num">$0.67</td><td class="num">$0.24</td><td class="num">91</td><td>1.32 / 3.96 (FP)</td></tr>
+<tr><td>GPT-5.6 Luna (max)</td><td class="num">36</td><td class="num">38</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">$0.18</td><td class="num">—</td><td class="num">115</td><td>0.20 / 1.20 (Z, -50%→Sep 18)</td></tr>
+<tr><td>DeepSeek V4 Flash 0731 (max, Codex)</td><td class="num">35</td><td class="num">—</td><td class="num">~39*</td><td class="num">54</td><td class="num">11</td><td class="num">51</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.44 / 1.32 (FP)</td></tr>
+<tr><td>DeepSeek V4 Pro (base, max)</td><td class="num">32</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+<tr><td>MiniMax-M3</td><td class="num">32</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.30 / 1.20 (Z)</td></tr>
+<tr><td>Kimi K2.6</td><td class="num">31</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.95 / 4.00 (Z)</td></tr>
+<tr><td>GLM-5.1</td><td class="num">31</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+<tr><td>Kimi K2.7 Code</td><td class="num">30</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.95 / 4.00 (Z)</td></tr>
+<tr><td>Inkling Small / MiMo-V2.5-Pro</td><td class="num">29</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+<tr><td>GPT-5.6 Sol (max, Codex)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">72</td><td class="num">37</td><td class="num">54</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>2 / 10 (Z)</td></tr>
+<tr><td>Nemotron 3 Ultra 550B</td><td class="num">—</td><td class="num">~48</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>free (opencode/OR)</td></tr>
+<tr><td>Nemotron 3 Super 120B</td><td class="num">—</td><td class="num">36</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>free (opencode/OR)</td></tr>
+<tr><td>Gemma 4 31B</td><td class="num">—</td><td class="num">39.2</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>free (OR)</td></tr>
+<tr><td>Ling-3.0-flash (fam.)</td><td class="num">—</td><td class="num">38</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>free fin-variant</td></tr>
+<tr><td>Claude Sonnet 5 (max effort)</td><td class="num">40</td><td class="num">38</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">84</td><td>2 / 10 (FP)</td></tr>
+<tr><td>Claude Sonnet 4.6 (high, non-reasoning)</td><td class="num">—</td><td class="num">25</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">41</td><td>3 / 15 (FP)</td></tr>
+<tr><td>Gemini 3.5 Flash-Lite</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">366</td><td>0.30 / 2.50 (FP)</td></tr>
+<tr><td>Qwen3.5 Plus</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.20 / 1.20 (Z)</td></tr>
+</tbody>
+</table>
+<p class="note">Eng = AA Engineering Index v1.1 · Intel = Intelligence Index v4.3 · CAI = Coding Agent Index v1.5 (DeepSWE + Terminal-Bench 4.0 + SWE-Atlas-QnA) · $/task II = weighted avg per Intelligence task, CAI = per agentic task · (Z) = Zen pricing, (FP) = first-party AA pricing · * DS Flash 39 inferred from chart rank order — estimate only · V4.1 Flash, GLM-5.3-Flash, Nemotron, Gemma 4, Sonnet 5, Luna, Qwen3.5 Plus have no agentic data (absence ≠ weakness).</p>
+
+<h2 id="access">3. Provider access (2026-09-16)</h2>
+<ul>
+<li><b>opencode</b> (7, free shelf, all limited-time + data-use terms): <code>big-pickle</code>, <code>ling-3.0-flash-fin-free</code>, <code>mimo-v2.5-free</code>, <code>muse-spark-1.2-contributor-free</code>, <code>muse-spark-1.3-contributor-free</code>, <code>nemotron-3-ultra-free</code>, <code>nemotron-3.5-lightning-free</code></li>
+<li><b>nvidia</b> (102, trial credits via build.nvidia.com key) — agent-relevant: <code>deepseek-ai/deepseek-v4-pro</code> + <code>deepseek-v4-pro-0813</code>, <code>deepseek-v4-flash</code> + <code>deepseek-v4-flash-0731</code>; <code>qwen/qwen3-coder-480b-a35b-instruct</code>, <code>qwen3.5-122b-a10b</code>, <code>qwen3.5-397b-a17b</code>; <code>minimaxai/minimax-m2.7</code>, <code>minimax-m3</code>; <code>moonshotai/kimi-k3</code>; <code>nvidia/nemotron-3-super-120b-a12b</code>, <code>nemotron-3-ultra-550b-a55b</code>, <code>nemotron-3.5-lightning-30b-a3b</code>; <code>openai/gpt-oss-120b</code>; <code>mistralai/mistral-large-3-675b-instruct-2512</code>; <code>stepfun-ai/step-3.5-flash</code>; <code>thinkingmachines/inkling</code> (full list in skill snapshot)</li>
+<li><b>ollama</b> (local): <code>qwen3.8:latest</code> · <b>Not in CLI:</b> Zen paid shelf (billing + key), OpenRouter <code>:free</code> (keep price-0 AND <code>tools</code> support), Groq free tier, Z.ai direct, Google AI Studio, GitHub Models</li>
+</ul>
+
+<h2 id="free">4. Free top-tier by provider</h2>
+<table id="freeTable">
+<thead><tr><th data-sort="t">Provider ⇅</th><th data-sort="t">Free pick ⇅</th><th>AA signal</th><th>Terms / limits</th></tr></thead>
+<tbody>
+<tr><td>opencode</td><td><code>muse-spark-1.3-contributor-free</code></td><td>Eng 49, DeepSWE 72 — best free signal</td><td>limited-time; <b>trains Meta models</b></td></tr>
+<tr><td>opencode</td><td><code>nemotron-3-ultra-free</code></td><td>Intel ~48; Eng/CAI unknown</td><td>limited-time; NVIDIA trial terms — logged, no confidential data</td></tr>
+<tr><td>opencode</td><td><code>nemotron-3.5-lightning-free</code></td><td>unevaluated</td><td>same trial terms</td></tr>
+<tr><td>opencode</td><td><code>mimo-v2.5-free</code></td><td>Intel 22 base OR Pro 43/Eng 29 (ambiguous)</td><td>trains on data</td></tr>
+<tr><td>opencode</td><td><code>ling-3.0-flash-fin-free</code></td><td>finance-tuned</td><td>trains on data; niche</td></tr>
+<tr><td>opencode</td><td><code>big-pickle</code></td><td>stealth, zero data</td><td>trains on data; sandbox only</td></tr>
+<tr><td>NVIDIA trial</td><td><code>deepseek-v4-pro-0813</code>, <code>kimi-k3</code>, <code>qwen3-coder-480b</code>, <code>gpt-oss-120b</code>…</td><td>per master table</td><td>trial credits, rate-limited</td></tr>
+<tr><td>OpenRouter :free</td><td> Nemotron-3-ultra/super/lightning, <code>gemma-4-31b-it</code> (Intel 39.2), <code>inkling-small</code> (Eng 29)</td><td>as above</td><td>rate-limited/routed; reject <code>z-ai/glm-5.2:free</code> (no tools)</td></tr>
+<tr><td>Z.ai direct</td><td><code>GLM-4.7-Flash</code> (~200K coding), <code>GLM-4.5-Flash</code>, <code>GLM-4.6V-Flash</code></td><td>older 4.x gen, no current AA data</td><td><b>permanent $0, no card</b>, ~1 req/s (observed)</td></tr>
+<tr><td>Groq</td><td><code>gpt-oss-120b/20b</code>, <code>qwen3.6/3.8-27b</code></td><td>oss Intel ~33</td><td>ongoing, no card, ~8K TPM — low-volume only</td></tr>
+<tr><td>Google AI Studio</td><td>Gemini Flash tier</td><td>Flash-Lite 366 tps</td><td>free tokens, modest quota, trains on data</td></tr>
+<tr><td>GitHub Models</td><td>full catalog throttled</td><td>—</td><td>150 RPD, 8K/req — prototyping only</td></tr>
+<tr><td>Ollama local</td><td><code>qwen3.8:latest</code></td><td>family Eng ~40</td><td>free, private, hardware-bound</td></tr>
+</tbody>
+</table>
+<p class="note">Excluded: Cerebras (no permanent free tier — $5/30-day trial + card), Hugging Face ($0.10/mo ≈ nothing for agents).</p>
+
+<h2 id="deals">5. Good deals (paid, cheap)</h2>
+<table>
+<thead><tr><th>Deal</th><th class="num">$/1M in/out</th><th>Signal</th><th>Catch</th></tr></thead>
+<tbody>
+<tr><td>Zen DeepSeek V4 Flash</td><td class="num">0.14 / 0.28</td><td>3× below first-party</td><td>needs Zen billing</td></tr>
+<tr><td>Zen GLM-5.3-Flash</td><td class="num">0.15 / 0.50</td><td>Eng 44</td><td>no agentic data</td></tr>
+<tr><td>Zen GPT-5.6 Luna</td><td class="num">0.20 / 1.20</td><td>Eng 36, $0.18/task</td><td class="warn"><b>50% off ends 2026-09-18</b></td></tr>
+<tr><td>Zen Qwen3.5 Plus</td><td class="num">0.20 / 1.20</td><td>unevaluated</td><td>trial only</td></tr>
+<tr><td>Zen MiniMax M3 / M2.7</td><td class="num">0.30 / 1.20</td><td>M3 Eng 32</td><td>—</td></tr>
+<tr><td>Zen Kimi K2.7 Code</td><td class="num">0.95 / 4.00</td><td>Eng 30</td><td>—</td></tr>
+<tr><td>Zen paid Muse Spark 1.3</td><td class="num">1.25 / 4.25</td><td>Eng 49, DeepSWE 72</td><td>zero-retention (vs contributor terms)</td></tr>
+<tr><td>Z.ai Coding Plan Lite</td><td class="num">~$18/mo</td><td>flagship GLM access, 80 prompts/5h</td><td>subscription, quota-based</td></tr>
+</tbody>
+</table>
+
+<h2 id="terms">6. Terms: retention / training / limits / speed</h2>
+<p class="note">Zen Terms <a href="https://opencode.ai/legal/terms-of-service">opencode.ai/legal/terms-of-service</a> (eff. 2026-08-15) · Zen privacy <a href="https://opencode.ai/legal/privacy-policy">…/privacy-policy</a> · Z.ai Terms <a href="https://docs.z.ai/legal-agreement/terms-of-use">docs.z.ai/legal-agreement/terms-of-use</a> (2026-04-14) · Z.ai privacy+DPA <a href="https://docs.z.ai/legal-agreement/privacy-policy">…/privacy-policy</a></p>
+<table>
+<thead><tr><th>Dimension</th><th>Zen (Anomaly, Delaware)</th><th>Z.ai direct (Jingsheng Hengxing, Singapore)</th></tr></thead>
+<tbody>
+<tr><td><b>Retention</b></td><td>Paid: OpenCode doesn't retain Content; upstreams zero-retention <b>except</b> OpenAI/Anthropic-routed (30d), Nemotron trial (logged), free/contributor models. Own keys → that provider's policy.</td><td><b>API: content processed real-time, NOT saved</b> (DPA); other data temp-stored, deleted after termination. Consumer/web: kept for account life + legitimate interest; conversations deletable.</td></tr>
+<tr><td><b>Training</b></td><td><b>Unpaid accounts grant training rights</b> (“may use Content to develop/improve”). Paid stops OpenCode-side training; per-model exceptions still train. You may not train competing models on Outputs.</td><td><b>Individual/web: broad license incl. training</b> outside your jurisdiction. <b>API: NO training/storage without explicit agreement.</b> You may not train competing models; no healthcare/<b>finance</b>/decision-making uses.</td></tr>
+<tr><td><b>Limits</b></td><td>Free ≈200 req/day (observed, resets ~00:00 UTC, IP-based, per-model flags, congested); <b>paid balance does NOT lift free-model caps</b>. Monthly spend caps + $20 auto-reload &lt;$5. No exhaustion warnings.</td><td>Free caps <b>unpublished</b> (~1 req/s observed, not contractual). Coding Plan Lite ~80 prompts/5h, ~400/wk from ~$18/mo. Payments non-refundable.</td></tr>
+<tr><td><b>Speed</b></td><td>No throughput/latency/RPM SLA published. Best-effort.</td><td>No speed SLA found; rate-limit doc behind login. Best-effort.</td></tr>
+<tr><td><b>Disputes / liability</b></td><td>Delaware law, JAMS arbitration (opt-out by mail ≤30d), cap $100 or 12-mo spend.</td><td>Singapore law, SIAC arbitration, cap $100 or 6-mo spend. No EU-residency option.</td></tr>
+<tr><td><b>IP / changes</b></td><td>You own Input + Output (assigned). Terms/prices changeable with notice. Terminate at will.</td><td>You retain Prompt/Output rights. Prices changeable with notice (30d). Terminate at will.</td></tr>
+</tbody>
+</table>
+
+<h2 id="usage">7. Our usage (local DB, Sep 13–15)</h2>
+<p>1 turn ≈ 1 assistant message ≈ 1 model call. <b>3,770 turns / 3 days (~1,257/day).</b> Peak <b>337/hr (Sep 14 21:00)</b>; heavy (≥150/hr): Sep 14 01:00 (319), Sep 13 23:00 (243), 17:00 (228), Sep 14 00:00 (222), Sep 15 01:00 (208). Pattern: night shift, quiet 03:00–08:00. Mix: <b>77% Spark contributor-free</b> (2,918), 22% <code>nvidia/z-ai/glm-5.3-flash</code> (843), 9 Nemotron Lightning, 1 Ollama. Implications: 337/hr exhausts Zen's ~200/day free cap in under an hour — production loops need paid/direct keys; 2,918 contributor turns are training Meta's models.</p>
+
+<h2 id="recs">8. Recommendations</h2>
+<table>
+<thead><tr><th>Agent</th><th>Pick</th><th>Why (axis)</th></tr></thead>
+<tbody>
+<tr><td>researcher</td><td><code>opencode/glm-5.3</code> or Spark; pin off DeepSeek</td><td>T-Bench 40 (harness-native) / 32+fast; DS Pro scores 10 — disqualified as primary</td></tr>
+<tr><td>reviewer</td><td>DS Pro <code>-0813</code> (value) · Spark (quality) · Gemini 3.8F (speed)</td><td>DeepSWE 57@$0.24 vs 72@$3.98 vs 66@$2.47/11.7m — state the axis</td></tr>
+<tr><td>security-reviewer</td><td>paid <code>opencode/muse-spark-1.3</code></td><td>DeepSWE co-leader 72, low volume absorbs $3.98/task, zero-retention</td></tr>
+<tr><td>docs-writer / domain-companion</td><td>free tier (Groq oss-120b, Google free, Z.ai GLM-4.5-Flash $0)</td><td>quality bar low; latency/price rule. Note Z.ai finance-use clause for domain advice</td></tr>
+</tbody>
+</table>
+
+<h2 id="caveats">9. Caveats &amp; refresh</h2>
+<ul>
+<li class="note">Scores are model×harness (Codex vs Muse Code vs Opencode vs Claude Code) — cross-harness transfer is approximate. AA benchmarks (max)/(high) effort variants; served default-effort scores lower. AA measures reference endpoints, not NVIDIA NIM. “—” means unevaluated, never weak.</li>
+<li class="note">Refresh: <code>node scripts/aa_bench.mjs check … --out snapshots/…</code>, <code>… coding …</code>, <code>… inventory …</code>, <code>node scripts/aa_bench.test.mjs</code> (see model-benchmarks skill), then update the tables above. Restart opencode to reload skill/config changes.</li>
+</ul>
+<pre>open ~/.config/opencode/skills/model-benchmarks/model-selection-guide.html</pre>
+
+<h2 id="sites">11. Other scoring sites (beyond AA)</h2>
+<p class="note">AA is one lens. Cross-checks below, verified 2026-09-16. Benchmarks disagree sometimes (e.g. DS Pro: Vellum open SWE-bench #1 vs AA DeepSWE 12th) — harness/task differences; don't over-index any single board.</p>
+<table>
+<thead><tr><th>Site</th><th>What it measures</th><th>Why it complements AA</th><th>Machine-readable?</th></tr></thead>
+<tbody>
+<tr><td><a href="https://arena.ai/leaderboard/text/coding">LMArena coding</a> / <a href="https://arena.ai/leaderboard/text">text</a></td><td>Blind human-preference Elo, millions of votes (coding + overall)</td><td>Catches what benchmarks miss. Notables: Fable 5 coding #1; <b>Spark 1.2 (xHigh) text #5</b>; GLM-5.3-Flash text #10; DS V4 Pro text #20</td><td>No official API; third-party mirrors exist</td></tr>
+<tr><td><a href="https://aider.chat/docs/leaderboards/">Aider polyglot</a></td><td>225 hard Exercism tasks inside Aider's real edit loop + cost/run</td><td>Closest public proxy to reviewer-style edit work; edit-format compliance included</td><td><b>Yes</b> — YAML on GitHub: <code>aider/website/_data/polyglot_leaderboard.yml</code></td></tr>
+<tr><td><a href="https://www.swebench.com/">SWE-bench official</a></td><td>% resolved on Verified (same mini-SWE-agent env)</td><td>Canonical reference for SWE-task claims</td><td>Page table, scrapable</td></tr>
+<tr><td><a href="https://www.vellum.ai/llm-leaderboard">Vellum</a> (+ <a href="https://www.vellum.ai/open-llm-leaderboard">open</a> + <a href="https://www.vellum.ai/best-llm-for-coding">coding</a>)</td><td>Aggregates SWE-Bench, LiveCodeBench, Aider + pricing</td><td>LiveCodeBench: DS Pro #1 (93.5%), DS Flash #2 — DS family's best surface is contest coding, not terminal agency</td><td>JS pages; cross-check by hand</td></tr>
+<tr><td>BenchLM · LLM Stats · lmspeed · Cheesecat · modelbenchmark.io · AI BENCHY</td><td>Composite aggregators / speed / niche indexes</td><td>Second opinions for unevaluated-on-AA models (e.g. Qwen3.5 family, Step flash)</td><td>Varies; search excerpts suffice</td></tr>
+<tr><td>OpenRouter rankings</td><td>Usage share across apps (tokens routed)</td><td>Adoption signal, NOT quality — popularity ≠ scores</td><td>Site table</td></tr>
+</tbody>
+</table>
+
+<h2 id="orvalue">12. OpenRouter value ranking (2026-09-16)</h2>
+<p class="note">From the weekly pull (<code>snapshots/reports/2026-09-16-value.md</code>). Refreshed Mondays 06:00 by launchd; full tiers + deltas in the report file.</p>
+<table>
+<thead><tr><th data-sort="t">Route ⇅</th><th data-sort="n" class="num">$/1M in ⇅</th><th data-sort="n" class="num">$/1M out ⇅</th><th>AA signal</th></tr></thead>
+<tbody>
+<tr><td><code>deepseek/deepseek-v4-flash-0731</code></td><td class="num">0.06</td><td class="num">0.12</td><td>CAI ~39, DS 54 — cheapest agentic data point</td></tr>
+<tr><td><code>meta/muse-spark-1.3-contributor</code></td><td class="num">0.10</td><td class="num">0.20</td><td>Eng 49, DS 72 — best quality-per-dollar (trains Meta)</td></tr>
+<tr><td><code>z-ai/glm-5.3-flash</code></td><td class="num">0.10</td><td class="num">0.33</td><td>Eng 44, no agentic data</td></tr>
+<tr><td><code>google/gemma-4-31b</code></td><td class="num">0.09</td><td class="num">0.34</td><td>Intel 39.2</td></tr>
+<tr><td><code>inclusionai/ling-3.0-flash</code></td><td class="num">0.021</td><td class="num">0.063</td><td>Intel 38 — cheapest scored model</td></tr>
+<tr><td><code>openai/gpt-oss-120b</code></td><td class="num">0.037</td><td class="num">0.17</td><td>Intel ~33 — docs-grade</td></tr>
+<tr><td><code>nvidia/nemotron-3-ultra-550b-a55b:free</code></td><td class="num">0</td><td class="num">0</td><td>Intel ~48 — best free signal</td></tr>
+</tbody>
+</table>
+
+<h2 id="more">10. Other major providers — terms snapshot (2026-09-16)</h2>
+<p class="note">Same four dimensions. “Reseller path” = our mapped route (Zen paid / NVIDIA trial) is covered by <em>that</em> reseller's terms, not these — these matter if you connect the provider directly.</p>
+<table>
+<thead><tr><th>Provider</th><th>Retention</th><th>Training</th><th>Limits / speed</th><th>Docs</th></tr></thead>
+<tbody>
+<tr><td><b>OpenRouter</b></td><td>OR itself ZDR by default (no prompt retention unless you opt in; 1% discount if you do). Per-endpoint policies; unknown = assumed retains+trains (conservative). ZDR enforceable globally, per model group, or per request (<code>zdr:true</code>); ZDR endpoint list is programmatic.</td><td>Separate allow-train toggles for <b>paid vs free</b> models — free endpoints often train; must opt out + enforce ZDR.</td><td>No speed SLA seen. Free-model quotas per endpoint.</td><td><a href="https://openrouter.ai/terms">terms</a> (2026-08-31) · <a href="https://openrouter.ai/docs/guides/features/zdr">ZDR</a> · <a href="https://openrouter.ai/docs/guides/privacy/provider-logging">provider logging</a></td></tr>
+<tr><td><b>NVIDIA</b> (build.nvidia.com trial)</td><td>Trial ToS: content used solely to provide the service, <b>not stored after session</b> except disclosed cases; NVIDIA may monitor/scan; metrics + error logs collected. No usage dashboard.</td><td>No training per trial ToS (content not retained). In-session processing rights are broad — trial use only, no confidential data (per Zen's summary of the same terms).</td><td>Trial credits, rate-limited. PDF: <a href="https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf">API Trial ToS §§2–3</a>.</td><td><a href="https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf">trial ToS</a></td></tr>
+<tr><td><b>DeepSeek</b> direct (Hangzhou DeepSeek, data in PRC)</td><td>Inputs/outputs collected; stored in China.</td><td><b>Used for training by default; opt-out</b> via “Improve the model for everyone” toggle + privacy right. Rare allowance: <b>distillation explicitly permitted</b>; must disclose AI generation.</td><td>Pay-per-token platform pricing; no SLA reviewed.</td><td><a href="https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html">platform ToS</a> · <a href="https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html">privacy</a></td></tr>
+<tr><td><b>Groq</b></td><td><b>No retention by default</b>; 30-day reliability/abuse logs only, disabled by ZDR toggle; delete ≤30d post-termination.</td><td><b>NEVER trains without explicit permission</b> — strongest privacy story in this set.</td><td>Free plan exists (thin: ~8K TPM class). No PHI without consent.</td><td><a href="https://console.groq.com/docs/legal/services-agreement">services agreement</a> (2026-06-22) · <a href="https://console.groq.com/docs/your-data">your data</a></td></tr>
+<tr><td><b>Google</b> AI Studio</td><td>Free tier: modest quota; account-lifetime retention pattern.</td><td><b>Trains on data</b> (free tier).</td><td>RPM/TPM/RPD limits per model.</td><td><a href="https://ai.google.dev/gemini-api/docs/rate-limits">rate limits</a> · <a href="https://ai.google.dev/gemini-api/docs/pricing">pricing</a></td></tr>
+<tr><td><b>GitHub Models</b></td><td>Rate-limited prototyping API.</td><td>Provider-default (Azure-hosted).</td><td>Low tier 15 RPM / 150 RPD, 8K in per req — diffs won't fit.</td><td><a href="https://docs.github.com/en/enterprise-cloud@latest/github-models/use-github-models/prototyping-with-ai-models">rate limits</a></td></tr>
+<tr><td><b>Moonshot / Kimi</b> (Singapore; consumer data mainland China)</td><td>API FAQ: no persistent storage. <b>But platform ToS default allows training unless separately agreed in writing</b> — get enterprise terms for guarantees. No PHI.</td><td>Consumer: trains (opt-out via support, 5–7d). Business plan: no training.</td><td>Pay-per-token; quotas per plan.</td><td><a href="https://www.kimi.com/en/help/kimi-api/api-data-security">API data security</a> · <a href="https://platform.kimi.ai/docs/agreement/userprivacy">platform privacy</a></td></tr>
+<tr><td><b>MiniMax / Alibaba (Qwen)</b> direct</td><td colspan="2"><span class="tag">unverified</span> Our mapped routes (Zen paid, NVIDIA trial) are covered by reseller terms above — verify before connecting directly.</td><td>—</td><td>—</td></tr>
+</tbody>
+</table>
+<p class="note">Clean proprietary-code API paths: Groq (+ZDR), Z.ai API (DPA no-storage), Kimi API (FAQ claim, ToS caveat — get it in writing), DeepSeek direct (opt out first). Avoid for secrets: all contributor/free trainers, NVIDIA trial (logged), OpenRouter free without ZDR + train-opt-out.</p>
+</div>
+<script>
+(function () {
+  var root = document.documentElement;
+  try { root.dataset.theme = localStorage.getItem('msg-theme') ||
+    (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('msg-theme', root.dataset.theme); } catch (e) {}
+  });
+  function val(td, type) {
+    var t = (td.dataset.v !== undefined) ? td.dataset.v : td.textContent.trim();
+    if (type === 'n') {
+      var m = t.replace(/[$,~]/g, '').replace(/,/g, '');
+      if (m === '' || m === '—' || m === '-') return -Infinity;
+      var f = parseFloat(m);
+      return isNaN(f) ? -Infinity : f;
+    }
+    return t.toLowerCase();
+  }
+  document.querySelectorAll('th[data-sort]').forEach(function (th) {
+    th.textContent = th.textContent.replace(' ⇅', '') + ' ⇅';
+    th.addEventListener('click', function () {
+      var table = th.closest('table'), idx = th.cellIndex, type = th.dataset.sort;
+      var tb = table.tBodies[0], rows = Array.prototype.slice.call(tb.rows);
+      var asc = !(table.dataset.dir === 'asc' && +table.dataset.idx === idx);
+      rows.sort(function (a, b) {
+        var x = val(a.cells[idx], type), y = val(b.cells[idx], type);
+        return (x < y ? -1 : x > y ? 1 : 0) * (asc ? 1 : -1);
+      });
+      rows.forEach(function (r) { tb.appendChild(r); });
+      table.dataset.dir = asc ? 'asc' : 'desc'; table.dataset.idx = idx;
+    });
+  });
+})();
+</script>
+</body>
+</html>

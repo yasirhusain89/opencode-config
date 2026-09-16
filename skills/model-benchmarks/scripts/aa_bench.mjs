@@ -240,6 +240,10 @@ function parseModelPage(text, slug) {
   m.output = parseFloat(pm[3]);
   const pc = flat.match(/cost \$([\d.]+) to evaluate/);
   if (pc) m.eval_total_cost = parseFloat(pc[1]);
+  // Intelligence Index score from the summary sentence (covers models
+  // outside the homepage top-11); display_name carries the effort config
+  const pi = flat.match(/scores (\d+) on the Artificial Analysis Intelligence Index/);
+  if (pi) m.intelligence = parseInt(pi[1], 10);
   if (m.cache_discount_pct !== undefined) {
     m.cache_read = Math.round(m.input * (1 - m.cache_discount_pct / 100) * 100) / 100;
   }

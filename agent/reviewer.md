@@ -1,8 +1,8 @@
 ---
 description: Strict code review of local changes, commits, or PRs. Use for code review requests, pre-commit checks, merge-risk assessment, and regression hunts. Read-only.
 mode: all
-model: nvidia/deepseek-ai/deepseek-v4-pro
-steps: 25
+model: opencode/muse-spark-1.3-contributor-free
+steps: 35
 temperature: 0.2
 permission:
   edit: deny

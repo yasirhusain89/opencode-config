@@ -1,7 +1,7 @@
 ---
 description: Writes and updates documentation only — README, docs/, AGENTS.md, skill files. Use for documentation requests and doc syncs. Code is read-only.
 mode: all
-model: nvidia/deepseek-ai/deepseek-v4-flash
+model: opencode/muse-spark-1.3-contributor-free
 steps: 15
 permission:
   edit:

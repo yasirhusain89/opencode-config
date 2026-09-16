@@ -98,9 +98,9 @@ eq(parseEngineering('Artificial Analysis Engineering Index\\nno CTA line\\nFoo\\
 
 // parseModelPage: single-line and wrapped pricing
 {
-  const line = 'Pricing for DeepSeek V4.1 Flash (Reasoning, Max Effort) is $0.30 per 1M input tokens and $1.20 per 1M output tokens. In total, it cost $476.89 to evaluate DeepSeek V4.1 Flash.';
+  const line = 'Pricing for DeepSeek V4.1 Flash (Reasoning, Max Effort) is $0.30 per 1M input tokens and $1.20 per 1M output tokens. In total, it cost $476.89 to evaluate DeepSeek V4.1 Flash. DeepSeek V4.1 Flash (Reasoning, Max Effort) scores 40 on the Artificial Analysis Intelligence Index, placing it well above average.';
   const m = parseModelPage(['Cache Discount 98%', 'At 214 tokens per second', line].join('\\n'), 'deepseek-v4-1-flash');
-  eq([m.input, m.output, m.eval_total_cost, m.speed_tps, m.cache_read], [0.3, 1.2, 476.89, 214, 0.01], 'parseModelPage single-line');
+  eq([m.input, m.output, m.eval_total_cost, m.speed_tps, m.cache_read, m.intelligence], [0.3, 1.2, 476.89, 214, 0.01, 40], 'parseModelPage single-line');
   const wrapped = 'Pricing for DeepSeek V4.1 Flash (Reasoning, Max Effort) is $0.30 per 1M input tokens and\\n$1.20 per 1M output tokens. In total, it cost\\n$476.89 to evaluate.';
   const m2 = parseModelPage(wrapped, 'deepseek-v4-1-flash');
   eq([m2.input, m2.output, m2.eval_total_cost], [0.3, 1.2, 476.89], 'parseModelPage wrapped');

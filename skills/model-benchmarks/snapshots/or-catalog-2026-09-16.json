@@ -1,0 +1,3551 @@
+{
+ "scraped_at": "2026-09-16",
+ "source": "openrouter.ai/api/v1/models",
+ "count": 443,
+ "models": [
+  {
+   "id": "openrouter/auto-beta",
+   "in": -1000000,
+   "out": -1000000,
+   "ctx": 2000000,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text+image"
+  },
+  {
+   "id": "openrouter/fusion",
+   "in": -1000000,
+   "out": -1000000,
+   "ctx": 1000000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openrouter/pareto-code",
+   "in": -1000000,
+   "out": -1000000,
+   "ctx": 2000000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openrouter/bodybuilder",
+   "in": -1000000,
+   "out": -1000000,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openrouter/auto",
+   "in": -1000000,
+   "out": -1000000,
+   "ctx": 2000000,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text+image"
+  },
+  {
+   "id": "inclusionai/ling-3.0-flash-vl:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "nex-agi/nex-n2.5-mini:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "nex-agi/nex-n2.5-pro:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "inclusionai/ling-3.0-flash-sante:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "inclusionai/ling-3.0-flash-fin:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "dots-studio/dots-3-note-preview:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 512000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "liquid/lfm-2.5-2.6b:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 65536,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "nvidia/nemotron-3.5-lightning:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "thinkingmachines/inkling-small:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+audio->text"
+  },
+  {
+   "id": "poolside/laguna-s-2.1:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "thinkingmachines/inkling:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+audio->text"
+  },
+  {
+   "id": "poolside/laguna-xs-2.1:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "cohere/north-mini-code:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 256000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-5.2:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 32768,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "nvidia/nemotron-3.5-content-safety:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 256000,
+   "tools": 1,
+   "mod": "text+image+audio+video->text"
+  },
+  {
+   "id": "google/gemma-4-26b-a4b-it:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "google/gemma-4-31b-it:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "google/lyria-3-pro-preview",
+   "in": 0,
+   "out": 0,
+   "ctx": 1048576,
+   "tools": 0,
+   "mod": "text+image->text+audio"
+  },
+  {
+   "id": "google/lyria-3-clip-preview",
+   "in": 0,
+   "out": 0,
+   "ctx": 1048576,
+   "tools": 0,
+   "mod": "text+image->text+audio"
+  },
+  {
+   "id": "nvidia/nemotron-3-super-120b-a12b:free",
+   "in": 0,
+   "out": 0,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openrouter/free",
+   "in": 0,
+   "out": 0,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "ibm-granite/granite-4.0-h-micro",
+   "in": 0.017,
+   "out": 0.112,
+   "ctx": 131000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/mistral-nemo",
+   "in": 0.019,
+   "out": 0.03,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "inclusionai/ling-3.0-flash",
+   "in": 0.021,
+   "out": 0.063,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-5-nano:batch",
+   "in": 0.025,
+   "out": 0.2,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "meta-llama/llama-3.2-1b-instruct",
+   "in": 0.027,
+   "out": 0.201,
+   "ctx": 60000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3.7-flash",
+   "in": 0.03,
+   "out": 0.13,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "openai/gpt-oss-20b",
+   "in": 0.03,
+   "out": 0.13,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "inference-net/schematron-v2-turbo",
+   "in": 0.03,
+   "out": 0.15,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "amazon/nova-micro-v1",
+   "in": 0.035,
+   "out": 0.14,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-oss-120b",
+   "in": 0.037,
+   "out": 0.17,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "cohere/command-r7b-12-2024",
+   "in": 0.038,
+   "out": 0.15,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "sao10k/l3-lunaris-8b",
+   "in": 0.04,
+   "out": 0.05,
+   "ctx": 8192,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "~deepseek/deepseek-v4-flash-latest",
+   "in": 0.04,
+   "out": 0.1,
+   "ctx": 1310720,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "inception/mercury-2.5",
+   "in": 0.04,
+   "out": 0.15,
+   "ctx": 260000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "tencent/hy-mt2-1.8b",
+   "in": 0.044,
+   "out": 0.177,
+   "ctx": 8192,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-30b-a3b-instruct-2507",
+   "in": 0.048,
+   "out": 0.193,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/mistral-small-24b-instruct-2501",
+   "in": 0.05,
+   "out": 0.08,
+   "ctx": 32768,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "meta-llama/llama-3.1-8b-instruct",
+   "in": 0.05,
+   "out": 0.08,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "google/gemma-3-4b-it",
+   "in": 0.05,
+   "out": 0.1,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "google/gemma-3-12b-it",
+   "in": 0.05,
+   "out": 0.15,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "nvidia/nemotron-3-nano-30b-a3b",
+   "in": 0.05,
+   "out": 0.2,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "google/gemini-2.5-flash-lite:batch",
+   "in": 0.05,
+   "out": 0.2,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "openai/gpt-4.1-nano:batch",
+   "in": 0.05,
+   "out": 0.2,
+   "ctx": 1047576,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "inference-net/schematron-v2-small",
+   "in": 0.05,
+   "out": 0.23,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "meta-llama/llama-3.2-3b-instruct",
+   "in": 0.05,
+   "out": 0.33,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-5-nano",
+   "in": 0.05,
+   "out": 0.4,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "gryphe/mythomax-l2-13b",
+   "in": 0.06,
+   "out": 0.06,
+   "ctx": 8192,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-v4-flash-0731",
+   "in": 0.06,
+   "out": 0.12,
+   "ctx": 1310720,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "poolside/laguna-xs-2.1",
+   "in": 0.06,
+   "out": 0.12,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "inclusionai/ling-3.0-flash-vl",
+   "in": 0.06,
+   "out": 0.18,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "inclusionai/ling-3.0-flash-fin",
+   "in": 0.06,
+   "out": 0.18,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "amazon/nova-lite-v1",
+   "in": 0.06,
+   "out": 0.24,
+   "ctx": 300000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "ibm-granite/granite-4.2-8b",
+   "in": 0.06,
+   "out": 0.25,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-4.7-flash",
+   "in": 0.061,
+   "out": 0.4,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3.5-flash-02-23",
+   "in": 0.065,
+   "out": 0.26,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "microsoft/phi-4",
+   "in": 0.07,
+   "out": 0.14,
+   "ctx": 16384,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-coder-30b-a3b-instruct",
+   "in": 0.07,
+   "out": 0.28,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "tencent/hy-mt2-30b-a3b",
+   "in": 0.074,
+   "out": 0.295,
+   "ctx": 8192,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "tencent/hy-mt2-7b",
+   "in": 0.074,
+   "out": 0.295,
+   "ctx": 8192,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/ministral-8b-2512:batch",
+   "in": 0.075,
+   "out": 0.075,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "~z-ai/glm-flash-latest",
+   "in": 0.075,
+   "out": 0.25,
+   "ctx": 1310720,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "z-ai/glm-5.3-flash:batch",
+   "in": 0.075,
+   "out": 0.25,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "mistralai/mistral-small-2603:batch",
+   "in": 0.075,
+   "out": 0.3,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "bytedance-seed/seed-1.6-flash",
+   "in": 0.075,
+   "out": 0.3,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "openai/gpt-oss-safeguard-20b",
+   "in": 0.075,
+   "out": 0.3,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-4o-mini:batch",
+   "in": 0.075,
+   "out": 0.3,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "nvidia/nemotron-3.5-lightning",
+   "in": 0.08,
+   "out": 0.2,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-32b",
+   "in": 0.08,
+   "out": 0.28,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "nvidia/nemotron-3-super-120b-a12b",
+   "in": 0.08,
+   "out": 0.45,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "google/gemma-3-27b-it",
+   "in": 0.08,
+   "out": 0.45,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen3-235b-a22b-2507",
+   "in": 0.088,
+   "out": 0.35,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-v4-flash",
+   "in": 0.089,
+   "out": 0.177,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "poolside/laguna-s-2.1",
+   "in": 0.09,
+   "out": 0.18,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "google/gemma-4-26b-a4b-it",
+   "in": 0.09,
+   "out": 0.3,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "google/gemma-4-31b-it",
+   "in": 0.09,
+   "out": 0.34,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "upstage/solar-pro4",
+   "in": 0.09,
+   "out": 0.36,
+   "ctx": 524288,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-next-80b-a3b-instruct",
+   "in": 0.09,
+   "out": 1.1,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/mistral-small-3.2-24b-instruct",
+   "in": 0.094,
+   "out": 0.25,
+   "ctx": 256000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "rekaai/reka-edge",
+   "in": 0.1,
+   "out": 0.1,
+   "ctx": 16384,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "mistralai/ministral-3b-2512",
+   "in": 0.1,
+   "out": 0.1,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen3.5-9b",
+   "in": 0.1,
+   "out": 0.15,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "meta/muse-spark-1.3-contributor",
+   "in": 0.1,
+   "out": 0.2,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "meta/muse-spark-1.2-contributor",
+   "in": 0.1,
+   "out": 0.2,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "bytedance/ui-tars-1.5-7b",
+   "in": 0.1,
+   "out": 0.2,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "rekaai/reka-flash-3",
+   "in": 0.1,
+   "out": 0.2,
+   "ctx": 65536,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen-2.5-7b-instruct",
+   "in": 0.1,
+   "out": 0.2,
+   "ctx": 32768,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "stepfun/step-3.5-flash",
+   "in": 0.1,
+   "out": 0.3,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/voxtral-small-24b-2507",
+   "in": 0.1,
+   "out": 0.3,
+   "ctx": 32768,
+   "tools": 1,
+   "mod": "text+file+audio->text"
+  },
+  {
+   "id": "meta-llama/llama-4-scout",
+   "in": 0.1,
+   "out": 0.3,
+   "ctx": 1310720,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "meta-llama/llama-3.3-70b-instruct",
+   "in": 0.1,
+   "out": 0.32,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-5.3-flash",
+   "in": 0.1,
+   "out": 0.333,
+   "ctx": 1310720,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "bytedance-seed/seed-2.0-mini",
+   "in": 0.1,
+   "out": 0.4,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "google/gemini-2.5-flash-lite",
+   "in": 0.1,
+   "out": 0.4,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "openai/gpt-4.1-nano",
+   "in": 0.1,
+   "out": 0.4,
+   "ctx": 1047576,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-luna-pro:batch",
+   "in": 0.1,
+   "out": 0.6,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-luna:batch",
+   "in": 0.1,
+   "out": 0.6,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.4-nano:batch",
+   "in": 0.1,
+   "out": 0.625,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "qwen/qwen3.6-35b-a3b",
+   "in": 0.1,
+   "out": 0.9,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "qwen/qwen3-vl-32b-instruct",
+   "in": 0.104,
+   "out": 0.416,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "deepseek/deepseek-v4-flash-vision-exp:batch",
+   "in": 0.11,
+   "out": 0.33,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "deepseek/deepseek-v4-flash-0731:batch",
+   "in": 0.11,
+   "out": 0.33,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-vl-8b-instruct",
+   "in": 0.117,
+   "out": 0.455,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen3-8b",
+   "in": 0.117,
+   "out": 0.455,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-14b",
+   "in": 0.12,
+   "out": 0.24,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-30b-a3b",
+   "in": 0.12,
+   "out": 0.5,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-coder-next",
+   "in": 0.12,
+   "out": 0.8,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "google/gemini-3.1-flash-lite:batch",
+   "in": 0.125,
+   "out": 0.75,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "openai/gpt-5-mini:batch",
+   "in": 0.125,
+   "out": 1,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "qwen/qwen3-vl-30b-a3b-instruct",
+   "in": 0.13,
+   "out": 0.52,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "z-ai/glm-4.5-air",
+   "in": 0.13,
+   "out": 0.85,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "tencent/hy3",
+   "in": 0.132,
+   "out": 0.528,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "xiaomi/mimo-v2.5",
+   "in": 0.14,
+   "out": 0.28,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+audio+video->text"
+  },
+  {
+   "id": "tencent/hunyuan-a13b-instruct",
+   "in": 0.14,
+   "out": 0.57,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/ministral-8b-2512",
+   "in": 0.15,
+   "out": 0.15,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "mistralai/codestral-2508:batch",
+   "in": 0.15,
+   "out": 0.45,
+   "ctx": 256000,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "qwen/qwen3.8-flash",
+   "in": 0.15,
+   "out": 0.47,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "~deepseek/deepseek-flash-latest",
+   "in": 0.15,
+   "out": 0.6,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "mistralai/mistral-small-2603",
+   "in": 0.15,
+   "out": 0.6,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "upstage/solar-pro-3",
+   "in": 0.15,
+   "out": 0.6,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-oss-120b:batch",
+   "in": 0.15,
+   "out": 0.6,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "cohere/command-r-08-2024",
+   "in": 0.15,
+   "out": 0.6,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-4o-mini",
+   "in": 0.15,
+   "out": 0.6,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-4o-mini-2024-07-18",
+   "in": 0.15,
+   "out": 0.6,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "qwen/qwen3-next-80b-a3b-thinking",
+   "in": 0.15,
+   "out": 1.2,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "google/gemini-3.5-flash-lite:batch",
+   "in": 0.15,
+   "out": 1.25,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-2.5-flash:batch",
+   "in": 0.15,
+   "out": 1.25,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "perceptron/perceptron-mk1",
+   "in": 0.15,
+   "out": 1.5,
+   "ctx": 32768,
+   "tools": 0,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "qwen/qwen3.5-35b-a3b",
+   "in": 0.163,
+   "out": 1.3,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "qwen/qwen3.5-9b:batch",
+   "in": 0.17,
+   "out": 0.25,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "meta/muse-glimmer-30b:batch",
+   "in": 0.175,
+   "out": 0.75,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "meta-llama/llama-guard-4-12b",
+   "in": 0.18,
+   "out": 0.18,
+   "ctx": 163840,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "tencent/hy3-preview",
+   "in": 0.18,
+   "out": 0.6,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-vl-8b-thinking",
+   "in": 0.18,
+   "out": 2.1,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "meta-llama/llama-4-maverick",
+   "in": 0.188,
+   "out": 0.653,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen3.6-flash",
+   "in": 0.188,
+   "out": 1.125,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "qwen/qwen3-coder-flash",
+   "in": 0.195,
+   "out": 0.975,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3.5-27b",
+   "in": 0.195,
+   "out": 1.56,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "nvidia/nemotron-3.5-content-safety",
+   "in": 0.2,
+   "out": 0.2,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "mistralai/ministral-14b-2512",
+   "in": 0.2,
+   "out": 0.2,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "mistralai/mistral-saba",
+   "in": 0.2,
+   "out": 0.6,
+   "ctx": 32768,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "openai/gpt-4.1-mini:batch",
+   "in": 0.2,
+   "out": 0.8,
+   "ctx": 1047576,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition",
+   "in": 0.2,
+   "out": 0.9,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/mistral-medium-3.1:batch",
+   "in": 0.2,
+   "out": 1,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "minimax/minimax-01",
+   "in": 0.2,
+   "out": 1.1,
+   "ctx": 1000192,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "stepfun/step-3.7-flash",
+   "in": 0.2,
+   "out": 1.15,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "~openai/gpt-luna-latest",
+   "in": 0.2,
+   "out": 1.2,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-luna-pro",
+   "in": 0.2,
+   "out": 1.2,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-luna",
+   "in": 0.2,
+   "out": 1.2,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.4-nano",
+   "in": 0.2,
+   "out": 1.25,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "qwen/qwen3-vl-30b-a3b-thinking",
+   "in": 0.2,
+   "out": 2.4,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen3-30b-a3b-thinking-2507",
+   "in": 0.2,
+   "out": 2.4,
+   "ctx": 81920,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-vl-235b-a22b-instruct",
+   "in": 0.21,
+   "out": 1.9,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen3.8-27b",
+   "in": 0.214,
+   "out": 2.55,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "deepseek/deepseek-v4-flash-vision-exp",
+   "in": 0.22,
+   "out": 0.66,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen3-235b-a22b-thinking-2507",
+   "in": 0.23,
+   "out": 2.3,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "inception/mercury-2",
+   "in": 0.25,
+   "out": 0.75,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/mistral-large-2512:batch",
+   "in": 0.25,
+   "out": 0.75,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-3.5-turbo:batch",
+   "in": 0.25,
+   "out": 0.75,
+   "ctx": 16385,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "arcee-ai/trinity-large-thinking",
+   "in": 0.25,
+   "out": 0.8,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-chat-v3.1",
+   "in": 0.25,
+   "out": 0.95,
+   "ctx": 163840,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-chat-v3-0324",
+   "in": 0.25,
+   "out": 1,
+   "ctx": 163840,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "anthropic/claude-3-haiku",
+   "in": 0.25,
+   "out": 1.25,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "google/gemini-3.1-flash-lite-image",
+   "in": 0.25,
+   "out": 1.5,
+   "ctx": 65536,
+   "tools": 0,
+   "mod": "text+image->text+image"
+  },
+  {
+   "id": "google/gemini-3.1-flash-lite",
+   "in": 0.25,
+   "out": 1.5,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3.1-flash-lite-preview",
+   "in": 0.25,
+   "out": 1.5,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3-flash-preview:batch",
+   "in": 0.25,
+   "out": 1.5,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "bytedance-seed/seed-2.0-lite",
+   "in": 0.25,
+   "out": 2,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "bytedance-seed/seed-1.6",
+   "in": 0.25,
+   "out": 2,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "openai/gpt-5.1-codex-mini",
+   "in": 0.25,
+   "out": 2,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "openai/gpt-5-mini",
+   "in": 0.25,
+   "out": 2,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "minimax/minimax-m2",
+   "in": 0.255,
+   "out": 1.02,
+   "ctx": 204800,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-chat",
+   "in": 0.257,
+   "out": 1.029,
+   "ctx": 163840,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen-plus-2025-07-28",
+   "in": 0.26,
+   "out": 0.78,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen-plus",
+   "in": 0.26,
+   "out": 0.78,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3.5-plus-02-15",
+   "in": 0.26,
+   "out": 1.56,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "qwen/qwen3.5-122b-a10b",
+   "in": 0.26,
+   "out": 2.08,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "deepseek/deepseek-v3.2",
+   "in": 0.269,
+   "out": 0.4,
+   "ctx": 163840,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-v3.2-exp",
+   "in": 0.27,
+   "out": 0.41,
+   "ctx": 163840,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-v3.1-terminus",
+   "in": 0.27,
+   "out": 1,
+   "ctx": 163840,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "minimax/minimax-m2.5",
+   "in": 0.27,
+   "out": 1.08,
+   "ctx": 204800,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "thedrummer/cydonia-24b-v4.1",
+   "in": 0.3,
+   "out": 0.5,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-4.6v",
+   "in": 0.3,
+   "out": 0.9,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "mistralai/codestral-2508",
+   "in": 0.3,
+   "out": 0.9,
+   "ctx": 256000,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "qwen/qwen3-coder",
+   "in": 0.3,
+   "out": 1,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-v4.1-flash",
+   "in": 0.3,
+   "out": 1.2,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "meituan/longcat-2.0",
+   "in": 0.3,
+   "out": 1.2,
+   "ctx": 1048756,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "minimax/minimax-m3",
+   "in": 0.3,
+   "out": 1.2,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "minimax/minimax-m3:batch",
+   "in": 0.3,
+   "out": 1.2,
+   "ctx": 524288,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "kwaipilot/kat-coder-pro-v2",
+   "in": 0.3,
+   "out": 1.2,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "minimax/minimax-m2.7",
+   "in": 0.3,
+   "out": 1.2,
+   "ctx": 204800,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "minimax/minimax-m2-her",
+   "in": 0.3,
+   "out": 1.2,
+   "ctx": 65536,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "minimax/minimax-m2.1",
+   "in": 0.3,
+   "out": 1.2,
+   "ctx": 204800,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3.5-plus-20260420",
+   "in": 0.3,
+   "out": 1.8,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "qwen/qwen3.6-27b",
+   "in": 0.3,
+   "out": 2,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "google/gemini-3.5-flash-lite",
+   "in": 0.3,
+   "out": 2.5,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "amazon/nova-2-lite-v1",
+   "in": 0.3,
+   "out": 2.5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file+video->text"
+  },
+  {
+   "id": "google/gemini-2.5-flash-image",
+   "in": 0.3,
+   "out": 2.5,
+   "ctx": 32768,
+   "tools": 0,
+   "mod": "text+image->text+image"
+  },
+  {
+   "id": "google/gemini-2.5-flash",
+   "in": 0.3,
+   "out": 2.5,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "qwen/qwen3.7-plus",
+   "in": 0.32,
+   "out": 1.28,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen3.6-plus",
+   "in": 0.325,
+   "out": 1.95,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "undi95/remm-slerp-l2-13b",
+   "in": 0.35,
+   "out": 0.65,
+   "ctx": 6144,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "meta/muse-glimmer-30b",
+   "in": 0.35,
+   "out": 1.5,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "mistralai/mistral-small-3.1-24b-instruct",
+   "in": 0.351,
+   "out": 0.555,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen-2.5-72b-instruct",
+   "in": 0.36,
+   "out": 0.4,
+   "ctx": 32768,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "google/gemini-3.8-flash:batch",
+   "in": 0.375,
+   "out": 1.875,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3.7-flash:batch",
+   "in": 0.375,
+   "out": 1.875,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3.6-flash:batch",
+   "in": 0.375,
+   "out": 1.875,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "openai/gpt-5.4-mini:batch",
+   "in": 0.375,
+   "out": 2.25,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "thedrummer/unslopnemo-12b",
+   "in": 0.4,
+   "out": 0.4,
+   "ctx": 1024000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "meta-llama/llama-3.1-70b-instruct",
+   "in": 0.4,
+   "out": 0.4,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "mancer/weaver",
+   "in": 0.4,
+   "out": 0.75,
+   "ctx": 8000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-4.1-mini",
+   "in": 0.4,
+   "out": 1.6,
+   "ctx": 1047576,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "z-ai/glm-4.7",
+   "in": 0.4,
+   "out": 1.75,
+   "ctx": 204800,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/devstral-2512",
+   "in": 0.4,
+   "out": 2,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "mistralai/mistral-medium-3.1",
+   "in": 0.4,
+   "out": 2,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "mistralai/mistral-medium-3",
+   "in": 0.4,
+   "out": 2,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "minimax/minimax-m1",
+   "in": 0.4,
+   "out": 2.2,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-vl-235b-a22b-thinking",
+   "in": 0.4,
+   "out": 4,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "baidu/ernie-4.5-vl-424b-a47b",
+   "in": 0.42,
+   "out": 1.25,
+   "ctx": 123000,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "z-ai/glm-4.6",
+   "in": 0.43,
+   "out": 1.75,
+   "ctx": 204800,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "xiaomi/mimo-v2.5-pro",
+   "in": 0.435,
+   "out": 0.87,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "thinkingmachines/inkling-small",
+   "in": 0.45,
+   "out": 1.2,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+audio->text"
+  },
+  {
+   "id": "moonshotai/kimi-k2.5",
+   "in": 0.45,
+   "out": 2.25,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "qwen/qwen3-235b-a22b",
+   "in": 0.455,
+   "out": 1.82,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/mistral-large-2512",
+   "in": 0.5,
+   "out": 1.5,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-3.5-turbo",
+   "in": 0.5,
+   "out": 1.5,
+   "ctx": 16385,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-r1-0528",
+   "in": 0.5,
+   "out": 2.15,
+   "ctx": 163840,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "bytedance-seed/seed-2-1-turbo",
+   "in": 0.5,
+   "out": 2.5,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "anthropic/claude-haiku-4.5:batch",
+   "in": 0.5,
+   "out": 2.5,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "bytedance-seed/seed-2.0-code",
+   "in": 0.5,
+   "out": 3,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "google/gemini-3.1-flash-image",
+   "in": 0.5,
+   "out": 3,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text+image->text+image"
+  },
+  {
+   "id": "google/gemini-3.1-flash-image-preview",
+   "in": 0.5,
+   "out": 3,
+   "ctx": 65536,
+   "tools": 0,
+   "mod": "text+image->text+image"
+  },
+  {
+   "id": "google/gemini-3-flash-preview",
+   "in": 0.5,
+   "out": 3,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "thedrummer/skyfall-36b-v2",
+   "in": 0.55,
+   "out": 0.8,
+   "ctx": 32768,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/o4-mini:batch",
+   "in": 0.55,
+   "out": 2.2,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/o3-mini:batch",
+   "in": 0.55,
+   "out": 2.2,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "qwen/qwen3.5-397b-a17b",
+   "in": 0.55,
+   "out": 3.5,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "moonshotai/kimi-k2",
+   "in": 0.57,
+   "out": 2.3,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-4.5v",
+   "in": 0.6,
+   "out": 1.8,
+   "ctx": 65536,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "z-ai/glm-5",
+   "in": 0.6,
+   "out": 1.92,
+   "ctx": 204800,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-4.5",
+   "in": 0.6,
+   "out": 2.2,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-audio-mini",
+   "in": 0.6,
+   "out": 2.4,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+audio->text+audio"
+  },
+  {
+   "id": "moonshotai/kimi-k2-thinking",
+   "in": 0.6,
+   "out": 2.5,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "moonshotai/kimi-k2-0905",
+   "in": 0.6,
+   "out": 2.5,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "writer/palmyra-x5",
+   "in": 0.6,
+   "out": 6,
+   "ctx": 1040000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "microsoft/wizardlm-2-8x22b",
+   "in": 0.62,
+   "out": 0.62,
+   "ctx": 65535,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "nvidia/nemotron-3-ultra-550b-a55b",
+   "in": 0.625,
+   "out": 3.125,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-5.1:batch",
+   "in": 0.625,
+   "out": 5,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5:batch",
+   "in": 0.625,
+   "out": 5,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "google/gemini-2.5-pro:batch",
+   "in": 0.625,
+   "out": 5,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemma-2-27b-it",
+   "in": 0.65,
+   "out": 0.65,
+   "ctx": 8192,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "sao10k/l3.3-euryale-70b",
+   "in": 0.65,
+   "out": 0.75,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-coder-plus",
+   "in": 0.65,
+   "out": 3.25,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen-2.5-coder-32b-instruct",
+   "in": 0.66,
+   "out": 1,
+   "ctx": 32768,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-v4-pro-0813:batch",
+   "in": 0.66,
+   "out": 1.98,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "nousresearch/hermes-3-llama-3.1-70b",
+   "in": 0.7,
+   "out": 0.7,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "aion-labs/aion-3.0-mini",
+   "in": 0.7,
+   "out": 1.4,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-5.3:batch",
+   "in": 0.7,
+   "out": 2.2,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-5.2:batch",
+   "in": 0.7,
+   "out": 2.2,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-r1",
+   "in": 0.7,
+   "out": 2.5,
+   "ctx": 64000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "moonshotai/kimi-k2.7-code",
+   "in": 0.706,
+   "out": 3.21,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "kwaipilot/kat-coder-pro-v2.5",
+   "in": 0.74,
+   "out": 2.96,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "google/gemini-3.8-flash",
+   "in": 0.75,
+   "out": 3.75,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3.7-flash",
+   "in": 0.75,
+   "out": 3.75,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3.6-flash",
+   "in": 0.75,
+   "out": 3.75,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "mistralai/mistral-medium-3-5:batch",
+   "in": 0.75,
+   "out": 3.75,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "~google/gemini-flash-latest",
+   "in": 0.75,
+   "out": 3.75,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3.5-flash:batch",
+   "in": 0.75,
+   "out": 4.5,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "~openai/gpt-mini-latest",
+   "in": 0.75,
+   "out": 4.5,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.4-mini",
+   "in": 0.75,
+   "out": 4.5,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "qwen/qwen3-max-thinking",
+   "in": 0.78,
+   "out": 3.9,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3-max",
+   "in": 0.78,
+   "out": 3.9,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-r1-distill-llama-70b",
+   "in": 0.8,
+   "out": 0.8,
+   "ctx": 8192,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen2.5-vl-72b-instruct",
+   "in": 0.8,
+   "out": 1,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "morph/morph-v3-fast",
+   "in": 0.8,
+   "out": 1.2,
+   "ctx": 81920,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "aion-labs/aion-2.0",
+   "in": 0.8,
+   "out": 1.6,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "aion-labs/aion-rp-llama-3.1-8b",
+   "in": 0.8,
+   "out": 1.6,
+   "ctx": 32768,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "amazon/nova-pro-v1",
+   "in": 0.8,
+   "out": 3.2,
+   "ctx": 300000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "tencent/hy4-preview",
+   "in": 0.834,
+   "out": 2.501,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "sao10k/l3.1-euryale-70b",
+   "in": 0.85,
+   "out": 0.85,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "relace/relace-apply-3",
+   "in": 0.85,
+   "out": 1.25,
+   "ctx": 256000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-5.2:batch",
+   "in": 0.875,
+   "out": 7,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "~z-ai/glm-latest",
+   "in": 0.878,
+   "out": 2.97,
+   "ctx": 1310720,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "morph/morph-v3-large",
+   "in": 0.9,
+   "out": 1.9,
+   "ctx": 262144,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "sakana/sakana-namazu",
+   "in": 0.95,
+   "out": 4,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "moonshotai/kimi-k2.6",
+   "in": 0.95,
+   "out": 4,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "~deepseek/deepseek-pro-latest",
+   "in": 0.96,
+   "out": 2.88,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-5.1",
+   "in": 0.966,
+   "out": 3.036,
+   "ctx": 204800,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "deepseek/deepseek-v4-pro-0813",
+   "in": 0.983,
+   "out": 2.95,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "perplexity/sonar",
+   "in": 1,
+   "out": 1,
+   "ctx": 127072,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "nousresearch/hermes-3-llama-3.1-405b",
+   "in": 1,
+   "out": 1,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "x-ai/grok-build-0.1",
+   "in": 1,
+   "out": 2,
+   "ctx": 256000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "x-ai/grok-4.3:batch",
+   "in": 1,
+   "out": 2,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-3.5-turbo-0613",
+   "in": 1,
+   "out": 2,
+   "ctx": 4095,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "relace/relace-search",
+   "in": 1,
+   "out": 3,
+   "ctx": 256000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "nousresearch/hermes-4-405b",
+   "in": 1,
+   "out": 3,
+   "ctx": 131072,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/o3:batch",
+   "in": 1,
+   "out": 4,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-4.1:batch",
+   "in": 1,
+   "out": 4,
+   "ctx": 1047576,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "thinkingmachines/inkling",
+   "in": 1,
+   "out": 4.05,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+audio->text"
+  },
+  {
+   "id": "thinkingmachines/inkling:batch",
+   "in": 1,
+   "out": 4.05,
+   "ctx": 524288,
+   "tools": 1,
+   "mod": "text+image+audio->text"
+  },
+  {
+   "id": "openai/gpt-5.6-sol-pro:batch",
+   "in": 1,
+   "out": 5,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-sol:batch",
+   "in": 1,
+   "out": 5,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-sonnet-5:batch",
+   "in": 1,
+   "out": 5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "~anthropic/claude-haiku-latest",
+   "in": 1,
+   "out": 5,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-haiku-4.5",
+   "in": 1,
+   "out": 5,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-terra-pro:batch",
+   "in": 1,
+   "out": 6,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-terra:batch",
+   "in": 1,
+   "out": 6,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "google/gemini-3.1-pro-preview:batch",
+   "in": 1,
+   "out": 6,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "qwen/qwen3.6-max-preview",
+   "in": 1.027,
+   "out": 6.162,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/o4-mini-high",
+   "in": 1.1,
+   "out": 4.4,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/o4-mini",
+   "in": 1.1,
+   "out": 4.4,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/o3-mini-high",
+   "in": 1.1,
+   "out": 4.4,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "openai/o3-mini",
+   "in": 1.1,
+   "out": 4.4,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "z-ai/glm-5v-turbo",
+   "in": 1.2,
+   "out": 4,
+   "ctx": 202752,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "z-ai/glm-5-turbo",
+   "in": 1.2,
+   "out": 4,
+   "ctx": 202752,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "x-ai/grok-4.3",
+   "in": 1.25,
+   "out": 2.5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "x-ai/grok-4.20-multi-agent",
+   "in": 1.25,
+   "out": 2.5,
+   "ctx": 2000000,
+   "tools": 0,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "x-ai/grok-4.20",
+   "in": 1.25,
+   "out": 2.5,
+   "ctx": 2000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "meta/muse-spark-1.3",
+   "in": 1.25,
+   "out": 4.25,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "meta/muse-spark-1.2",
+   "in": 1.25,
+   "out": 4.25,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "meta/muse-spark-1.1",
+   "in": 1.25,
+   "out": 4.25,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "openai/gpt-4o:batch",
+   "in": 1.25,
+   "out": 5,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.4:batch",
+   "in": 1.25,
+   "out": 7.5,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.1-codex-max",
+   "in": 1.25,
+   "out": 10,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "openai/gpt-5.1",
+   "in": 1.25,
+   "out": 10,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.1-codex",
+   "in": 1.25,
+   "out": 10,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "openai/gpt-5",
+   "in": 1.25,
+   "out": 10,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "google/gemini-2.5-pro",
+   "in": 1.25,
+   "out": 10,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-2.5-pro-preview",
+   "in": 1.25,
+   "out": 10,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio->text"
+  },
+  {
+   "id": "z-ai/glm-5.3",
+   "in": 1.4,
+   "out": 4.4,
+   "ctx": 1310720,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "z-ai/glm-5.2",
+   "in": 1.4,
+   "out": 4.4,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3.7-max",
+   "in": 1.475,
+   "out": 4.425,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-3.5-turbo-instruct",
+   "in": 1.5,
+   "out": 2,
+   "ctx": 4095,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "mistralai/mistral-medium-3-5",
+   "in": 1.5,
+   "out": 7.5,
+   "ctx": 262144,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-sonnet-4.6:batch",
+   "in": 1.5,
+   "out": 7.5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-sonnet-4.5:batch",
+   "in": 1.5,
+   "out": 7.5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "google/gemini-3.5-flash",
+   "in": 1.5,
+   "out": 9,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "deepseek/deepseek-v4-pro",
+   "in": 1.6,
+   "out": 3.2,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-5.3-codex",
+   "in": 1.75,
+   "out": 14,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.2-codex",
+   "in": 1.75,
+   "out": 14,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "openai/gpt-5.2-chat",
+   "in": 1.75,
+   "out": 14,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.2",
+   "in": 1.75,
+   "out": 14,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "sakana/fugu-max",
+   "in": 2,
+   "out": 6,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "qwen/qwen3.8-max-0902",
+   "in": 2,
+   "out": 6,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "qwen/qwen3.8-2.4t-a95b",
+   "in": 2,
+   "out": 6,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "qwen/qwen3.8-2.4t-a95b:batch",
+   "in": 2,
+   "out": 6,
+   "ctx": 1010000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "x-ai/grok-4.6",
+   "in": 2,
+   "out": 6,
+   "ctx": 500000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "x-ai/grok-4.5",
+   "in": 2,
+   "out": 6,
+   "ctx": 500000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "~x-ai/grok-latest",
+   "in": 2,
+   "out": 6,
+   "ctx": 500000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "mistralai/mistral-large-2407",
+   "in": 2,
+   "out": 6,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "mistralai/mixtral-8x22b-instruct",
+   "in": 2,
+   "out": 6,
+   "ctx": 65536,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "mistralai/mistral-large",
+   "in": 2,
+   "out": 6,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+file->text"
+  },
+  {
+   "id": "openai/o3",
+   "in": 2,
+   "out": 8,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-4.1",
+   "in": 2,
+   "out": 8,
+   "ctx": 1047576,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "perplexity/sonar-reasoning-pro",
+   "in": 2,
+   "out": 8,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "perplexity/sonar-deep-research",
+   "in": 2,
+   "out": 8,
+   "ctx": 128000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "~openai/gpt-sol-latest",
+   "in": 2,
+   "out": 10,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-sol-pro",
+   "in": 2,
+   "out": 10,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-sol",
+   "in": 2,
+   "out": 10,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-sonnet-5",
+   "in": 2,
+   "out": 10,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "~anthropic/claude-sonnet-latest",
+   "in": 2,
+   "out": 10,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "~openai/gpt-terra-latest",
+   "in": 2,
+   "out": 12,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-terra-pro",
+   "in": 2,
+   "out": 12,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.6-terra",
+   "in": 2,
+   "out": 12,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "google/gemini-3-pro-image",
+   "in": 2,
+   "out": 12,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text+image->text+image"
+  },
+  {
+   "id": "~google/gemini-pro-latest",
+   "in": 2,
+   "out": 12,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3.1-pro-preview-customtools",
+   "in": 2,
+   "out": 12,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3.1-pro-preview",
+   "in": 2,
+   "out": 12,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+file+audio+video->text"
+  },
+  {
+   "id": "google/gemini-3-pro-image-preview",
+   "in": 2,
+   "out": 12,
+   "ctx": 65536,
+   "tools": 0,
+   "mod": "text+image->text+image"
+  },
+  {
+   "id": "~moonshotai/kimi-latest",
+   "in": 2.1,
+   "out": 10.95,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "openai/gpt-5-image-mini",
+   "in": 2.5,
+   "out": 2,
+   "ctx": 400000,
+   "tools": 0,
+   "mod": "text+image+file->text+image"
+  },
+  {
+   "id": "anthracite-org/magnum-v4-72b",
+   "in": 2.5,
+   "out": 5,
+   "ctx": 32768,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-audio",
+   "in": 2.5,
+   "out": 10,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+audio->text+audio"
+  },
+  {
+   "id": "cohere/command-a",
+   "in": 2.5,
+   "out": 10,
+   "ctx": 256000,
+   "tools": 0,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-4o-2024-11-20",
+   "in": 2.5,
+   "out": 10,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "cohere/command-r-plus-08-2024",
+   "in": 2.5,
+   "out": 10,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-4o-2024-08-06",
+   "in": 2.5,
+   "out": 10,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-4o",
+   "in": 2.5,
+   "out": 10,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-5:batch",
+   "in": 2.5,
+   "out": 12.5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.8:batch",
+   "in": 2.5,
+   "out": 12.5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.7:batch",
+   "in": 2.5,
+   "out": 12.5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.6:batch",
+   "in": 2.5,
+   "out": 12.5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.5:batch",
+   "in": 2.5,
+   "out": 12.5,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "amazon/nova-premier-v1",
+   "in": 2.5,
+   "out": 12.5,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "openai/gpt-5.5:batch",
+   "in": 2.5,
+   "out": 15,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.4",
+   "in": 2.5,
+   "out": 15,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "moonshotai/kimi-k3",
+   "in": 2.648,
+   "out": 13.283,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "openai/gpt-3.5-turbo-16k",
+   "in": 3,
+   "out": 4,
+   "ctx": 16385,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "aion-labs/aion-3.0",
+   "in": 3,
+   "out": 6,
+   "ctx": 131072,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "moonshotai/kimi-k3:batch",
+   "in": 3,
+   "out": 15,
+   "ctx": 1048576,
+   "tools": 1,
+   "mod": "text+image+video->text"
+  },
+  {
+   "id": "anthropic/claude-sonnet-4.6",
+   "in": 3,
+   "out": 15,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "perplexity/sonar-pro-search",
+   "in": 3,
+   "out": 15,
+   "ctx": 200000,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "anthropic/claude-sonnet-4.5",
+   "in": 3,
+   "out": 15,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-sonnet-4",
+   "in": 3,
+   "out": 15,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "perplexity/sonar-pro",
+   "in": 3,
+   "out": 15,
+   "ctx": 200000,
+   "tools": 0,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "openai/gpt-4o-2024-05-13",
+   "in": 5,
+   "out": 15,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-4-turbo:batch",
+   "in": 5,
+   "out": 15,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "openai/gpt-6-astra:batch",
+   "in": 5,
+   "out": 25,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-6-astra-pro:batch",
+   "in": 5,
+   "out": 25,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-fable-5.1:batch",
+   "in": 5,
+   "out": 25,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-5",
+   "in": 5,
+   "out": 25,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-fable-5:batch",
+   "in": 5,
+   "out": 25,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.8",
+   "in": 5,
+   "out": 25,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "~anthropic/claude-opus-latest",
+   "in": 5,
+   "out": 25,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.7",
+   "in": 5,
+   "out": 25,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.6",
+   "in": 5,
+   "out": 25,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.5",
+   "in": 5,
+   "out": 25,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "sakana/fugu-ultra-v2",
+   "in": 5,
+   "out": 30,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "sakana/fugu-ultra",
+   "in": 5,
+   "out": 30,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "openai/gpt-chat-latest",
+   "in": 5,
+   "out": 30,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.5",
+   "in": 5,
+   "out": 30,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.1:batch",
+   "in": 7.5,
+   "out": 37.5,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5-pro:batch",
+   "in": 7.5,
+   "out": 60,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.4-image-2",
+   "in": 8,
+   "out": 15,
+   "ctx": 272000,
+   "tools": 0,
+   "mod": "text+image+file->text+image"
+  },
+  {
+   "id": "openai/gpt-5-image",
+   "in": 10,
+   "out": 10,
+   "ctx": 400000,
+   "tools": 0,
+   "mod": "text+image+file->text+image"
+  },
+  {
+   "id": "openai/gpt-4-turbo",
+   "in": 10,
+   "out": 30,
+   "ctx": 128000,
+   "tools": 1,
+   "mod": "text+image->text"
+  },
+  {
+   "id": "~openai/gpt-astra-latest",
+   "in": 10,
+   "out": 50,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-6-astra",
+   "in": 10,
+   "out": 50,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-6-astra-pro",
+   "in": 10,
+   "out": 50,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-fable-5.1",
+   "in": 10,
+   "out": 50,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "~anthropic/claude-fable-latest",
+   "in": 10,
+   "out": 50,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-fable-5",
+   "in": 10,
+   "out": 50,
+   "ctx": 1000000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.2-pro:batch",
+   "in": 10.5,
+   "out": 84,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/o1",
+   "in": 15,
+   "out": 60,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4.1",
+   "in": 15,
+   "out": 75,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "anthropic/claude-opus-4",
+   "in": 15,
+   "out": 75,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.5-pro:batch",
+   "in": 15,
+   "out": 90,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.4-pro:batch",
+   "in": 15,
+   "out": 90,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5-pro",
+   "in": 15,
+   "out": 120,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/o3-pro",
+   "in": 20,
+   "out": 80,
+   "ctx": 200000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.2-pro",
+   "in": 21,
+   "out": 168,
+   "ctx": 400000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-4",
+   "in": 30,
+   "out": 60,
+   "ctx": 8191,
+   "tools": 1,
+   "mod": "text->text"
+  },
+  {
+   "id": "openai/gpt-5.5-pro",
+   "in": 30,
+   "out": 180,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/gpt-5.4-pro",
+   "in": 30,
+   "out": 180,
+   "ctx": 1050000,
+   "tools": 1,
+   "mod": "text+image+file->text"
+  },
+  {
+   "id": "openai/o1-pro",
+   "in": 150,
+   "out": 600,
+   "ctx": 200000,
+   "tools": 0,
+   "mod": "text+image+file->text"
+  }
+ ]
+}

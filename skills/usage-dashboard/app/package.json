@@ -1,0 +1,15 @@
+{
+  "name": "ocud-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "opencode usage dashboard — Svelte templates, data loaded from data.js at runtime",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.0",
+    "svelte": "^5.0.0"
+  }
+}

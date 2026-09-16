@@ -1,5 +1,15 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  // Primary: opencode gateway (muse-spark-1.3, quota-limited).
+  // Quota backup: muse-spark-1.2 (same gateway, separate quota). OpenCode has
+  // NO automatic failover — when 1.3 returns 429/quota errors the session
+  // errors and stops; switch manually:
+  //   TUI: /models → opencode/muse-spark-1.2-contributor-free
+  //   CLI (verified): OPENCODE_CONFIG_CONTENT='{"model":"opencode/muse-spark-1.2-contributor-free","small_model":"opencode/muse-spark-1.2-contributor-free"}' opencode run --title "backup" "..."
+  // small_model must ride along: title/summary calls hit the same dead quota.
+  // Last resort (offline, no quota): ollama/qwen3.8:latest — needs
+  // "compaction":{"auto":false} added to the override JSON (it rambles summaries).
+  "model": "opencode/muse-spark-1.3-contributor-free",
   "small_model": "opencode/muse-spark-1.3-contributor-free",
   "provider": {
     "ollama": {
@@ -10,12 +20,14 @@
       },
       "models": {
         "qwen3.8:latest": {
-          "name": "Qwen 3.8 (local)",
+          "name": "Qwen 3.8 (local, quota backup)",
           "tool_call": true,
           "reasoning": true,
           "limit": {
-            "context": 262144,
-            "output": 32768
+            // Keep modest: opencode passes this as num_ctx. 262k on a 27B
+            // local model reloads ~19GB+ KV cache and stalls startup.
+            "context": 32768,
+            "output": 16384
           }
         }
       }
@@ -106,7 +118,7 @@
         "--stdio"
       ],
       "enabled": true,
-      "timeout": 600000
+      "timeout": 60000
     }
   }
 }

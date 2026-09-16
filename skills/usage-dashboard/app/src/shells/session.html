@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>opencode session</title>
+<link rel="stylesheet" href="assets/app.css">
+</head><body>
+<div id="app"><div class="card"><div class="s">loading&hellip;</div></div></div>
+<script>
+window.__OCUD_PAGE__ = "session";
+(function () {
+  function load(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement("script");
+      s.src = src;
+      s.onload = res;
+      s.onerror = function () { rej(new Error("load failed: " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  var id = "";
+  try { id = decodeURIComponent((location.hash || "").replace(/^#/, "")); }
+  catch (e) { id = ""; }
+  window.__OCUD_SESSION_ID__ = id;
+  var want = /^[0-9A-Za-z_-]{4,64}$/.test(id)
+    ? load("sessions/" + id + ".js").catch(function () {
+        window.__OCUD_SESSION_ERROR__ = "No data file for session " + id + ".";
+      })
+    : (window.__OCUD_SESSION_ERROR__ =
+        "Pick a session from the per-session table on the dashboard.",
+      Promise.resolve());
+  want.then(function () { return load("assets/app.js"); });
+  window.addEventListener("hashchange", function () { location.reload(); });
+})();
+</script>
+</body></html>

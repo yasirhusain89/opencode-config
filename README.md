@@ -6,10 +6,11 @@ Global [opencode](https://opencode.ai) configuration for yasirhusain89. This rep
 
 | Path | Purpose |
 | --- | --- |
-| `opencode.jsonc` | Providers (Ollama local), small_model, permissions, MCP servers (gitnexus, zvec_grep) |
-| `AGENTS.md` | Global agent instructions (zvec-grep retrieval routing) — auto-loaded into every session |
-| `agent/` | 5 custom agents: `reviewer`, `security-reviewer`, `docs-writer`, `researcher`, `domain-companion` (finance/app-design companion grounded in Mint/YNAB/Monarch/Copilot patterns) |
-| `skills/` | 13 skills: full GitNexus suite (12) + `usage-dashboard` |
+| `opencode.jsonc` | Providers (Ollama local), `model` + `small_model` (both `opencode/muse-spark-1.3-contributor-free`), permissions, MCP servers (gitnexus, zvec_grep) |
+| `AGENTS.md` | Global agent instructions (operating constitution + zvec-grep retrieval routing) — auto-loaded into every session |
+| `agent/` | 5 custom agents (all `opencode/muse-spark-1.3-contributor-free`): `reviewer` (35 steps), `security-reviewer` (40 steps), `docs-writer`, `researcher` (40 steps), `domain-companion` (finance/app-design companion grounded in Mint/YNAB/Monarch/Copilot patterns) |
+| `skills/` | 14 skills: full GitNexus suite (12) + `usage-dashboard` + `model-benchmarks` |
+| `plugins/` | Auto-loaded hooks: `secret-guard.ts`, `github-safety.ts` (no `plugin` config entry needed) |
 | `command/sync-config.md` | The `/sync-config` command — syncs this repo from inside opencode |
 | `sync.sh` | The sync script the command runs |
 
@@ -38,7 +39,7 @@ Global [opencode](https://opencode.ai) configuration for yasirhusain89. This rep
    - `gitnexus`: `/opt/homebrew/bin/gitnexus` (verify with `which gitnexus`)
    - `zg` (zvec-grep): `/opt/homebrew/bin/zg` (verify with `which zg`)
 
-5. Authenticate providers that need it (opencode's own gateway models are used for `small_model`):
+5. Authenticate providers that need it (`opencode auth login` — covers `model`/`small_model` and all agents on the opencode gateway):
 
    ```bash
    opencode auth login
@@ -57,6 +58,20 @@ ln -s ~/.config/opencode ~/PycharmProjects/opencode-config
 ## Search index
 
 zvec-grep indexes this repo for semantic search: `zg index` (run after big changes). The generated `.zvec-grep/` dir is machine-local runtime state — gitignored and PyCharm-excluded, never commit it.
+
+## When the gateway quota runs out
+
+OpenCode has no automatic failover: a dead quota surfaces as a session error and the agent stops. Switch manually:
+
+* **TUI:** `/models` → pick `opencode/muse-spark-1.2-contributor-free` (same gateway, separate quota, verified working).
+* **CLI (verified end-to-end):**
+  ```bash
+  OPENCODE_CONFIG_CONTENT='{"model":"opencode/muse-spark-1.2-contributor-free","small_model":"opencode/muse-spark-1.2-contributor-free"}' opencode run --title "backup" "..."
+  ```
+  The `small_model` part matters: title/summary calls hit the same dead quota otherwise.
+* **Whole session:** `export OPENCODE_CONFIG_CONTENT='...'` (same JSON), then `opencode`.
+
+Same model family, so reasoning quality stays close to 1.3 — just stay on 1.2 until the 1.3 quota resets, then switch back. Last resort if the whole gateway is down: `ollama/qwen3.8:latest` (local, no quota; add `"compaction":{"auto":false}` to the override JSON — it rambles end-of-run summaries).
 
 ## Keeping it in sync
 

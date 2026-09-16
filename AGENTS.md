@@ -1,3 +1,11 @@
+## Operating constitution
+
+- Ground every claim in files you actually read: cite `file:line`, never state APIs or behavior from memory.
+- Keep diffs surgical: no reformatting, no stylistic churn, no out-of-scope refactors.
+- Plan before multi-file edits: for changes spanning >2 files, schema migrations, or public API changes, present a short plan and wait for confirmation.
+- Verify before declaring done: run the relevant build, tests, or linters and report the result.
+- Prefer editing existing files over creating new ones; never create docs unless asked.
+
 <!-- ZVEC_GREP_START -->
 ## zvec-grep
 

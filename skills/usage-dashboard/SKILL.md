@@ -5,8 +5,16 @@ description: Use when regenerating or extending the opencode usage dashboard (~/
 
 # Usage Dashboard
 
-Self-contained HTML dashboard of opencode usage, priced on multiple models.
-Source of truth is the generator — edit `generate.py`, never `dashboard.html`.
+Svelte-rendered dashboard of opencode usage, priced on multiple models.
+Data and presentation are split:
+
+- `generate.py` computes everything and emits **JSON data only**
+  (`data.js` + `sessions/*.js`, as `window.__OCUD__` / `window.__OCUD_SESSION__`
+  globals so pages work from `file://` with no fetch). Never generate HTML here.
+- `app/src/` holds the **Svelte templates** (`Index`, `Session`, shared
+  formatting in `lib/format.js`, improvement-tip rules in `lib/tips.js`).
+  Build with `npm run build` in `app/`; verify with `npm run check`
+  (SSR-renders both pages against the real generated data).
 
 ## Files
 
@@ -14,15 +22,25 @@ Source of truth is the generator — edit `generate.py`, never `dashboard.html`.
   python3.9-compatible: no f-strings with nested same-type quotes, use `%` or
   concat). Canonical copy lives here; `~/.opencode/usage-dashboard/generate.py`
   is a thin launcher shim so the old path + launchd keep working.
-- `~/.opencode/usage-dashboard/dashboard.html` — generated output. Do not hand-edit.
+- `<skill dir>/app/` — Svelte sources + `package.json` (`svelte`, `esbuild`
+  vendored under `app/node_modules`, git-ignored but required for rebuilds).
+  `app/src/shells/` are the static page shells; `app/build.mjs` compiles +
+  bundles to the output dir; `app/check.mjs` is the render smoke test.
+- `~/.opencode/usage-dashboard/dashboard.html` + `session.html` — static
+  shells (from `app/src/shells/`). Do not hand-edit; rebuild templates.
+- `~/.opencode/usage-dashboard/assets/app.js|app.css` — compiled bundle.
+  Do not hand-edit; rebuild templates.
+- `~/.opencode/usage-dashboard/data.js` + `sessions/*.js` — generated data.
+  Do not hand-edit; regenerate.
 - `~/.opencode/usage-dashboard/history.jsonl` — daily snapshots (365 kept).
 - `~/Library/LaunchAgents/ai.opencode.usage-dashboard.plist` — launchd, daily 08:00 + RunAtLoad.
 - Source DB (read-only): `~/.local/share/opencode/opencode.db`. Tables: `session`
   (tokens/cost columns), `message` (JSON data: providerID, modelID, variant, tokens,
-  time.created/completed in **ms**), `part` (tool calls, state.status).
+  time.created/completed in **ms**), `part` (tool calls, state.status,
+  state.time.start/end in **ms** for the per-session tool-time split).
   Git commit timestamps are **seconds** — convert ms/s when joining (see `landed()`).
 
-## Regenerate
+## Regenerate (data only; daily path)
 
 ```bash
 python3 ~/.config/opencode/skills/usage-dashboard/generate.py
@@ -31,6 +49,21 @@ open ~/.opencode/usage-dashboard/dashboard.html
 
 Verify under both pythons if generate.py changed:
 `/opt/homebrew/bin/python3` and `/usr/bin/python3` (user id 501, launchctl gui/501).
+
+## Change templates (layout, metrics display, tip rules)
+
+```bash
+cd ~/.config/opencode/skills/usage-dashboard/app
+# edit src/*.svelte / src/lib/*.js, then:
+npm run build    # must finish warning-free
+npm run check    # SSR render test vs real data; must print check OK
+```
+
+Then regenerate data (above) and open both `dashboard.html` and a
+`session.html#<id8>` page. Session subpages prune themselves: generate.py
+rewrites `sessions/` to the current top 20 and deletes stale files.
+Per-session tool-time bar: share of active tool-call time per category
+(`state.time.start/end`), `sleep`-first bash counted as `Wait/idle`.
 
 ## Refresh model pricing (new launches / updates)
 
@@ -72,6 +105,6 @@ Notes:
 - Reasoning tokens are billed as output everywhere.
 - Signed amounts: expenses negative, income positive (MonArtha repo convention,
   unrelated but adjacent — don't sweep its files into commits).
-- Dashboard is offline self-contained HTML: no CDN, no fetch at runtime; all
-  pricing baked in at generation time. Theme toggle persists via localStorage
-  key `ocud-theme`.
+- Dashboard is offline: no CDN, no fetch at runtime (data arrives via
+  `<script src>` globals so `file://` works); all pricing baked in at
+  generation time. Theme toggle persists via localStorage key `ocud-theme`.

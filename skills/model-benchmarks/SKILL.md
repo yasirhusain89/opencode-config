@@ -29,9 +29,10 @@ session pulls everything, so a refresh is a single command.
   `node <skill dir>/scripts/aa_bench.test.mjs`; all green before commit.
 - `<skill dir>/snapshots/` — dated ground truth: `access-YYYY-MM-DD.json`
   (full provider catalogs), `coding-index-YYYY-MM-DD.json` (raw agentic
-  scrape), `agentic-table-YYYY-MM-DD.md` (curated table + footnotes).
-  Snapshots rot — check the date, refresh if stale, and update the
-  embedded tables below when you do.
+  scrape), `agentic-table-YYYY-MM-DD.md` (curated table + footnotes),
+  `free-deals-YYYY-MM-DD.md` (free top-tier by provider + cheap deals +
+  agent mapping). Snapshots rot — check the date, refresh if stale, and
+  update the embedded tables below when you do.
 
 ## Refresh benchmarks
 
@@ -64,6 +65,28 @@ Notes:
   (`DeepSeek V4.1 Flash (max)` → `deepseek-v4-1-flash`). Effort variants in
   parentheses are part of the display name only — the slug has no suffix.
   Dedup slugs with effort words stripped (one slug per family).
+
+## Schedule (weekly pull + report)
+
+- `scripts/weekly_pull.sh` — unattended: OR catalog → dated snapshot, then
+  value report with deltas vs previous catalog. Re-runnable by hand.
+- launchd `~/Library/LaunchAgents/ai.opencode.model-benchmarks.plist` —
+  Mondays 06:00 local. Logs to `snapshots/reports/weekly.log`.
+  Verify: `launchctl print gui/501/ai.opencode.model-benchmarks`.
+  Reports land in `snapshots/reports/YYYY-MM-DD-value.md`.
+- `scripts/or_catalog.mjs [--out FILE]` — standalone OR catalog pull
+  (public API via playwright, no key).
+- `scripts/weekly_report.mjs --catalog FILE [--prev FILE] [--coding FILE]
+  [--out FILE]` — deterministic join of OR prices with the curated
+  `AA_BENCH` map (Tier 1 benchmarked value / Tier 2 fliers / free routes
+  + deltas). Refresh `AA_BENCH` from the skill snapshots + guide whenever
+  AA publishes new numbers; family matching is substring rules
+  (`FAMILY_RULES`, specific-first).
+- AA benchmark pulls (`check` / `coding`) stay manual — refresh those
+  snapshots and the guide tables on the same cadence when models launch.
+- Other scoring sites (LMArena, Aider polyglot, SWE-bench, Vellum) are
+  documented in the guide (§11) for hand cross-checks; only the Aider YAML
+  (`aider/website/_data/polyglot_leaderboard.yml`) is pull-friendly today.
 
 ## Access snapshot (2026-09-16)
 
@@ -118,6 +141,28 @@ agentic data): V4.1 Flash, GLM-5.3-Flash, Nemotron 3 Ultra/Super, Gemma 4,
 Sonnet 5, GPT-5.6 Luna, Qwen3.5 Plus, MiniMax M3, Kimi K2.7. Role map:
 DeepSWE ≈ reviewer, T-Bench ≈ researcher, QnA ≈ technical QA.
 
+## Free top-tier by provider + good deals (2026-09-16)
+
+From `snapshots/free-deals-2026-09-16.md`. Free tiers change fastest of
+all — re-verify no-card/no-expiry claims every sweep.
+
+Free: opencode `muse-spark-1.3-contributor-free` (Eng 49 — best free
+signal, trains Meta models) and `nemotron-3-ultra-free` (Intel ~48, Eng
+unknown, trial-logged); NVIDIA trial credits (`deepseek-v4-pro-0813`,
+`kimi-k3`, `qwen3-coder-480b`, `minimax-m3`, `gpt-oss-120b`, …);
+OpenRouter `:free` (same Nemotrons + `gemma-4-31b-it` Intel 39.2 +
+`inkling-small` Eng 29; require `tools` support); Z.ai direct
+`GLM-4.7-Flash` (~200K coding, permanent $0, ~1 req/s — 4.x gen, not 5.x);
+Groq (`gpt-oss-120b`, ~8K TPM, low-volume only); Google AI Studio free
+tier (modest quota, trains on data); GitHub Models (150 RPD, 8K/req —
+prototyping only); Ollama local. Excluded: Cerebras (no permanent free),
+Hugging Face ($0.10/mo ≈ nothing).
+
+Deals (Zen billing): DeepSeek V4 Flash $0.14/$0.28 (3× below first-party);
+GLM-5.3-Flash $0.15/$0.50 (Eng 44); GPT-5.6 Luna $0.20/$1.20 (Eng 36 —
+50% off ends 2026-09-18); Qwen3.5 Plus $0.20/$1.20 (unevaluated); paid
+Spark 1.3 $1.25/$4.25 (zero-retention); Z.ai Coding Plan ~$18/mo Lite.
+
 ## Reading the output
 
 - `highlights.intelligence / .speed_tps / .cost_per_task` — keyed by AA
@@ -131,7 +176,9 @@ DeepSWE ≈ reviewer, T-Bench ≈ researcher, QnA ≈ technical QA.
   data", never as zero. `rank` is position in the scraped table.
 - `models[]` — per slug: `input/output` ($/1M tokens, first-party),
   `cache_read` (derived from AA's rounded discount — verify before
-  budgeting), `speed_tps`, `eval_total_cost` ("cost $X to evaluate" the full
+  budgeting), `speed_tps`, `intelligence` (page-summary score — covers
+  models outside the homepage top-11; `display_name` carries the served
+  effort config, e.g. max/high), `eval_total_cost` ("cost $X to evaluate" the full
   Intelligence Index — useful cost proxy when per-task is missing; ratio it
   against a model that has both).
 - `check` cross-checks `agent/*.md` (`agents/` too) plus `"model"` /

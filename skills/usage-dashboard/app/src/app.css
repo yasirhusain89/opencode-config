@@ -1,0 +1,70 @@
+:root{color-scheme:light dark;--bg:#ffffff;--fg:#1c1c1e;--border:#d4d4d8;
+--soft:rgba(127,127,127,.07);--line:rgba(127,127,127,.25)}
+:root[data-theme="dark"]{--bg:#161617;--fg:#f4f4f5;--border:#3f3f46}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161617;--fg:#f4f4f5;--border:#3f3f46}}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+margin:0 auto;padding:28px 24px 60px;max-width:1060px;line-height:1.45;
+background:var(--bg);color:var(--fg)}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+#theme{flex:none;font:inherit;font-size:12px;color:var(--fg);background:var(--soft);
+border:1px solid var(--border);border-radius:99px;padding:6px 14px;cursor:pointer}
+.cmpsel{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);
+border:1px solid var(--border);border-radius:8px;padding:8px 10px;width:100%;
+margin-bottom:8px;cursor:pointer}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:#888;margin-bottom:22px;font-size:13px}
+h2{font-size:15px;margin:30px 0 10px;letter-spacing:.01em;text-transform:uppercase;
+font-size:12px;color:#888}
+.hero{display:grid;grid-template-columns:1.4fr 1.2fr 1fr 1fr;gap:12px;margin-bottom:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px}
+@media(max-width:760px){.hero{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
+.card{border:1px solid var(--border);border-radius:14px;padding:16px 18px;
+background:var(--soft)}
+.card .k{font-size:12px;color:#888;margin-bottom:4px}
+.card .v{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.card.big .v{font-size:34px}
+.card .v.ok{color:#16a34a}
+.card .s{font-size:12px;color:#888;margin-top:4px}
+table{border-collapse:collapse;width:100%;margin:6px 0 10px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);font-size:13px}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,SFMono-Regular,monospace;font-size:12px}
+table.rates td{padding:5px 0;border:0;font-size:13px}
+.bar{display:inline-block;width:150px;max-width:30vw;height:8px;background:var(--line);
+border-radius:4px;overflow:hidden;vertical-align:middle}
+.fill{display:block;height:100%}
+.hist{display:flex;align-items:flex-end;gap:8px;min-height:160px;border:1px solid var(--border);
+border-radius:14px;padding:16px 12px 10px;overflow-x:auto;background:var(--soft)}
+.hcol{flex:1;min-width:58px;text-align:center}
+.hval{font-size:11px;font-variant-numeric:tabular-nums}
+.htrack{height:92px;display:flex;align-items:flex-end;justify-content:center}
+.hfill{width:28px;background:linear-gradient(180deg,#9d8cff,#7c5cff);border-radius:5px 5px 0 0;min-height:3px}
+.hdate{font-size:11px;color:#888}
+.heatstrip{display:flex;align-items:flex-end;gap:6px;height:110px;border:1px solid var(--border);
+border-radius:14px;padding:14px 12px 10px;background:var(--soft)}
+.hcell2{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.hfill2{width:100%;background:#ff9500;border-radius:4px 4px 0 0}
+.hlab{font-size:10px;color:#888;margin-top:4px}
+.ok-flag{color:#16a34a;font-weight:700}
+.bad-flag{color:#dc2626;font-weight:700}
+.pill{display:inline-block;font-size:11px;border:1px solid var(--border);border-radius:99px;
+padding:2px 10px;margin-left:8px;color:inherit;vertical-align:middle;text-transform:none;letter-spacing:0}
+details{border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin:14px 0;background:var(--soft)}
+summary{cursor:pointer;font-size:13px}
+.s{font-size:12px;color:#888;margin:2px 0 8px}
+.note{font-size:12px;color:#888}
+b{font-weight:650}
+a{color:#4c9aff;text-decoration:none}
+a:hover{text-decoration:underline}
+.tips{margin:6px 0 4px;padding-left:20px;font-size:13px}
+.tips li{margin:3px 0}
+/* single 100% stacked bar (per-session tool-time split) */
+.tbar{display:flex;height:20px;border-radius:10px;overflow:hidden;background:var(--line);margin:10px 0 4px}
+.tbar span{display:block;height:100%;min-width:0}
+.tbar-legend{font-size:12px;color:#888;margin-bottom:6px}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:baseline}
+.back{display:inline-block;margin-bottom:6px;font-size:13px}
+.act{max-width:360px;font-size:13px}
+.act .s{margin:1px 0 0}
