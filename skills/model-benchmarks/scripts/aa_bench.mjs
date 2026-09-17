@@ -244,6 +244,11 @@ function parseModelPage(text, slug) {
   // outside the homepage top-11); display_name carries the effort config
   const pi = flat.match(/scores (\d+) on the Artificial Analysis Intelligence Index/);
   if (pi) m.intelligence = parseInt(pi[1], 10);
+  // verbosity: eval output tokens + peer-group median + descriptor
+  const pv = flat.match(/generated ([\d.]+)M tokens.*?median of ([\d.]+)M/);
+  if (pv) { m.eval_output_tokens_m = parseFloat(pv[1]); m.eval_median_m = parseFloat(pv[2]); }
+  const pd2 = flat.match(/which is ([a-z]+(?: [a-z]+)?) in comparison/);
+  if (pd2) m.verbosity = pd2[1]; // e.g. "very verbose", "fairly concise"
   if (m.cache_discount_pct !== undefined) {
     m.cache_read = Math.round(m.input * (1 - m.cache_discount_pct / 100) * 100) / 100;
   }

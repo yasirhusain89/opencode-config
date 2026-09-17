@@ -8,10 +8,10 @@ Global [opencode](https://opencode.ai) configuration for yasirhusain89. This rep
 | --- | --- |
 | `opencode.jsonc` | Providers (Ollama local), `model` + `small_model` (both `opencode/muse-spark-1.3-contributor-free`), permissions, MCP servers (gitnexus, zvec_grep) |
 | `AGENTS.md` | Global agent instructions (operating constitution + zvec-grep retrieval routing) — auto-loaded into every session |
-| `agent/` | 5 custom agents (all `opencode/muse-spark-1.3-contributor-free`): `reviewer` (35 steps), `security-reviewer` (40 steps), `docs-writer`, `researcher` (40 steps), `domain-companion` (finance/app-design companion grounded in Mint/YNAB/Monarch/Copilot patterns) |
-| `skills/` | 14 skills: full GitNexus suite (12) + `usage-dashboard` + `model-benchmarks` |
+| `agent/` | 6 custom agents (all `opencode/muse-spark-1.3-contributor-free`): `reviewer` (35 steps), `security-reviewer` (40 steps), `docs-writer`, `researcher` (40 steps), `domain-companion` (finance/app-design companion grounded in Mint/YNAB/Monarch/Copilot patterns), `brainstorm` (30 steps, Socratic design + visual decision pages, hands off to gitnexus-plan) |
+| `skills/` | 30 skills: GitNexus suite (12), superpowers ports (7: `test-driven-development`, `systematic-debugging`, `verification-before-completion`, `using-git-worktrees`, `finishing-a-development-branch`, `dispatching-parallel-agents`, `writing-skills`), marketplace (5: `tauri-v2`, `commit-work`, `dependency-updater`, `database-migration`, `svelte-testing`), house-built (`test-runner`, `sqlite-migration-guard`, `html-report`, `gh-workflow`), `usage-dashboard` + `model-benchmarks` |
 | `plugins/` | Auto-loaded hooks: `secret-guard.ts`, `github-safety.ts` (no `plugin` config entry needed) |
-| `command/sync-config.md` | The `/sync-config` command — syncs this repo from inside opencode |
+| `command/` | `/sync-config` (sync this repo), `/decision-page` (visual Q&A decision pages; see also the `brainstorm` agent) |
 | `sync.sh` | The sync script the command runs |
 
 ## Setup
