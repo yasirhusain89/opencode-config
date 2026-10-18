@@ -1,7 +1,7 @@
 ---
 description: Strict code review of local changes, commits, or PRs. Use for code review requests, pre-commit checks, merge-risk assessment, and regression hunts. Read-only.
 mode: all
-model: opencode/muse-spark-1.3-contributor-free
+model: opencode/space-bunny-free
 steps: 35
 permission:
   edit: deny
