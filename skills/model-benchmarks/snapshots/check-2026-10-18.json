@@ -1,0 +1,495 @@
+{
+  "scraped_at": "2026-10-18",
+  "source": "artificialanalysis.ai",
+  "errors": [],
+  "highlights": {
+    "intelligence": {
+      "Claude Opus 5.5 (max with fallback)": 58,
+      "Claude Fable 5.1 (max with fallback)": 53,
+      "GPT-6 Astra (max)": 53,
+      "Gemini 4 Argon (high)": 53,
+      "Muse Wonder (max)": 52,
+      "GPT-6.1 Sol (max)": 52,
+      "Grok 4.7 (xhigh)": 46,
+      "MiMo-V2.6-Pro": 46,
+      "GLM-5.3 (max)": 45,
+      "DeepSeek V4.1 Flash (max)": 39
+    },
+    "speed_tps": {
+      "Muse Wonder (max)": 181,
+      "DeepSeek V4.1 Flash (max)": 176,
+      "Claude Opus 5.5 (max with fallback)": 97,
+      "Grok 4.7 (xhigh)": 93,
+      "GLM-5.3 (max)": 81,
+      "Claude Fable 5.1 (max with fallback)": 71,
+      "GPT-6.1 Sol (max)": 66,
+      "GPT-6 Astra (max)": 57,
+      "MiMo-V2.6-Pro": 48
+    },
+    "cost_per_task": {
+      "MiMo-V2.6-Pro": 0.13,
+      "DeepSeek V4.1 Flash (max)": 0.27,
+      "GPT-6.1 Sol (max)": 0.72,
+      "Gemini 4 Argon (high)": 1.99,
+      "GLM-5.3 (max)": 2.01,
+      "GPT-6 Astra (max)": 3.26,
+      "Grok 4.7 (xhigh)": 3.74,
+      "Muse Wonder (max)": 4.52,
+      "Claude Opus 5.5 (max with fallback)": 5.98,
+      "Claude Fable 5.1 (max with fallback)": 7.63
+    },
+    "_order": [
+      "Claude Opus 5.5 (max with fallback)",
+      "Claude Fable 5.1 (max with fallback)",
+      "GPT-6 Astra (max)",
+      "Gemini 4 Argon (high)",
+      "Muse Wonder (max)",
+      "GPT-6.1 Sol (max)",
+      "Grok 4.7 (xhigh)",
+      "MiMo-V2.6-Pro",
+      "GLM-5.3 (max)",
+      "DeepSeek V4.1 Flash (max)"
+    ]
+  },
+  "models": [
+    {
+      "slug": "claude-fable-5-1",
+      "cache_discount_pct": 98,
+      "speed_tps": 71,
+      "display_name": "Claude Fable 5.1 (Max, Default Fallback)",
+      "input": 10,
+      "output": 50,
+      "intelligence": 53,
+      "eval_output_tokens_m": 190,
+      "eval_median_m": 85,
+      "verbosity": "very verbose",
+      "cache_read": 0.2,
+      "cache_write": null
+    },
+    {
+      "slug": "gpt-6-astra",
+      "cache_discount_pct": 90,
+      "speed_tps": 57,
+      "display_name": "GPT-6 Astra (Max)",
+      "input": 10,
+      "output": 50,
+      "intelligence": 53,
+      "eval_output_tokens_m": 60,
+      "eval_median_m": 85,
+      "verbosity": "fairly concise",
+      "cache_read": 1,
+      "cache_write": null
+    },
+    {
+      "slug": "claude-opus-5",
+      "cache_discount_pct": 90,
+      "speed_tps": 60,
+      "display_name": "Claude Opus 5 (Max)",
+      "input": 5,
+      "output": 25,
+      "intelligence": 51,
+      "eval_output_tokens_m": 140,
+      "eval_median_m": 85,
+      "verbosity": "very verbose",
+      "cache_read": 0.5,
+      "cache_write": null
+    },
+    {
+      "slug": "muse-spark-1-3",
+      "cache_discount_pct": 88,
+      "speed_tps": 134,
+      "display_name": "Muse Spark 1.3 (Max)",
+      "input": 1.25,
+      "output": 4.25,
+      "intelligence": 48,
+      "eval_output_tokens_m": 170,
+      "eval_median_m": 85,
+      "verbosity": "very verbose",
+      "cache_read": 0.15,
+      "cache_write": null
+    },
+    {
+      "slug": "glm-5-3",
+      "cache_discount_pct": 81,
+      "speed_tps": 81,
+      "display_name": "GLM-5.3 (Max)",
+      "input": 1.4,
+      "output": 4.4,
+      "intelligence": 45,
+      "eval_output_tokens_m": 210,
+      "eval_median_m": 130,
+      "verbosity": "very verbose",
+      "cache_read": 0.27,
+      "cache_write": null
+    },
+    {
+      "slug": "grok-4-6",
+      "cache_discount_pct": 75,
+      "speed_tps": 65,
+      "display_name": "Grok 4.6 (High)",
+      "input": 2,
+      "output": 6,
+      "intelligence": 44,
+      "eval_output_tokens_m": 94,
+      "eval_median_m": 85,
+      "verbosity": "somewhat verbose",
+      "cache_read": 0.5,
+      "cache_write": null
+    },
+    {
+      "slug": "kimi-k3",
+      "cache_discount_pct": 90,
+      "speed_tps": 42,
+      "display_name": "Kimi K3 (Max)",
+      "input": 3,
+      "output": 15,
+      "intelligence": 44,
+      "eval_output_tokens_m": 160,
+      "eval_median_m": 130,
+      "verbosity": "somewhat verbose",
+      "cache_read": 0.3,
+      "cache_write": null
+    },
+    {
+      "slug": "gemini-3-8-flash",
+      "cache_discount_pct": 90,
+      "speed_tps": 147,
+      "display_name": "Gemini 3.8 Flash (High)",
+      "input": 0.75,
+      "output": 3.75,
+      "intelligence": 41,
+      "eval_output_tokens_m": 170,
+      "eval_median_m": 85,
+      "verbosity": "very verbose",
+      "cache_read": 0.07,
+      "cache_write": null
+    },
+    {
+      "slug": "deepseek-v4-1-flash",
+      "cache_discount_pct": 98,
+      "speed_tps": 176,
+      "display_name": "DeepSeek V4.1 Flash (Max)",
+      "input": 0.3,
+      "output": 1.2,
+      "intelligence": 39,
+      "eval_output_tokens_m": 250,
+      "eval_median_m": 130,
+      "verbosity": "very verbose",
+      "cache_read": 0.01,
+      "cache_write": null
+    },
+    {
+      "slug": "gpt-5-6-luna",
+      "cache_discount_pct": 90,
+      "speed_tps": 129,
+      "display_name": "GPT-5.6 Luna (Max)",
+      "input": 0.2,
+      "output": 1.2,
+      "intelligence": 37,
+      "eval_output_tokens_m": 150,
+      "eval_median_m": 96,
+      "verbosity": "somewhat verbose",
+      "cache_read": 0.02,
+      "cache_write": null
+    },
+    {
+      "slug": "deepseek-v4-pro",
+      "cache_discount_pct": 97,
+      "speed_tps": 79,
+      "display_name": "DeepSeek V4 Pro 0813 (Max)",
+      "input": 1.32,
+      "output": 3.96,
+      "intelligence": 36,
+      "eval_output_tokens_m": 160,
+      "eval_median_m": 130,
+      "verbosity": "somewhat verbose",
+      "cache_read": 0.04,
+      "cache_write": null
+    },
+    {
+      "slug": "gemini-3-5-flash-lite",
+      "cache_discount_pct": 90,
+      "speed_tps": 449,
+      "display_name": "Gemini 3.5 Flash-Lite",
+      "input": 0.3,
+      "output": 2.5,
+      "intelligence": 22,
+      "eval_output_tokens_m": 59,
+      "eval_median_m": 96,
+      "verbosity": "fairly concise",
+      "cache_read": 0.03,
+      "cache_write": null
+    },
+    {
+      "slug": "claude-sonnet-5",
+      "cache_discount_pct": 90,
+      "speed_tps": 81,
+      "display_name": "Claude Sonnet 5 (Max)",
+      "input": 2,
+      "output": 10,
+      "intelligence": 38,
+      "eval_output_tokens_m": 370,
+      "eval_median_m": 85,
+      "verbosity": "very verbose",
+      "cache_read": 0.2,
+      "cache_write": null
+    },
+    {
+      "slug": "claude-sonnet-4-6",
+      "cache_discount_pct": 90,
+      "speed_tps": 45,
+      "display_name": "Claude Sonnet 4.6 (Non-reasoning, High)",
+      "input": 3,
+      "output": 15,
+      "intelligence": 25,
+      "cache_read": 0.3,
+      "cache_write": null
+    },
+    {
+      "slug": "glm-5-3-flash",
+      "cache_discount_pct": 80,
+      "speed_tps": 71,
+      "display_name": "GLM-5.3-Flash",
+      "input": 0.15,
+      "output": 0.5,
+      "intelligence": 42,
+      "eval_output_tokens_m": 180,
+      "eval_median_m": 130,
+      "verbosity": "very verbose",
+      "cache_read": 0.03,
+      "cache_write": null
+    },
+    {
+      "slug": "muse-spark-1-2",
+      "cache_discount_pct": 88,
+      "speed_tps": 369,
+      "display_name": "Muse Spark 1.2 (Xhigh)",
+      "input": 1.25,
+      "output": 4.25,
+      "intelligence": 40,
+      "eval_output_tokens_m": 130,
+      "eval_median_m": 85,
+      "verbosity": "somewhat verbose",
+      "cache_read": 0.15,
+      "cache_write": null
+    },
+    {
+      "slug": "deepseek-v4-flash",
+      "cache_discount_pct": 97,
+      "speed_tps": 173,
+      "display_name": "DeepSeek V4 Flash 0731 (Max)",
+      "input": 0.44,
+      "output": 1.32,
+      "intelligence": 34,
+      "eval_output_tokens_m": 240,
+      "eval_median_m": 130,
+      "verbosity": "very verbose",
+      "cache_read": 0.01,
+      "cache_write": null
+    }
+  ],
+  "engineering": [
+    {
+      "rank": 1,
+      "name": "No publicly available API",
+      "engineering": 60
+    },
+    {
+      "rank": 2,
+      "name": "Claude Opus 5.5 (max with fallback)",
+      "engineering": 58
+    },
+    {
+      "rank": 3,
+      "name": "Claude Sonnet 5.5 (max with fallback)",
+      "engineering": 57
+    },
+    {
+      "rank": 4,
+      "name": "Muse Wonder Full (max)",
+      "engineering": 56
+    },
+    {
+      "rank": 5,
+      "name": "Claude Fable 5.1 (max with fallback)",
+      "engineering": 55
+    },
+    {
+      "rank": 6,
+      "name": "Gemini 4 Argon (high)",
+      "engineering": 55
+    },
+    {
+      "rank": 7,
+      "name": "GPT-6 Astra (max)",
+      "engineering": 54
+    },
+    {
+      "rank": 8,
+      "name": "GPT-6.1 Sol (max)",
+      "engineering": 54
+    },
+    {
+      "rank": 9,
+      "name": "Muse Wonder (max)",
+      "engineering": 47
+    },
+    {
+      "rank": 10,
+      "name": "Grok 4.7 (xhigh)",
+      "engineering": 47
+    },
+    {
+      "rank": 11,
+      "name": "GLM-5.3 (max)",
+      "engineering": 47
+    },
+    {
+      "rank": 12,
+      "name": "MiMo-V2.6-Pro",
+      "engineering": 46
+    },
+    {
+      "rank": 13,
+      "name": "Qwen3.8 Max (0902)",
+      "engineering": 45
+    },
+    {
+      "rank": 14,
+      "name": "Step 5 Preview",
+      "engineering": 45
+    },
+    {
+      "rank": 15,
+      "name": "Claude Haiku 5.5 (max)",
+      "engineering": 44
+    },
+    {
+      "rank": 16,
+      "name": "GLM-5.3-Flash",
+      "engineering": 43
+    },
+    {
+      "rank": 17,
+      "name": "Kimi K3 (max)",
+      "engineering": 43
+    },
+    {
+      "rank": 18,
+      "name": "Gemini 3.8 Flash (high)",
+      "engineering": 40
+    },
+    {
+      "rank": 19,
+      "name": "Muse Spark Open (xhigh)",
+      "engineering": 39
+    },
+    {
+      "rank": 20,
+      "name": "DeepSeek V4.1 Flash (max)",
+      "engineering": 38
+    },
+    {
+      "rank": 21,
+      "name": "Mistral Large 4 Preview",
+      "engineering": 37
+    },
+    {
+      "rank": 22,
+      "name": "GPT-6 Luna (max)",
+      "engineering": 33
+    },
+    {
+      "rank": 23,
+      "name": "Qwen3.8 27B (xhigh)",
+      "engineering": 33
+    },
+    {
+      "rank": 24,
+      "name": "K2 Horizon 375B A23B",
+      "engineering": 31
+    },
+    {
+      "rank": 25,
+      "name": "MiniMax-M3",
+      "engineering": 31
+    },
+    {
+      "rank": 26,
+      "name": "Beam 1.0",
+      "engineering": 30
+    },
+    {
+      "rank": 27,
+      "name": "Nemotron 3.5 Super VL",
+      "engineering": 28
+    }
+  ],
+  "partial": false,
+  "agents": [
+    {
+      "agent": "brainstorm",
+      "file": "/Users/yasihusain/.config/opencode/agent/brainstorm.md",
+      "model": "opencode/muse-spark-1.3-contributor-free",
+      "aa_slug": "muse-spark-1-3",
+      "aa_match": "Muse Spark 1.3 (Max)",
+      "engineering": null
+    },
+    {
+      "agent": "docs-writer",
+      "file": "/Users/yasihusain/.config/opencode/agent/docs-writer.md",
+      "model": "opencode/muse-spark-1.3-contributor-free",
+      "aa_slug": "muse-spark-1-3",
+      "aa_match": "Muse Spark 1.3 (Max)",
+      "engineering": null
+    },
+    {
+      "agent": "domain-companion",
+      "file": "/Users/yasihusain/.config/opencode/agent/domain-companion.md",
+      "model": "opencode/muse-spark-1.3-contributor-free",
+      "aa_slug": "muse-spark-1-3",
+      "aa_match": "Muse Spark 1.3 (Max)",
+      "engineering": null
+    },
+    {
+      "agent": "researcher",
+      "file": "/Users/yasihusain/.config/opencode/agent/researcher.md",
+      "model": "opencode/muse-spark-1.3-contributor-free",
+      "aa_slug": "muse-spark-1-3",
+      "aa_match": "Muse Spark 1.3 (Max)",
+      "engineering": null
+    },
+    {
+      "agent": "reviewer",
+      "file": "/Users/yasihusain/.config/opencode/agent/reviewer.md",
+      "model": "opencode/muse-spark-1.3-contributor-free",
+      "aa_slug": "muse-spark-1-3",
+      "aa_match": "Muse Spark 1.3 (Max)",
+      "engineering": null
+    },
+    {
+      "agent": "security-reviewer",
+      "file": "/Users/yasihusain/.config/opencode/agent/security-reviewer.md",
+      "model": "opencode/muse-spark-1.3-contributor-free",
+      "aa_slug": "muse-spark-1-3",
+      "aa_match": "Muse Spark 1.3 (Max)",
+      "engineering": null
+    },
+    {
+      "agent": "(config model)",
+      "file": "/Users/yasihusain/.config/opencode/opencode.jsonc",
+      "model": "opencode/muse-spark-1.2-contributor-free",
+      "aa_slug": "muse-spark-1-2",
+      "aa_match": "Muse Spark 1.2 (Xhigh)",
+      "engineering": null
+    },
+    {
+      "agent": "(config small_model)",
+      "file": "/Users/yasihusain/.config/opencode/opencode.jsonc",
+      "model": "opencode/muse-spark-1.2-contributor-free",
+      "aa_slug": "muse-spark-1-2",
+      "aa_match": "Muse Spark 1.2 (Xhigh)",
+      "engineering": null
+    }
+  ]
+}

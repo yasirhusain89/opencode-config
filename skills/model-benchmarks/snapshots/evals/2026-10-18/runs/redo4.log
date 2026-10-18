@@ -1,0 +1,4 @@
+lynx-d04: ok wall=10s out=184ch
+onyx-d04: FAIL wall=420s out=0ch
+onyx-d09: FAIL wall=420s out=0ch
+DONE done=28 failed=2

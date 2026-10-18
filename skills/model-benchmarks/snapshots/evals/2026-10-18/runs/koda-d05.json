@@ -1,0 +1,21 @@
+{
+ "run_id": "koda-d05",
+ "diff": "d05",
+ "contender": "koda",
+ "model": "opencode/nemotron-3.5-super-vl-free",
+ "wall_ms": 19299,
+ "exit": 0,
+ "killed": false,
+ "response": "SEVERITY: minor\nWHERE: tests/api.spec.ts (new test, ~line 160)\nISSUE: The new `fallback_reason` output field is added to the command but never asserted in any test — the new behavior is unverified.\nFIX: Add a test case that drives the command into a fallback path and asserts `fallback_reason` is present and correct.\n\nSEVERITY: minor\nWHERE: src-tauri/src/lib.rs:873 and src-tauri/src/server.rs:1032\nISSUE: Identical `fallback_reason` injection logic is duplicated across two entry points, creating a divergence risk if one is updated and the other isn't.\nFIX: Extract the injection into a shared helper called by both `pdf_statement_extract` and `dispatch`.\n\nNo blocking, security, or regression issues found.\n\nVERDICT: SHIP",
+ "tokens": {
+  "total": 37376,
+  "input": 4904,
+  "output": 190,
+  "reasoning": 1930,
+  "cache": {
+   "write": 0,
+   "read": 30352
+  }
+ },
+ "error": null
+}

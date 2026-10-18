@@ -1,0 +1,21 @@
+{
+ "run_id": "onyx-d01",
+ "diff": "d01",
+ "contender": "onyx",
+ "model": "opencode/glm-5.3-flash-free",
+ "wall_ms": 146219,
+ "exit": 0,
+ "killed": false,
+ "response": "**Findings**\n\n**SEVERITY: major**\n**WHERE:** python/ollama_agents/statement-extractor.v1.json:7 (interacting with python/ollama_helper.py:398)\n**ISSUE:** Halving `num_predict` to 2000 caps output at roughly 30–40 transaction rows at typical ~60-token/row JSON, so longer monthly statements now emit truncated JSON that fails to parse — a regression vs. the old 4000 cap, and a cap hit is indistinguishable from a model error (no `done_reason` check).\n**FIX:** Keep `num_predict` at 4000 (the 120s budget already solves the slowness) or scale it from markdown length; additionally fail loudly on a cap hit (Ollama returns `done_reason: \"length\"`) so the Rust layer can surface \"truncated\" instead of silently falling back.\n\n**SEVERITY: minor**\n**WHERE:** python/ollama_helper.py:154-165 (per-attempt timeout in `body_attempts` loop)\n**ISSUE:** `wait` applies per attempt, so worst-case wall time for one extraction is now ~240s (120s schema attempt + 120s `format=json` fallback) versus ~30s before.\n**FIX:** Share one deadline across attempts (recompute remaining time before each attempt) or lower the budget for the fallback attempt.\n\n**SEVERITY: minor**\n**WHERE:** python/ollama_helper.py:376-381\n**ISSUE:** The new `timeout_ms` handling has no tests for the override/clamp/malformed paths, and a non-finite value (e.g. `\"inf\"` → `float('inf')`) passes `max(1.0, ...)` and reaches `urlopen`, raising an `OverflowError` that `except (TypeError, ValueError)` doesn't catch.\n**FIX:** Add tests for override, clamp, and malformed values, and guard with `math.isfinite(...)` before the division, defaulting to 120.0 when false.\n\n**SEVERITY: minor**\n**WHERE:** python/ollama_helper.py:353-399 / docs/python-reference.md:146\n**ISSUE:** The fix only helps if the Tauri/Rust sidecar bridge actually waits ≥120s for this handler; the diff never verifies that, so an unchanged Rust-side read/kill timeout around the old ~15s default would make this inert.\n**FIX:** Confirm the Rust-side bridge timeout is ≥ the Python budget (or have Rust pass `timeout_ms` from one shared config value) and cover it in a test.\n\n**Details verified in the diff that are fine:** existing positional callers of `ollama_chat` are unaffected by the defaulted `timeout_s=None`; `payload.get(\"timeout_ms\", 120000)` correctly falls into the except path when the value is `null`; the updated fake matches the new keyword call; `max(1.0, ...)` correctly floors 0/negative/NaN-string inputs to 1.0.\n\nVERDICT: FIX",
+ "tokens": {
+  "total": 41079,
+  "input": 32479,
+  "output": 8600,
+  "reasoning": 0,
+  "cache": {
+   "write": 0,
+   "read": 0
+  }
+ },
+ "error": null
+}

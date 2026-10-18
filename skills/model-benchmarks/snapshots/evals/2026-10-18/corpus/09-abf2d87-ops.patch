@@ -1,0 +1,193 @@
+commit abf2d87df8e7e1550e27a347a3ef548d620517f6
+Author: yasirhusain89 <er.yasir.husain@gmail.com>
+Date:   Tue Sep 15 01:22:55 2026 -0600
+
+    feat: post-push ci-watch hook to track Actions runs to green
+
+diff --git a/docs/ci-cd-pipeline.md b/docs/ci-cd-pipeline.md
+index 6675426..7dfc9b7 100644
+--- a/docs/ci-cd-pipeline.md
++++ b/docs/ci-cd-pipeline.md
+@@ -153,6 +153,34 @@ To check remaining free Actions minutes for your account:
+ 
+ ---
+ 
++## 4b. Post-push tracking hook (`ci-watch`)
++
++Git has no `post-push` hook, so pushes are tracked with a watcher: after
++pushing, run it and stay until every workflow for that commit is green. It
++polls the Runs API (zero CI minutes) and, on failure, prints a digest —
++failed workflow → failed job → failed steps → the error lines from the
++step log — so the loop can be closed without digging through the web UI.
++
++```bash
++npm run ci:watch            # track HEAD (the commit just pushed)
++npm run ci:watch -- <sha>   # track a specific commit
++git pp                      # repo-local alias: `git push` + watch HEAD
++```
++
++Exit codes: `0` all green · `1` workflow failed (digest printed) ·
++`2` watcher timed out · `3` runs cancelled/superseded (watch the newer SHA).
++`--rerun-failed` re-runs only failed jobs — for transient/infra flakes;
++real failures get fixed and re-pushed (repro locally first: each full
++retry bills ~14 mins).
++
++One-time setup per clone (repo-local, never touches global gitconfig):
++
++```bash
++git config alias.pp '!f() { git push "$@" && exec "$(git rev-parse --show-toplevel)/scripts/ci-watch.sh"; }; f'
++```
++
++---
++
+ ## 5. On-demand & cost optimization (small dev group)
+ 
+ Goal: keep the monthly burn near the ~1,300-min current pace (or lower) so two
+diff --git a/package.json b/package.json
+index 0cc3761..58a0511 100644
+--- a/package.json
++++ b/package.json
+@@ -18,6 +18,7 @@
+ 		"test:e2e:ui": "playwright test --ui",
+ 		"test:ux": "playwright test tests/ux-audit.spec.ts",
+ 		"test:visual": "playwright test tests/visual.spec.ts",
++		"ci:watch": "scripts/ci-watch.sh",
+ 		"tauri": "tauri",
+ 		"index": "npm run index:graph && npm run index:semantic",
+ 		"index:graph": "gitnexus analyze",
+diff --git a/scripts/ci-watch.sh b/scripts/ci-watch.sh
+new file mode 100755
+index 0000000..9828a0e
+--- /dev/null
++++ b/scripts/ci-watch.sh
+@@ -0,0 +1,130 @@
++#!/usr/bin/env bash
++# ci-watch — post-push tracker: wait until every GitHub Actions run for a
++# commit finishes, then report per-workflow/per-job results. Failures print a
++# digest (failed job -> failed steps -> log tail) so the loop can be closed.
++#
++# Costs zero CI minutes (read-only API polling). Pair with `git pp`
++# (repo-local alias: push, then watch this SHA).
++#
++# Usage: scripts/ci-watch.sh [sha] [--timeout SEC] [--interval SEC]
++#                            [--appear-timeout SEC] [--rerun-failed]
++# Exit codes: 0 = all green (success/skipped/neutral)
++#             1 = a workflow failed / timed out / needs action
++#             2 = watcher timed out (runs still unfinished)
++#             3 = runs cancelled (superseded by a newer push — watch that SHA)
++set -uo pipefail
++cd "$(git rev-parse --show-toplevel)"
++
++sha="$(git rev-parse HEAD)"
++timeout=1800
++interval=30
++appear_timeout=300
++rerun_failed=0
++while [ $# -gt 0 ]; do
++	case "$1" in
++	--timeout) timeout="$2"; shift 2 ;;
++	--interval) interval="$2"; shift 2 ;;
++	--appear-timeout) appear_timeout="$2"; shift 2 ;;
++	--rerun-failed) rerun_failed=1; shift ;;
++	-*) echo "unknown flag: $1" >&2; exit 2 ;;
++	*) sha="$(git rev-parse --verify "$1")" || exit 2; shift ;;
++	esac
++done
++
++command -v gh >/dev/null || {
++	echo "ci-watch: gh CLI not found" >&2
++	exit 2
++}
++gh auth status >/dev/null 2>&1 || {
++	echo "ci-watch: gh not authenticated (run: gh auth login)" >&2
++	exit 2
++}
++
++# TSV lines: run-id, status, conclusion, workflow name.
++runs_tsv() {
++	gh run list --commit "$sha" --limit 50 \
++		--json databaseId,name,status,conclusion \
++		--jq '.[] | "\(.databaseId)\t\(.status)\t\(.conclusion)\t\(.name)"' 2>/dev/null
++}
++
++echo "ci-watch: tracking ${sha:0:12} ($(git log -1 --format=%s "$sha" | head -c 60))"
++echo "ci-watch: polling every ${interval}s, timeout ${timeout}s (appear grace ${appear_timeout}s)"
++
++# Phase 1: wait for runs to register (workflows take ~30-60s to appear).
++deadline=$((SECONDS + appear_timeout))
++runs=""
++while [ -z "$runs" ]; do
++	runs="$(runs_tsv)"
++	[ -n "$runs" ] && break
++	if [ $SECONDS -ge $deadline ]; then
++		echo "ci-watch: no runs appeared for ${sha:0:12} within ${appear_timeout}s" >&2
++		exit 2
++	fi
++	sleep "$interval"
++done
++
++# Phase 2: wait for every run to complete.
++deadline=$((SECONDS + timeout))
++while :; do
++	runs="$(runs_tsv)"
++	pending="$(printf '%s\n' "$runs" | awk -F'\t' '$2 != "completed" {print $4}' | paste -sd', ' -)"
++	if [ -z "$pending" ]; then break; fi
++	if [ $SECONDS -ge $deadline ]; then
++		echo "ci-watch: timed out after ${timeout}s. Still unfinished: $pending" >&2
++		exit 2
++	fi
++	echo "ci-watch: ${SECONDS}s — still running: $pending"
++	sleep "$interval"
++done
++
++# Phase 3: per-workflow / per-job report.
++echo "ci-watch: all runs completed:"
++printf '%s\n' "$runs" | awk -F'\t' '{printf "  %s (#%s): %s\n", $4, $1, $3}'
++
++rc=0
++failed_runs=""
++cancelled=0
++while IFS=$'\t' read -r id _status conclusion name; do
++	case "$conclusion" in
++	success | skipped | neutral) ;;
++	cancelled) cancelled=1 ;;
++	*)
++		rc=1
++		failed_runs="$failed_runs $id"
++		echo ""
++		echo "✗ FAILED: $name (#$id)"
++		fail_steps="$(gh run view "$id" --json jobs --jq '
++          .jobs[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")
++          | .name as $j | .steps[]
++          | select(.conclusion == "failure")
++          | "\($j)\t\(.number)\t\(.name)"')"
++		joblog="$(gh run view "$id" --log 2>/dev/null)"
++		while IFS=$'\t' read -r jname snum sname; do
++			[ -z "$jname" ] && continue
++			echo "  job: $jname / failed step #$snum: $sname"
++			section="$(printf '%s\n' "$joblog" | awk -F'\t' -v s="$sname" '$2 == s')"
++			hits="$(printf '%s\n' "$section" | grep -aiE 'error|warn|fail' | grep -aviE 'pipefail|show-error|shared-mime|CACHE_ON_FAILURE' | tail -12)"
++			if [ -n "$hits" ]; then printf '%s\n' "$hits" | sed 's/^/  | /'
++			else printf '%s\n' "$section" | tail -12 | sed 's/^/  | /'; fi
++		done <<<"$fail_steps"
++		;;
++	esac
++done <<<"$runs"
++
++if [ "$rerun_failed" = "1" ] && [ -n "$failed_runs" ]; then
++	for id in $failed_runs; do
++		echo "ci-watch: rerunning failed jobs in #$id (transient-flake escape hatch)"
++		gh run rerun --failed "$id" || rc=1
++	done
++fi
++
++if [ $rc -eq 0 ] && [ $cancelled -eq 1 ]; then
++	echo "ci-watch: runs were CANCELLED (likely superseded by a newer push) — watch that SHA instead."
++	exit 3
++fi
++if [ $rc -eq 0 ]; then
++	echo "✓ ci-watch: all green for ${sha:0:12}"
++else
++	echo "✗ ci-watch: failures above — fix, push, and re-watch (each retry bills ~14 mins; repro locally first)."
++fi
++exit $rc

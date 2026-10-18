@@ -1,0 +1,9 @@
+koda-d09: ok wall=113s out=1893ch
+lynx-d07: ok wall=21s out=160ch
+lynx-d09: ok wall=18s out=372ch
+lynx-d10: FAIL wall=9s out=0ch
+onyx-d04: ok wall=182s out=122ch
+onyx-d05: FAIL wall=71s out=0ch
+onyx-d09: ok wall=83s out=3383ch
+onyx-d10: ok wall=132s out=180ch
+DONE done=28 failed=2

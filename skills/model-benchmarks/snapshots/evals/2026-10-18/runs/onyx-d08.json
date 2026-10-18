@@ -1,0 +1,21 @@
+{
+ "run_id": "onyx-d08",
+ "diff": "d08",
+ "contender": "onyx",
+ "model": "opencode/glm-5.3-flash-free",
+ "wall_ms": 120619,
+ "exit": 0,
+ "killed": false,
+ "response": "**Finding 1**\n- SEVERITY: minor\n- WHERE: tests/api.spec.ts:26-29\n- ISSUE: Clearing `extraHTTPHeaders` fixes the leak, but `expect(status()).toBe(401)` passes for *any* 401 cause — the test still can't distinguish \"gate rejects unauthenticated\" from \"endpoint 401s everyone\" (the commit message shows the assertion kept passing even while the token was being sent).\n- FIX: Add a positive control against the same endpoint — an authenticated context (the config headers, or one that sent a valid token) expecting 200 — so the 401 assertion is only meaningful alongside proof that valid auth succeeds.\n\n**Finding 2**\n- SEVERITY: minor\n- WHERE: tests/* (repo-wide, beyond this diff)\n- ISSUE: The inherited-`use`-options trap applies wherever `playwright.request.newContext()` is used to build an isolated/unauthenticated context, so other tests may have the same latent leak.\n- FIX: Grep the suite for other `playwright.request.newContext(` calls and verify each either doesn't rely on header isolation or clears `extraHTTPHeaders` the same way.\n\nOtherwise the fix itself is correct and minimal: the `playwright` fixture's context options are merged with config `use` options, and a call-site `extraHTTPHeaders: {}` explicitly overrides (shallow-merge, replace) the inherited header set, so the request is genuinely unauthenticated. No security, race, or error-handling issues introduced.",
+ "tokens": {
+  "total": 37924,
+  "input": 31308,
+  "output": 6616,
+  "reasoning": 0,
+  "cache": {
+   "write": 0,
+   "read": 0
+  }
+ },
+ "error": null
+}

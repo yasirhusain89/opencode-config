@@ -1,0 +1,27 @@
+commit 21a196072ab414b474b0a6193dc6f9078197fe18
+Author: yasirhusain89 <er.yasir.husain@gmail.com>
+Date:   Mon Sep 14 21:25:53 2026 -0600
+
+    fix(e2e): isolate token-gate test from inherited extraHTTPHeaders
+    
+    playwright.request.newContext() created via the test fixture inherits
+    use.extraHTTPHeaders, so the 'bare' context sent the bearer token and the
+    401 assertion could never fail — the gate was never exercised. Clearing
+    extraHTTPHeaders makes the test genuinely unauthenticated.
+
+diff --git a/tests/api.spec.ts b/tests/api.spec.ts
+index ce776bc..5edb599 100644
+--- a/tests/api.spec.ts
++++ b/tests/api.spec.ts
+@@ -21,7 +21,10 @@ test("health probe stays open and exposes no data", async ({ request }) => {
+ 
+ test("token gate: non-health calls need the bearer token", async ({ playwright }) => {
+ 	// Fresh context without the config's extraHTTPHeaders — proves the 401.
+-	const bare = await playwright.request.newContext({ baseURL: API });
++	// NOTE: contexts created via the `playwright` fixture inherit `use`
++	// options, so extraHTTPHeaders must be cleared explicitly; otherwise the
++	// bearer token leaks in and the gate is never actually exercised.
++	const bare = await playwright.request.newContext({ baseURL: API, extraHTTPHeaders: {} });
+ 	try {
+ 		const noAuth = await bare.post(`${API}/api/overview`, { data: {} });
+ 		expect(noAuth.status()).toBe(401);

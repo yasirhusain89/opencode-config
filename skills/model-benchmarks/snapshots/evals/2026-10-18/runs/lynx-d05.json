@@ -1,0 +1,21 @@
+{
+ "run_id": "lynx-d05",
+ "diff": "d05",
+ "contender": "lynx",
+ "model": "opencode/space-bunny-free",
+ "wall_ms": 24797,
+ "exit": 0,
+ "killed": false,
+ "response": "Repo isn't in this workspace (no `src-tauri/` locally), so this review is from the diff text alone.\n\n**SEVERITY: major**\n**WHERE:** tests/api.spec.ts:155-176\n**ISSUE:** The commit adds `fallback_reason` propagation in two places but the only new test exercises the empty-markdown short-circuit, which never produces a `fallback_reason` — so the headline behavior of the commit is untested.\n**FIX:** Add a case that feeds a fixture where the extractor returns `{llm_used: false, fallback_reason: \"timed out\", ...}` (stub/fake extractor) and assert `fallback_reason === \"timed out\"` on the response body, for both the HTTP bridge path and, if reachable, the Tauri command.\n\n**SEVERITY: major**\n**WHERE:** src/lib/api.ts:203\n**ISSUE:** `fallback_reason` is added to `NormalizedPreview` but nothing in the frontend reads it, so the field is plumbed end-to-end to a dead end and cannot be verified by any e2e assertion.\n**FIX:** Consume it where `NormalizedPreview` is rendered (surface the reason next to the fallback notice), or drop the field until the consumer lands.\n\n**SEVERITY: minor**\n**WHERE:** src-tauri/src/lib.rs:876-886, src-tauri/src/server.rs:1035-1045\n**ISSUE:** The preview-construction block (including the new `!llm_used` gate and `fallback_reason` copy) is now duplicated between the IPC command and the HTTP dispatch, so the two extraction paths can silently diverge.\n**FIX:** Extract one `build_pdf_statement_preview(&Value, ...) -> Value` helper in a shared module and call it from both `lib.rs` and `server.rs`.\n\n**SEVERITY: minor**\n**WHERE:** src-tauri/src/lib.rs:874, src-tauri/src/server.rs:1033\n**ISSUE:** `llm_used` defaults to `false` via `unwrap_or(false)`, so a script response that omits the key (or returns no boolean) also unlocks the `fallback_reason` branch instead of treating the result as indeterminate.\n**FIX:** Distinguish `Some(false)` from absent, e.g. `let llm_used = v.get(\"llm_used\").and_then(Value::as_bool);` and only forward `fallback_reason` when it is explicitly `Some(false)`.\n\n**SEVERITY: minor**\n**WHERE:** tests/api.spec.ts:162\n**ISSUE:** The test asserts HTTP 500 for a blank `pdfBase64`, cementing a client-input validation failure as a server error.\n**FIX:** Return 400 with an error payload for empty/blank input in the handler and update the assertion to `expect(empty.status()).toBe(400)`.\n\n**SEVERITY: minor**\n**WHERE:** tests/api.spec.ts:163\n**ISSUE:** The assertion couples the test to human-readable error wording via `/pdf data/i`, so a harmless reword of the message breaks the test.\n**FIX:** Assert on a stable error code field (e.g. `expect(body.code).toBe(\"INVALID_PDF\")`) instead of matching message prose.\n\nVERDICT: FIX",
+ "tokens": {
+  "total": 35759,
+  "input": 273,
+  "output": 687,
+  "reasoning": 2649,
+  "cache": {
+   "write": 0,
+   "read": 32150
+  }
+ },
+ "error": null
+}

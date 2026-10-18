@@ -1,0 +1,97 @@
+commit 655071ad3953db7b796ad233f1b82dcece3c60b6
+Author: yasirhusain89 <er.yasir.husain@gmail.com>
+Date:   Tue Sep 15 22:42:12 2026 -0600
+
+    feat(pdf): pass extraction fallback_reason to UI, add bridge contract tests
+
+diff --git a/src-tauri/src/lib.rs b/src-tauri/src/lib.rs
+index e366363..81076d8 100644
+--- a/src-tauri/src/lib.rs
++++ b/src-tauri/src/lib.rs
+@@ -873,10 +873,17 @@ fn pdf_statement_extract(
+     };
+     let llm_used = v.get("llm_used").and_then(|b| b.as_bool()).unwrap_or(false);
+     let (staged, skipped) = normalize_statement_rows(&v, &allowed, &acct);
+-    Ok(serde_json::json!({
++    let mut out = serde_json::json!({
+         "transactions": staged_to_json(staged), "detected_format": "pdf-statement",
+         "skipped": skipped, "llm_used": llm_used,
+-    }))
++    });
++    // Keep the script's reason (e.g. "timed out") so the UI/logs can say why.
++    if !llm_used {
++        if let Some(reason) = v.get("fallback_reason").and_then(|r| r.as_str()) {
++            out["fallback_reason"] = serde_json::Value::String(reason.to_string());
++        }
++    }
++    Ok(out)
+ }
+ 
+ #[tauri::command]
+diff --git a/src-tauri/src/server.rs b/src-tauri/src/server.rs
+index 9252b74..0e3ec51 100644
+--- a/src-tauri/src/server.rs
++++ b/src-tauri/src/server.rs
+@@ -1032,11 +1032,17 @@ fn dispatch(
+                 Ok(v) => {
+                     let llm_used = v.get("llm_used").and_then(|b| b.as_bool()).unwrap_or(false);
+                     let (staged, skipped) = normalize_statement_rows(&v, &allowed, &acct);
+-                    Ok(serde_json::json!({
++                    let mut out = serde_json::json!({
+                         "transactions": staged_to_json(staged),
+                         "detected_format": "pdf-statement",
+                         "skipped": skipped, "llm_used": llm_used,
+-                    }))
++                    });
++                    if !llm_used {
++                        if let Some(reason) = v.get("fallback_reason").and_then(|r| r.as_str()) {
++                            out["fallback_reason"] = serde_json::Value::String(reason.to_string());
++                        }
++                    }
++                    Ok(out)
+                 }
+                 Err(e) => Ok(serde_json::json!({
+                     "transactions": [], "detected_format": "pdf-statement",
+diff --git a/src/lib/api.ts b/src/lib/api.ts
+index c91611d..d91ce62 100644
+--- a/src/lib/api.ts
++++ b/src/lib/api.ts
+@@ -199,6 +199,7 @@ export interface NormalizedPreview {
+ 	detected_format: string;
+ 	skipped: number;
+ 	llm_used?: boolean;
++	fallback_reason?: string;
+ }
+ 
+ export interface PdfMarkdown {
+diff --git a/tests/api.spec.ts b/tests/api.spec.ts
+index 5edb599..0750b7d 100644
+--- a/tests/api.spec.ts
++++ b/tests/api.spec.ts
+@@ -150,3 +150,26 @@ test("backup round-trip: export, wipe, restore, verify", async ({ request }) =>
+ 	const after = await (await request.post(`${API}/api/overview`, { data: {} })).json();
+ 	expect(after.transaction_count).toBe(14);
+ });
++
++test("PDF statement commands validate input without needing Ollama or PyMuPDF", async ({
++	request,
++}) => {
++	// Empty PDF bytes are rejected before any Python runs.
++	const empty = await request.post(`${API}/api/pdf_statement_to_markdown`, {
++		data: { pdfBase64: "   ", filename: "mock.pdf" },
++	});
++	expect(empty.status()).toBe(500);
++	expect((await empty.json()).error).toMatch(/pdf data/i);
++	// Empty markdown short-circuits to an empty preview (no model call).
++	const preview = await (
++		await request.post(`${API}/api/pdf_statement_extract`, {
++			data: { markdown: "  ", defaultAccount: "Imported" },
++		})
++	).json();
++	expect(preview).toMatchObject({
++		transactions: [],
++		detected_format: "pdf-statement",
++		skipped: 0,
++		llm_used: false,
++	});
++});

@@ -1,0 +1,21 @@
+{
+ "run_id": "koda-d10",
+ "diff": "d10",
+ "contender": "koda",
+ "model": "opencode/nemotron-3.5-super-vl-free",
+ "wall_ms": 35411,
+ "exit": 0,
+ "killed": false,
+ "response": "Let me verify one claim in the diff before concluding.\n\nNo significant issues found.\n\n- SEVERITY: minor — WHERE: AGENTS.md:51 — ISSUE: The doc claims `.worktrees/` is \"gitignored,\" but the diff only adds exclusions to `.prettierignore` and `vite.config.js`, not `.gitignore`; if not already ignored, `git add -A` could stage an entire nested checkout. — FIX: Add `.worktrees/` to `.gitignore` (or confirm it's already there) to match the documented claim.\n\nThe vite config watcher pattern and prettierignore entry are valid; no runtime behavior, security, race, or test gaps introduced by this config/docs-only change.\n\nVERDICT: SHIP",
+ "tokens": {
+  "total": 38737,
+  "input": 2742,
+  "output": 150,
+  "reasoning": 1157,
+  "cache": {
+   "write": 0,
+   "read": 34688
+  }
+ },
+ "error": null
+}

@@ -1,0 +1,102 @@
+commit c4f68862050edad209ad76f498579776de212d32
+Author: yasirhusain89 <er.yasir.husain@gmail.com>
+Date:   Tue Sep 15 02:08:02 2026 -0600
+
+    feat: split-aware CSV export — parents export as their lines
+
+diff --git a/src-tauri/src/db.rs b/src-tauri/src/db.rs
+index 2b6c9e5..b2179f7 100644
+--- a/src-tauri/src/db.rs
++++ b/src-tauri/src/db.rs
+@@ -1106,6 +1106,23 @@ pub fn delete_recurring_rule(conn: &mut SqliteConnection, id: i64) -> DbResult<(
+ /// export re-imports cleanly). Same filters as `list_transactions`.
+ pub fn export_transactions_csv(conn: &mut SqliteConnection, f: TxFilter) -> DbResult<String> {
+     let txs = list_transactions(conn, f)?;
++    // Split-aware: a split parent's total next to its lines would double-
++    // count, so parents with lines export as their lines instead — the same
++    // numbers the budgets show. Re-import creates plain transactions (split
++    // structure is backup-only fidelity).
++    let ids: Vec<i64> = txs.iter().map(|t| t.id).collect();
++    let mut by_parent: HashMap<i64, Vec<SplitRow>> = HashMap::new();
++    if !ids.is_empty() {
++        let lines: Vec<SplitRow> = transaction_splits::table
++            .filter(transaction_splits::transaction_id.eq_any(&ids))
++            .order((transaction_splits::transaction_id, transaction_splits::id))
++            .select(SplitRow::as_select())
++            .load(conn)
++            .map_err(db_err)?;
++        for l in lines {
++            by_parent.entry(l.transaction_id).or_default().push(l);
++        }
++    }
+     let mut w = csv::Writer::from_writer(Vec::new());
+     w.write_record([
+         "Date",
+@@ -1118,16 +1135,34 @@ pub fn export_transactions_csv(conn: &mut SqliteConnection, f: TxFilter) -> DbRe
+     ])
+     .map_err(db_err)?;
+     for t in &txs {
+-        w.write_record([
+-            t.date.clone(),
+-            t.description.clone(),
+-            format!("{:.2}", t.amount),
+-            t.transaction_type.clone(),
+-            t.category.clone(),
+-            t.account_name.clone().unwrap_or_default(),
+-            t.notes.clone(),
+-        ])
+-        .map_err(db_err)?;
++        match by_parent.get(&t.id) {
++            Some(lines) => {
++                for l in lines {
++                    w.write_record([
++                        t.date.clone(),
++                        t.description.clone(),
++                        format!("{:.2}", l.amount),
++                        if l.amount < 0.0 { "debit" } else { "credit" }.to_string(),
++                        l.category.clone(),
++                        t.account_name.clone().unwrap_or_default(),
++                        l.notes.clone(),
++                    ])
++                    .map_err(db_err)?;
++                }
++            }
++            None => {
++                w.write_record([
++                    t.date.clone(),
++                    t.description.clone(),
++                    format!("{:.2}", t.amount),
++                    t.transaction_type.clone(),
++                    t.category.clone(),
++                    t.account_name.clone().unwrap_or_default(),
++                    t.notes.clone(),
++                ])
++                .map_err(db_err)?;
++            }
++        }
+     }
+     String::from_utf8(w.into_inner().map_err(db_err)?).map_err(db_err)
+ }
+diff --git a/src-tauri/src/lib.rs b/src-tauri/src/lib.rs
+index 585d62d..b5b1275 100644
+--- a/src-tauri/src/lib.rs
++++ b/src-tauri/src/lib.rs
+@@ -1428,6 +1428,18 @@ mod smoke_tests {
+         assert_eq!(cats[0].category, "Food & Dining");
+         assert_eq!((cats[0].total, cats[0].count), (60.0, 1));
+         assert_eq!((cats[1].total, cats[1].count), (40.0, 1));
++        // CSV exports the lines instead of the split parent (same totals).
++        let csv = db::export_transactions_csv(
++            &mut conn,
++            db::TxFilter {
++                limit: 5000,
++                ..Default::default()
++            },
++        )
++        .unwrap();
++        assert!(csv.contains("-60.00,debit,Food & Dining,Checking,"));
++        assert!(csv.contains("-40.00,debit,Household,Checking,"));
++        assert!(!csv.contains("-100.00"));
+         // Unsplit restores the parent-only view.
+         db::delete_splits(&mut conn, g.id).unwrap();
+         let (_, expenses) = db::month_sums(&mut conn, "2026-09").unwrap();

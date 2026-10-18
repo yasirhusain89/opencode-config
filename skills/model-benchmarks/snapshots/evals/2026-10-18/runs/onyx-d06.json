@@ -1,0 +1,21 @@
+{
+ "run_id": "onyx-d06",
+ "diff": "d06",
+ "contender": "onyx",
+ "model": "opencode/glm-5.3-flash-free",
+ "wall_ms": 168421,
+ "exit": 0,
+ "killed": false,
+ "response": "Review of the diff:\n\n---\n\n**1.**\n- SEVERITY: major\n- WHERE: src/routes/+page.svelte ~2315 (CSV file input) and `onPdfFile` (~1010–1060)\n- ISSUE: The PDF input is disabled while the pipeline runs (`disabled={pdfBusy || stmtBusy}`), but the CSV input is not — a user can trigger `onCsvFile` mid-extraction, and when the slow Ollama call resolves it silently overwrites `preview`/`rawCsv` (and vice versa), so the rows a user verifies can be swapped under them and wrong rows can be imported.\n- FIX: Early-return from both `onCsvFile` and `onPdfFile` when a pipeline is busy (or add a shared `busy` flag), and apply the same `disabled` binding to the CSV input.\n\n**2.**\n- SEVERITY: major\n- WHERE: src/routes/+page.svelte ~1040 (`preview = extracted; rawCsv = statementRowsToCsv(...)`)\n- ISSUE: What the user verifies is the AI-extracted `NormalizedPreview`, but `doImport` re-parses the synthesized `rawCsv` through the importer — whose format detection and date/amount/Transaction-Type sign handling can diverge from the extraction (notably the synthesized header includes `Transaction Type` and `Notes` columns the app's canonical CSV format doesn't list), so verified rows and imported rows may differ.\n- FIX: After synthesizing `rawCsv`, set `preview = await api.previewCsv(statementRowsToCsv(...))` so the preview shown is exactly the parse that will be imported (or add an import-from-rows API that skips the CSV round-trip).\n\n**3.**\n- SEVERITY: minor\n- WHERE: src/routes/+page.svelte `csvCell` (~1004)\n- ISSUE: The quoting regex `/[\",\\n]/` doesn't check `\\r`, so a description containing a lone carriage return is written unquoted and yields a malformed CSV row for the importer.\n- FIX: Change the test to `/[\",\\n\\r]/`.\n\n**4.**\n- SEVERITY: minor\n- WHERE: `csvCell` / `statementRowsToCsv` (~1004–1020)\n- ISSUE: New CSV-round-trip logic (quoting, header shape, empty rows) has no unit tests despite being the safety-critical bridge between AI output and the importer.\n- FIX: Extract both functions into a lib module and add tests for quoting (`\"` embedded, newline, `\\r`, empty list) and header fidelity.\n\n**5.**\n- SEVERITY: minor\n- WHERE: src/routes/+page.svelte `onPdfFile` (~1030) / src/lib/api.ts `pdfToMarkdown` (~385)\n- ISSUE: A 15 MB PDF becomes a ~20 MB base64 string pushed through the IPC `invoke` payload as one string — slow and memory-heavy on the renderer side for large statements.\n- FIX: Pass a file path (via dialog/fs scope) to the backend and read the bytes in Rust/Python instead of shipping base64 through IPC; keep the 15 MB cap.\n\n---\n\nVERDICT: FIX",
+ "tokens": {
+  "total": 51394,
+  "input": 33366,
+  "output": 18028,
+  "reasoning": 0,
+  "cache": {
+   "write": 0,
+   "read": 0
+  }
+ },
+ "error": null
+}

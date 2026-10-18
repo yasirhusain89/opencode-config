@@ -1,0 +1,12 @@
+{"frozen_at":"2026-10-18","repo":"/Users/yasihusain/PycharmProjects/monartha","protocol":"guide section 17 - 10 real diffs, same frozen reviewer prompt, fresh session each, blind judge","diffs":[
+{"id":"d01","file":"01-dcd660d-bugfix.patch","hash":"dcd660d","type":"bugfix","subject":"fix(pdf): 120s extraction timeout budget, 2000-token cap (27B models exceed 15s)"},
+{"id":"d02","file":"02-e37ceee-security-ci.patch","hash":"e37ceee","type":"security-ci","subject":"fix(ci): grant checks:write so RustSec audit can post its check run"},
+{"id":"d03","file":"03-27a75ec-security.patch","hash":"27a75ec","type":"security","subject":"security: close Phase 3 enforcement - version gate, SBOM, release env, pytest coverage"},
+{"id":"d04","file":"04-c4f6886-feature.patch","hash":"c4f6886","type":"feature","subject":"feat: split-aware CSV export - parents export as their lines"},
+{"id":"d05","file":"05-655071a-feature-test.patch","hash":"655071a","type":"feature-test","subject":"feat(pdf): pass extraction fallback_reason to UI, add bridge contract tests"},
+{"id":"d06","file":"06-95282d6-feature.patch","hash":"95282d6","type":"feature","subject":"feat(pdf): Import tab PDF statement upload with AI-extracted preview and verify flow"},
+{"id":"d07","file":"07-f64f634-dep-bump.patch","hash":"f64f634","type":"dep-bump","subject":"chore: bump getrandom from 0.3.4 to 0.4.3 in /src-tauri"},
+{"id":"d08","file":"08-21a1960-test-only.patch","hash":"21a1960","type":"test-only","subject":"fix(e2e): isolate token-gate test from inherited extraHTTPHeaders"},
+{"id":"d09","file":"09-abf2d87-ops.patch","hash":"abf2d87","type":"ops","subject":"feat: post-push ci-watch hook to track Actions runs to green"},
+{"id":"d10","file":"10-e6fa3fe-refactor-tooling.patch","hash":"e6fa3fe","type":"refactor-tooling","subject":"chore: exclude .worktrees/ from prettier + Vite watcher, codify worktree convention"}],
+"excluded":[{"hash":"982072b","reason":"1662+/1013- too large for review corpus"},{"hash":"a670605","reason":"style-only, no review signal"}]}

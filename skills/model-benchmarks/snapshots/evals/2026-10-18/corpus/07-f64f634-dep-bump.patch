@@ -1,0 +1,30 @@
+commit f64f6348a05cb94ec0ea8e655f651359f592e151
+Author: yasirhusain89 <er.yasir.husain@gmail.com>
+Date:   Mon Sep 14 22:49:14 2026 -0600
+
+    chore: bump getrandom from 0.3.4 to 0.4.3 in /src-tauri
+
+diff --git a/src-tauri/Cargo.lock b/src-tauri/Cargo.lock
+index ee94169..c227a61 100644
+--- a/src-tauri/Cargo.lock
++++ b/src-tauri/Cargo.lock
+@@ -2306,7 +2306,7 @@ dependencies = [
+  "csv",
+  "diesel",
+  "diesel_migrations",
+- "getrandom 0.3.4",
++ "getrandom 0.4.3",
+  "keyring",
+  "libsqlite3-sys",
+  "serde",
+diff --git a/src-tauri/Cargo.toml b/src-tauri/Cargo.toml
+index 9caf9cf..fe98605 100644
+--- a/src-tauri/Cargo.toml
++++ b/src-tauri/Cargo.toml
+@@ -62,5 +62,5 @@ optional = true
+ features = ["apple-native", "windows-native", "sync-secret-service"]
+ 
+ [dependencies.getrandom]
+-version = "0.3"
++version = "0.4"
+ optional = true

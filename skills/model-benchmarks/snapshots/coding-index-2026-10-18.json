@@ -1,0 +1,41 @@
+{
+  "source": "artificialanalysis.ai/agents/coding-agents",
+  "scraped_at": "2026-10-18",
+  "errors": [],
+  "index": {
+    "Claude Code - Sonnet 5.5 (max)": 68,
+    "Claude Code - Opus 5.5 (max)": 66,
+    "Antigravity CLI - Gemini 4 Argon": 64,
+    "Muse Code - Muse Wonder (max)": 63,
+    "Claude Code - Fable 5.1 (max) (with fallback)": 62,
+    "Codex - GPT-6 Astra (max)": 62,
+    "Codex - GPT-6.1 Sol (max)": 60,
+    "Grok Build - Grok 4.7 (xhigh)": 56
+  },
+  "time_per_task": {
+    "Muse Code - Muse Wonder (max) (Meta)": "22.4m",
+    "Codex - GPT-6.1 Sol (max) (OpenAI)": "24.4m",
+    "Codex - GPT-6 Astra (max) (OpenAI)": "29.4m",
+    "Antigravity CLI - Gemini 4 Argon (high) (Google)": "34.5m",
+    "Claude Code - Fable 5.1 (max) (with fallback) (Anthropic)": "34.8m",
+    "Grok Build - Grok 4.7 (xhigh) (SpaceXAI)": "39.2m",
+    "Claude Code - Opus 5.5 (max) (Anthropic)": "1.1h",
+    "Claude Code - Sonnet 5.5 (max) (Anthropic)": "1.5h"
+  },
+  "cost_per_task": {
+    "Codex - GPT-6.1 Sol (max) (OpenAI)": 1.55,
+    "Antigravity CLI - Gemini 4 Argon (high) (Google)": 5.84,
+    "Codex - GPT-6 Astra (max) (OpenAI)": 7.47,
+    "Muse Code - Muse Wonder (max) (Meta)": 8.05,
+    "Grok Build - Grok 4.7 (xhigh) (SpaceXAI)": 8.82,
+    "Claude Code - Fable 5.1 (max) (with fallback) (Anthropic)": 12.39,
+    "Claude Code - Opus 5.5 (max) (Anthropic)": 13.04,
+    "Claude Code - Sonnet 5.5 (max) (Anthropic)": 14.19
+  },
+  "benchmarks": {
+    "DeepSWE v1.1": [],
+    "Terminal-Bench 4.0": [],
+    "SWE-Atlas-QnA": []
+  },
+  "partial": false
+}

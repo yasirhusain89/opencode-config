@@ -1,0 +1,21 @@
+{
+ "run_id": "onyx-d03",
+ "diff": "d03",
+ "contender": "onyx",
+ "model": "opencode/glm-5.3-flash-free",
+ "wall_ms": 233726,
+ "exit": 0,
+ "killed": false,
+ "response": "- SEVERITY: minor\n  WHERE: scripts/check-versions.mjs:9\n  ISSUE: `new URL(\"..\", import.meta.url).pathname` keeps percent-encoding and yields `/C:/…` on Windows, so the default root resolution breaks on Windows (or any path with spaces/non-ASCII) — a platform this repo ships for; unwind exception then exits 1 non-obviously.\n  FIX: Use `fileURLToPath(new URL(\"..\", import.meta.url))` from `node:url`, or fall back to `process.cwd()` when no arg is passed.\n\n- SEVERITY: minor\n  WHERE: .github/workflows/ci.yml:~123 (validate) vs build-desktop job\n  ISSUE: The version gate only runs in push/PR `validate`, but `build-desktop` runs on tag pushes and `workflow_dispatch` without it, so the stated goal (\"a release tag can never ship mismatched versions\") is not actually enforced on the release path.\n  FIX: Add a `npm run check:versions` step near the top of `build-desktop` (node is already set up there for the frontend build).\n\n- SEVERITY: minor\n  WHERE: .prettierignore / eslint.config.js (new ignores)\n  ISSUE: `.pytest_cache/` and `.coverage*` were added to eslint ignores but only `.venv/` to `.prettierignore`, yet the `lint` script ends with `prettier --check .` — a local pytest run creates `.pytest_cache/README.md`, which prettier will likely flag, re-creating exactly the local-lint breakage this change was meant to fix.\n  FIX: Add `.pytest_cache/` and `.coverage*` to `.prettierignore` as well.\n\n- SEVERITY: minor\n  WHERE: scripts/check-versions.mjs:16-18 (Cargo regex)\n  ISSUE: The `/^version\\s*=\\s*\"/m` regex takes the first line-starting `version =` anywhere in Cargo.toml, so a future `[workspace.package]` block ahead of `[package]` would be checked instead of the package version, with no automated test to catch it (only manual positive/negative verification is recorded).\n  FIX: Anchor the match to the `[package]` section (e.g. parse lines after `[package]`) and add a small node test covering match / mismatch / missing-file fixtures expecting exit 0/1/1.\n\n- SEVERITY: minor\n  WHERE: .github/workflows/ci.yml (~258, SBOM step `path: ./`)\n  ISSUE: Scanning `./` after the full build catalogs the entire dev tree (all of node_modules, plus sources) rather than anything tied to the release artifacts, producing a huge, slow SPDX per platform — notably on the 10× macOS leg — with little release-audit value.\n  FIX: Add a `.syft.yaml` excluding `**/node_modules/**` or scope `path` to the manifests the SBOM should attest (`src-tauri`, root package manifests), and note the artifact scope in the release docs.\n\nVERDICT: SHIP",
+ "tokens": {
+  "total": 79467,
+  "input": 64751,
+  "output": 14716,
+  "reasoning": 0,
+  "cache": {
+   "write": 0,
+   "read": 0
+  }
+ },
+ "error": null
+}

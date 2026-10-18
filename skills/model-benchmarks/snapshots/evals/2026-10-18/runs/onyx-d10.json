@@ -1,0 +1,21 @@
+{
+ "run_id": "onyx-d10",
+ "diff": "d10",
+ "contender": "onyx",
+ "model": "opencode/glm-5.3-flash-free",
+ "wall_ms": 132381,
+ "exit": 0,
+ "killed": false,
+ "response": "I'll verify this diff's claims against the actual repo before judging. First, let me locate the MonArtha repo.\nRepo found. Now verifying the diff's claims against the working tree.",
+ "tokens": {
+  "total": 39230,
+  "input": 38756,
+  "output": 249,
+  "reasoning": 225,
+  "cache": {
+   "write": 0,
+   "read": 0
+  }
+ },
+ "error": null
+}

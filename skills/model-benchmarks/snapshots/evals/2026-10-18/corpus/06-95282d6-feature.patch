@@ -1,0 +1,231 @@
+commit 95282d6748077e5e94487b90074c14054696608f
+Author: yasirhusain89 <er.yasir.husain@gmail.com>
+Date:   Tue Sep 15 18:23:58 2026 -0600
+
+    feat(pdf): Import tab PDF statement upload with AI-extracted preview and verify flow
+
+diff --git a/src/lib/api.ts b/src/lib/api.ts
+index 1c7b9ff..c91611d 100644
+--- a/src/lib/api.ts
++++ b/src/lib/api.ts
+@@ -198,6 +198,15 @@ export interface NormalizedPreview {
+ 	}[];
+ 	detected_format: string;
+ 	skipped: number;
++	llm_used?: boolean;
++}
++
++export interface PdfMarkdown {
++	markdown: string;
++	pages: number;
++	chars: number;
++	truncated: boolean;
++	filename: string;
+ }
+ 
+ export const api = {
+@@ -370,6 +379,18 @@ export const api = {
+ 			csvText: csv_text,
+ 			defaultAccount: default_account,
+ 		}),
++	/** PDF statement → Markdown (needs the `pdf` Python extra). */
++	pdfToMarkdown: (pdf_base64: string, filename?: string) =>
++		call<PdfMarkdown>("pdf_statement_to_markdown", {
++			pdfBase64: pdf_base64,
++			filename: filename ?? null,
++		}),
++	/** AI-extract a NormalizedPreview from statement Markdown (local Ollama). */
++	extractStatement: (markdown: string, default_account = "Imported") =>
++		call<NormalizedPreview>("pdf_statement_extract", {
++			markdown,
++			defaultAccount: default_account,
++		}),
+ 	suggestCategories: (descriptions: string[]) => call<string[]>("py_categorize", { descriptions }),
+ 	suggestCategoriesDetailed: (descriptions: string[], timeoutMs = 10000) =>
+ 		withTimeout(
+diff --git a/src/routes/+page.svelte b/src/routes/+page.svelte
+index 857def0..090fe9f 100644
+--- a/src/routes/+page.svelte
++++ b/src/routes/+page.svelte
+@@ -156,6 +156,12 @@
+ 	let preview = $state<NormalizedPreview | null>(null);
+ 	let rawCsv = $state("");
+ 	let previewCatOverrides = $state<Record<number, string>>({});
++	// PDF statement import: PDF → Markdown → AI extraction → the same
++	// preview/verify/import flow as CSV (rawCsv is synthesized from the
++	// extracted rows so doImport works unchanged).
++	let pdfBusy = $state(false);
++	let stmtBusy = $state(false);
++	let pdfInfo = $state<string | null>(null);
+ 
+ 	// Local AI (Ollama) suggest-on-add/import state. All best-effort:
+ 	// failures hide the badge and the rules path still works.
+@@ -971,6 +977,7 @@
+ 		rawCsv = await file.text();
+ 		previewAi = {};
+ 		previewCatOverrides = {};
++		pdfInfo = null;
+ 		try {
+ 			preview = await api.previewCsv(rawCsv);
+ 			toast.ok(
+@@ -981,6 +988,89 @@
+ 		}
+ 	}
+ 
++	function csvCell(v: string | number): string {
++		const s = String(v ?? "");
++		return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
++	}
++
++	/** Re-encode extracted rows as importer-readable CSV so the existing
++	 * preview/override/duplicate/import flow is reused verbatim. */
++	function statementRowsToCsv(txs: NormalizedPreview["transactions"]): string {
++		const head = "Date,Description,Amount,Transaction Type,Category,Account Name,Notes";
++		const lines = txs.map((t) =>
++			[
++				t.date,
++				t.description,
++				String(t.amount),
++				t.transaction_type,
++				t.category,
++				t.account_name,
++				t.notes ?? "",
++			]
++				.map(csvCell)
++				.join(","),
++		);
++		return [head, ...lines].join("\n");
++	}
++
++	async function onPdfFile(e: Event) {
++		const input = e.target as HTMLInputElement;
++		const file = input.files?.[0];
++		input.value = "";
++		if (!file) return;
++		if (isWeb) {
++			toast.error(WEB_NO_BACKEND_MSG);
++			return;
++		}
++		if (file.size > 15 * 1024 * 1024) {
++			toast.error("That PDF is over 15 MB — split the statement and retry.");
++			return;
++		}
++		pdfBusy = true;
++		stmtBusy = false;
++		pdfInfo = null;
++		try {
++			const dataUrl = await new Promise<string>((resolve, reject) => {
++				const r = new FileReader();
++				r.onload = () => resolve(String(r.result ?? ""));
++				r.onerror = () => reject(new Error("Could not read that file"));
++				r.readAsDataURL(file);
++			});
++			const pdfBase64 = (dataUrl.split(",", 2)[1] ?? "").trim();
++			if (!pdfBase64) throw new Error("Could not read that file");
++			const md = await api.pdfToMarkdown(pdfBase64, file.name);
++			pdfBusy = false;
++			stmtBusy = true;
++			const accountName = file.name.replace(/\.pdf$/i, "").slice(0, 60) || "Imported";
++			const extracted = await api.extractStatement(md.markdown, accountName);
++			if (!extracted.transactions.length) {
++				pdfInfo =
++					extracted.llm_used === false
++						? "Local AI is unavailable, so no rows could be extracted. Start Ollama and retry."
++						: "No transactions found in that PDF — check it is a text statement, not a scan.";
++				preview = null;
++				rawCsv = "";
++				toast.error(pdfInfo);
++				return;
++			}
++			previewAi = {};
++			previewCatOverrides = {};
++			preview = extracted;
++			rawCsv = statementRowsToCsv(extracted.transactions);
++			pdfInfo =
++				`${file.name}: ${md.pages} page${md.pages === 1 ? "" : "s"}` +
++				`${md.truncated ? " (long statement, read first 120k chars)" : ""} → ` +
++				`${extracted.transactions.length} rows` +
++				`${extracted.llm_used === false ? " (rules fallback — verify categories)" : " (AI extracted — verify below)"}`;
++			toast.ok(`PDF ready — ${extracted.transactions.length} rows to verify`);
++		} catch (err) {
++			toast.error(errMsg(err));
++		} finally {
++			pdfBusy = false;
++			stmtBusy = false;
++		}
++	}
++
+ 	async function doImport() {
+ 		if (!rawCsv || !preview) return;
+ 		importBusy = true;
+@@ -2203,7 +2293,7 @@
+ 				{/each}
+ 			</div>
+ 		{:else if tab === "import"}
+-			<PageHeader title="Import" sub="CSV into the ledger" />
++			<PageHeader title="Import" sub="CSV or PDF statement into the ledger" />
+ 			<div class="panel">
+ 				<h2>Import from CSV</h2>
+ 				<label class="field"
+@@ -2213,7 +2303,28 @@
+ 						onchange={onCsvFile}
+ 					/></label
+ 				>
+-				{#if preview}
++			</div>
++			<div class="panel">
++				<h2>Import from PDF statement</h2>
++				<p class="muted">
++					Credit-card or year-end statements: the PDF is converted to Markdown on-device (needs the
++					optional <span class="mono">pdf</span> Python extra), then the local AI extracts transactions
++					into the same verifiable preview below.
++				</p>
++				<label class="field"
++					><span>PDF file</span><input
++						type="file"
++						accept=".pdf,application/pdf"
++						onchange={onPdfFile}
++						disabled={pdfBusy || stmtBusy}
++					/></label
++				>
++				{#if pdfBusy}<p class="muted" role="status">Converting PDF to Markdown…</p>{/if}
++				{#if stmtBusy}<p class="muted" role="status">Local AI is reading the statement…</p>{/if}
++				{#if pdfInfo}<p class="muted">{pdfInfo}</p>{/if}
++			</div>
++			{#if preview}
++				<div class="panel">
+ 					<p>
+ 						Detected <strong>{preview.detected_format}</strong> · {preview.transactions.length} rows ·
+ 						{preview.skipped} skipped
+@@ -2221,8 +2332,8 @@
+ 					{#if preview.skipped}
+ 						<p class="muted">
+ 							Skipped rows are ones missing a date, description, or readable amount — the importer
+-							leaves those out rather than guessing. Fix them in the CSV and re-preview to include
+-							them.
++							leaves those out rather than guessing. For a CSV, fix the rows and re-preview; for a
++							PDF, check the statement is a text PDF rather than a scan.
+ 						</p>
+ 					{/if}
+ 					{#if dupCount}
+@@ -2289,13 +2400,16 @@
+ 								: `Import ${preview.transactions.length} transactions`}</button
+ 						>
+ 					</div>
+-				{:else}
++				</div>
++			{:else}
++				<div class="panel">
+ 					<p class="muted">
+ 						CSV columns: Date, Description, Amount, Category, Account Name. Generic bank CSVs
+-						(date/description/amount) work too.
++						(date/description/amount) work too — or drop a PDF statement above and verify the
++						AI-extracted rows here before importing.
+ 					</p>
+-				{/if}
+-			</div>
++				</div>
++			{/if}
+ 		{:else if tab === "settings"}
+ 			<PageHeader title="Settings" />
+ 			<div class="grid2">

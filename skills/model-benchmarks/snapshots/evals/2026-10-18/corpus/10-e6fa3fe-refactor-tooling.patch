@@ -1,0 +1,68 @@
+commit e6fa3fe34fd002f7f4bbdc1a9960f0fc97d506e7
+Author: yasirhusain89 <er.yasir.husain@gmail.com>
+Date:   Tue Sep 15 09:35:52 2026 -0600
+
+    chore: exclude .worktrees/ from prettier + Vite watcher, codify worktree convention
+
+diff --git a/.prettierignore b/.prettierignore
+index 61dac2c..a5241d1 100644
+--- a/.prettierignore
++++ b/.prettierignore
+@@ -10,6 +10,7 @@ coverage/
+ package-lock.json
+ .zvec-grep/
+ .gitnexus/
++.worktrees/
+ data/
+ # Code-only scope: markdown, CI YAML, tool configs, and Python/Rust sources
+ # have their own owners (docs review, hand-tuned workflows, cargo fmt, ruff).
+diff --git a/AGENTS.md b/AGENTS.md
+index 30c0570..471fc96 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -48,6 +48,9 @@ echo '{"descriptions":["STARBUCKS #12"],"history":[]}' | uv run python python/ca
+ - Signed amounts: expenses negative, income positive. Normalize on import.
+ - New Rust command → register in `invoke_handler!`, add a `dispatch` arm in `server.rs` (+ `COMMANDS` entry), add wrapper in `api.ts`. The `dispatch_parity_with_tauri_commands` test guards the list.
+ - Commits are logical work groups: one concern per commit, only the files that belong to it. Never sweep another session's in-flight edits into your commit — leave foreign changes unstaged in the working tree.
++- Worktrees live in `.worktrees/` (gitignored, inside the project so no per-session permission prompts): `git worktree add .worktrees/<name> -b <branch> <base>`. Do feature work there; keep the main checkout clean.
++- `.worktrees/` is excluded from every scanner — git, eslint, prettier, the Vite watcher, svelte-check/tsconfig (root-scoped `src/` globs), Storybook (`../src/**`), Playwright (`tests/`), pytest (`testpaths`), ruff/rg/`zg`/GitNexus (all respect `.gitignore`; verified 0 worktree files in the GitNexus index). Adding a new scanner/linter/indexer? Give it the same exclusion before its first run.
++- In PyCharm: Mark Directory as → Excluded on `.worktrees/` so the IDE doesn't double-index nested checkouts. Never run `prettier --write .`, `eslint --fix .`, or `npm run index` expecting them to cross into (or from) a worktree — each checkout lints and indexes itself.
+ - Python: managed with uv (`uv sync --extra pandas`); run scripts via `uv run python …`. Scripts stay pure stdlib unless justified; pandas optional with fallback.
+ - SQLite lives in OS app-data dir (`monartha.db`, adopted from legacy `myfinances.db` on first run); dev fallback `./data/`.
+ - Verify before finishing: `cargo check`, `npm run check`, `npm run lint`, `npm run build`.
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 0469c1f..6eb2b81 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -43,6 +43,14 @@ This project is indexed by GitNexus as **monartha** (897 symbols, 1870 relations
+ 
+ <!-- gitnexus:end -->
+ 
++## Worktrees
++
++Feature work happens in `.worktrees/<name>` worktrees (gitignored, inside the
++project so no per-session permission prompts). `.worktrees/` is excluded from
++git, eslint, prettier, the Vite watcher, and both code indexes — full exclusion
++list and rules: AGENTS.md Conventions. New scanners must get the same exclusion;
++in PyCharm mark `.worktrees/` as Excluded.
++
+ ## CI cost gates
+ 
+ Same rules as AGENTS.md Conventions: CI minutes are metered (2,000/mo free;
+diff --git a/vite.config.js b/vite.config.js
+index d360b4d..532edef 100644
+--- a/vite.config.js
++++ b/vite.config.js
+@@ -24,8 +24,10 @@ export default defineConfig(() => ({
+ 				}
+ 			: undefined,
+ 		watch: {
+-			// 3. tell Vite to ignore watching `src-tauri`
+-			ignored: ["**/src-tauri/**"],
++			// 3. tell Vite to ignore watching `src-tauri` and nested git
++			// worktrees (`.worktrees/` holds full checkouts — watching them
++			// doubles HMR file handles and can reload on another branch's saves).
++			ignored: ["**/src-tauri/**", "**/.worktrees/**"],
+ 		},
+ 	},
+ }));

@@ -1,0 +1,119 @@
+commit dcd660d85858922d95e05ef20183a8f8130c87e5
+Author: yasirhusain89 <er.yasir.husain@gmail.com>
+Date:   Tue Sep 15 22:41:55 2026 -0600
+
+    fix(pdf): 120s extraction timeout budget, 2000-token cap (27B models exceed 15s)
+
+diff --git a/docs/python-reference.md b/docs/python-reference.md
+index 50d5ac8..ebdb56a 100644
+--- a/docs/python-reference.md
++++ b/docs/python-reference.md
+@@ -143,8 +143,10 @@ prompt) → `{transactions[{date, description, amount, transaction_type,
+ category, account_name, notes}], detected_format: "pdf-statement",
+ skipped, llm_used}`. Malformed model rows are dropped and counted in
+ `skipped`; unknown categories become `Uncategorized` (the Rust layer then
+-applies keyword rules via `normalize_statement_rows`). Model unreachable →
+-empty `llm_used: false` payload, same shape.
++applies keyword rules via `normalize_statement_rows`). Extraction generates
++far more tokens than categorize/explain, so it gets a 120 s default budget
++(overridable via `timeout_ms`); the model unreachable → empty `llm_used:
++false` payload, same shape.
+ 
+ ## 5. Changing a script
+ 
+diff --git a/python/ollama_agents/statement-extractor.v1.json b/python/ollama_agents/statement-extractor.v1.json
+index befd61b..1e92741 100644
+--- a/python/ollama_agents/statement-extractor.v1.json
++++ b/python/ollama_agents/statement-extractor.v1.json
+@@ -4,7 +4,7 @@
+   "model": "qwen3.8:latest",
+   "options": {
+     "temperature": 0,
+-    "num_predict": 4000
++    "num_predict": 2000
+   },
+   "role": "You are a precise bank-statement extractor for a local-first personal finance app. You read statement markdown and return transactions as JSON, nothing else.",
+   "instructions": [
+diff --git a/python/ollama_helper.py b/python/ollama_helper.py
+index ef4768f..37fd87c 100644
+--- a/python/ollama_helper.py
++++ b/python/ollama_helper.py
+@@ -117,8 +117,12 @@ def strip_fences(text):
+     return m.group(1).strip() if m else t
+ 
+ 
+-def ollama_chat(agent, system, user):
+-    """POST /api/chat with structured-output schema; fall back to format=json."""
++def ollama_chat(agent, system, user, timeout_s=None):
++    """POST /api/chat with structured-output schema; fall back to format=json.
++
++    `timeout_s` overrides the env default for slow actions (statement
++    extraction generates far more tokens than categorize/explain).
++    """
+     model = (os.environ.get("OLLAMA_MODEL", "") or agent.get("model", "qwen3:8b")).strip()
+     opts = dict(agent.get("options", {}))
+     fmt_schema = agent.get("output_schema")
+@@ -147,6 +151,7 @@ def ollama_chat(agent, system, user):
+     body_attempts.append(p)
+ 
+     last_err = "no-attempt"
++    wait = timeout_s if timeout_s is not None else ollama_timeout_s()
+     for body in body_attempts:
+         req = urllib.request.Request(
+             ollama_base() + "/api/chat",
+@@ -157,7 +162,7 @@ def ollama_chat(agent, system, user):
+         try:
+             # Base URL is trusted-local Ollama (default http://localhost:11434,
+             # user-set OLLAMA_URL on the same machine); POST with a timeout.
+-            with urllib.request.urlopen(req, timeout=ollama_timeout_s()) as res:  # nosemgrep
++            with urllib.request.urlopen(req, timeout=wait) as res:  # nosemgrep
+                 data = json.loads(res.read().decode("utf-8"))
+             content = ((data.get("message") or {}).get("content") or "").strip()
+             if not content:
+@@ -353,7 +358,8 @@ def do_explain(payload):
+ def do_extract_statement(payload):
+     """Extract transactions from statement markdown (PDF import step 2).
+ 
+-    In: {"markdown": "...", "default_account": "...", "categories": [...]}
++    In: {"markdown": "...", "default_account": "...", "categories": [...],
++      "timeout_ms": 120000}
+     Out: {"transactions": [{date, description, amount, transaction_type,
+       category, account_name, notes}], "detected_format": "pdf-statement",
+       "skipped": int, "llm_used": bool, "agent": "statement-extractor.v1"}
+@@ -367,6 +373,12 @@ def do_extract_statement(payload):
+     default_account = str(payload.get("default_account", "") or "Imported").strip()
+     default_account = default_account or "Imported"
+     allowed = payload.get("categories") or None
++    # Extraction generates far more tokens than categorize/explain, so it
++    # gets a longer default budget (callers may override via timeout_ms).
++    try:
++        timeout_s = max(1.0, float(payload.get("timeout_ms", 120000)) / 1000.0)
++    except (TypeError, ValueError):
++        timeout_s = 120.0
+     if len(markdown) > EXTRACT_MD_LIMIT:
+         markdown = markdown[:EXTRACT_MD_LIMIT]
+ 
+@@ -386,7 +398,7 @@ def do_extract_statement(payload):
+         ]
+     )
+ 
+-    parsed, err = ollama_chat(agent, agent.get("role", ""), user)
++    parsed, err = ollama_chat(agent, agent.get("role", ""), user, timeout_s=timeout_s)
+     txs = (parsed or {}).get("transactions") if isinstance(parsed, dict) else None
+     if isinstance(txs, list):
+         clean = []
+diff --git a/python/tests/test_statement.py b/python/tests/test_statement.py
+index 7c8902f..5752afc 100644
+--- a/python/tests/test_statement.py
++++ b/python/tests/test_statement.py
+@@ -88,8 +88,9 @@ def test_extract_statement_falls_back_without_llm(monkeypatch):
+ 
+ 
+ def test_extract_statement_cleans_model_rows(monkeypatch):
+-    def fake_chat(agent, system, user):
++    def fake_chat(agent, system, user, timeout_s=None):
+         assert "Chase Sapphire" in user  # default account reaches the prompt
++        assert timeout_s == 120.0  # extraction gets the longer default budget
+         return (
+             {
+                 "transactions": [

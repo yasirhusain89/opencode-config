@@ -1,0 +1,21 @@
+{
+ "run_id": "onyx-d05",
+ "diff": "d05",
+ "contender": "onyx",
+ "model": "opencode/glm-5.3-flash-free",
+ "wall_ms": 210657,
+ "exit": 0,
+ "killed": false,
+ "response": "Since the referenced files aren't present in this workspace (this is a benchmark snapshot dir — verified via glob), the review is grounded on the diff text itself.\n\n**Findings:**\n\n---\n\n**1. SEVERITY: major**\nWHERE: tests/api.spec.ts:154-175\nISSUE: The commit's core behavior — populating `fallback_reason` when `llm_used` is false — has zero test coverage; both new tests only exercise pre-existing empty-input validation, so a misspelled key, a non-string reason, or a wrong `!llm_used` gate would regress silently (the \"bridge contract tests\" promised in the commit message don't test the new contract field).\nFIX: Extract the augmentation into a testable helper (e.g. `fn attach_fallback_reason(out: &mut serde_json::Value, v: &serde_json::Value, llm_used: bool)`) and add Rust unit tests asserting the reason is added when `llm_used=false` and omitted when `llm_used=true`.\n\n**2. SEVERITY: minor**\nWHERE: src-tauri/src/server.rs:~1046 (Err arm; same handling missing on any script-failure path in src-tauri/src/lib.rs:873)\nISSUE: When the script call fails, the response still omits `fallback_reason`, so the new UI contract is absent exactly when the user most needs an explanation for the empty result.\nFIX: In the Err arm also set `out[\"fallback_reason\"] = serde_json::Value::String(...)` from the error (short/trimmed) so every pdf-statement response carries a consistent explanation field.\n\n**3. SEVERITY: minor**\nWHERE: src-tauri/src/lib.rs:878 (mirrored at src-tauri/src/server.rs:~1043)\nISSUE: The `!llm_used` gate drops the reason in exactly the documented case — script \"timed out\" but the LLM fallback then succeeded (`llm_used=true`) — discarding the explanation the new comment says it wants to keep.\nFIX: Either emit `fallback_reason` whenever the script provides it, or pin the intended \"llm_used supersedes\" rule explicitly with a test/comment.\n\n**4. SEVERITY: minor**\nWHERE: tests/api.spec.ts:157-158\nISSUE: The new contract test enshrines HTTP 500 for invalid client input (whitespace-only `pdfBase64`), where a 4xx validation error is semantically correct.\nFIX: Map malformed request input to 400 in the handler and update the assertion, so client errors are distinguishable from real server failures.\n\n---\n\nNo blocking issues: the Rust JSON mutation via `out[\"fallback_reason\"] = ...` is safe (the `json!` literal is always an `Object`, so `IndexMut` inserts rather than panics), the TypeScript interface change is additive/optional, and no security or race concerns are introduced.\n\nVERDICT: FIX",
+ "tokens": {
+  "total": 38457,
+  "input": 851,
+  "output": 6246,
+  "reasoning": 0,
+  "cache": {
+   "write": 0,
+   "read": 31360
+  }
+ },
+ "error": null
+}

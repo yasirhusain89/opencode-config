@@ -1,0 +1,21 @@
+{
+ "run_id": "koda-d03",
+ "diff": "d03",
+ "contender": "koda",
+ "model": "opencode/nemotron-3.5-super-vl-free",
+ "wall_ms": 44082,
+ "exit": 0,
+ "killed": false,
+ "response": "SEVERITY: major\nWHERE: .github/workflows/ci.yml:~264\nISSUE: `artifact-name: monartha-sbom-${{ matrix.platform }}.spdx.json` references an undefined matrix var (`matrix.platform`; the job matrices on `os`), so every platform job uploads the identical artifact name `monartha-sbom-.spdx.json`, and duplicate artifact names in one workflow run make later uploads fail.\nFIX: Use `${{ matrix.os }}` so each platform gets a unique SBOM artifact.\n\nSEVERITY: minor\nWHERE: scripts/check-versions.mjs:22\nISSUE: The Cargo.toml regex `/^version\\s*=\\s*\"([^\"]+)\"/m` matches the first `version =` line anywhere in the file, not only the `[package]` section, so a dependency version declared before the package version would be compared.\nFIX: Anchor the match to the `[package]` section (e.g. parse TOML or match only after `\\[package\\]`).\n\nSEVERITY: minor\nWHERE: scripts/check-versions.mjs:14-30\nISSUE: `readFileSync` and `JSON.parse` can throw uncaught exceptions (missing file, malformed JSON/TOML), emitting raw stack traces instead of a clean gate failure.\nFIX: Wrap reads/parsing in try/catch and route failures through `fail()`.\n\nSEVERITY: minor\nWHERE: scripts/check-versions.mjs (new file)\nISSUE: The new CI gate script has no automated test; behavior is only verified manually per docs.\nFIX: Add a small test covering match, mismatch, and missing/malformed-file cases.\n\nSEVERITY: minor\nWHERE: .github/workflows/ci.yml:~259\nISSUE: `anchore/sbom-action` scans `path: ./`, pulling in `node_modules/`, `target/`, and `.venv/` — producing a bloated SBOM of dev/build dependencies not shipped in the release.\nFIX: Scope `path:` to release-relevant files or exclude `node_modules`, `target`, `.venv`.\n\nVERDICT: FIX",
+ "tokens": {
+  "total": 81002,
+  "input": 76280,
+  "output": 461,
+  "reasoning": 4261,
+  "cache": {
+   "write": 0,
+   "read": 0
+  }
+ },
+ "error": null
+}

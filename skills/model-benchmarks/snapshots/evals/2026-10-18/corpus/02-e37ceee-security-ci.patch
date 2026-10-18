@@ -1,0 +1,23 @@
+commit e37ceee21864358f3f311a9343e8a0957d48f1e3
+Author: monartha-bot <bot@monartha.local>
+Date:   Mon Sep 14 23:00:50 2026 -0600
+
+    fix(ci): grant checks:write so RustSec audit can post its check run
+
+diff --git a/.github/workflows/security.yml b/.github/workflows/security.yml
+index c82266e..ce89e2c 100644
+--- a/.github/workflows/security.yml
++++ b/.github/workflows/security.yml
+@@ -39,6 +39,12 @@ jobs:
+ 
+   dep-audit:
+     name: Dependency audit (npm, cargo, pip)
++    # audit-check posts its result as a Check Run, which needs `checks: write`
++    # (without it the step passes the audit then 403s with "Resource not
++    # accessible by integration" — same class as the SBOM `actions: read` fix).
++    permissions:
++      contents: read
++      checks: write
+     # Weekly + PR signal only (see header): keeps per-push minute cost flat.
+     # Respects the CI_MODE brake (docs/ci-cd-pipeline.md §5); secret-scan above
+     # is deliberately exempt and always runs — secrets hide in docs too.

@@ -1,0 +1,21 @@
+{
+ "run_id": "koda-d06",
+ "diff": "d06",
+ "contender": "koda",
+ "model": "opencode/nemotron-3.5-super-vl-free",
+ "wall_ms": 63512,
+ "exit": 0,
+ "killed": false,
+ "response": "SEVERITY: minor | WHERE: src/routes/+page.svelte `statementRowsToCsv` | ISSUE: `String(t.amount)` renders \"null\"/\"undefined\" in the synthesized CSV when a transaction amount is missing. | FIX: Coerce defensively, e.g. `String(t.amount ?? \"\")`, so missing amounts become empty cells rather than literals.\n\nSEVERITY: minor | WHERE: src/routes/+page.svelte `onPdfFile` | ISSUE: `extracted.llm_used === false` treats an undefined `llm_used` as \"AI extracted\", mislabeling rules-fallback / backend-omitted outcomes. | FIX: normalize the optional flag (treat undefined as rules/unknown) or make `llm_used` required in `NormalizedPreview`.\n\nSEVERITY: minor | WHERE: src/routes/+page.svelte and src/lib/api.ts | ISSUE: New PDF import behavior (`onPdfFile`, `statementRowsToCsv`, `csvCell`, `pdfToMarkdown`, `extractStatement`) has no test coverage. | FIX: add unit/integration tests for CSV re-encoding, empty-transaction fallback, and busy-state toggling.\n\nNo blocking or major issues found.\n\nVERDICT: SHIP",
+ "tokens": {
+  "total": 42413,
+  "input": 6376,
+  "output": 267,
+  "reasoning": 5418,
+  "cache": {
+   "write": 0,
+   "read": 30352
+  }
+ },
+ "error": null
+}

@@ -1,0 +1,21 @@
+{
+ "run_id": "koda-d04",
+ "diff": "d04",
+ "contender": "koda",
+ "model": "opencode/nemotron-3.5-super-vl-free",
+ "wall_ms": 174451,
+ "exit": 0,
+ "killed": false,
+ "response": "I'll read the relevant files to understand the full context before reviewing.\n\nSEVERITY: minor\nWHERE: src-tauri/src/db.rs:56\nISSUE: Split rows derive the Type column from `l.amount < 0.0` while parent rows use `t.transaction_type`; a zero-amount split is labeled \"credit\" and the two row kinds can diverge within the same CSV.\nFIX: Use `t.transaction_type.clone()` for split rows too (same as the parent), or add an explicit zero-amount case and keep the sign→debit/credit mapping consistent with the parent convention.\n\nSEVERITY: minor\nWHERE: src-tauri/src/lib.rs:97-99\nISSUE: The smoke test asserts split-line output but the splits fixture is established off-screen before this hunk (and `delete_splits(g.id)` runs after), so the new `Some(lines)` branch isn't verifiably exercised; the assertions could pass trivially with no splits present.\nFIX: Explicitly create a split parent with its lines in the test before the export assertion, then assert the lines appear and the parent total is absent.\n\nVERDICT: FIX",
+ "tokens": {
+  "total": 46882,
+  "input": 5952,
+  "output": 237,
+  "reasoning": 6005,
+  "cache": {
+   "write": 0,
+   "read": 34688
+  }
+ },
+ "error": null
+}

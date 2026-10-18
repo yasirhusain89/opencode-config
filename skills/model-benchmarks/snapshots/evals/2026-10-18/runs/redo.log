@@ -1,0 +1,17 @@
+koda-d01: ok wall=46s out=1105ch
+koda-d02: ok wall=40s out=465ch
+koda-d03: ok wall=44s out=1700ch
+koda-d04: ok wall=174s out=1013ch
+koda-d05: ok wall=19s out=725ch
+koda-d06: ok wall=64s out=999ch
+koda-d07: ok wall=45s out=1011ch
+koda-d08: ok wall=63s out=1128ch
+koda-d09: ok wall=68s out=1123ch
+koda-d10: ok wall=35s out=633ch
+lynx-d04: FAIL wall=12s out=0ch
+lynx-d07: ok wall=35s out=198ch
+lynx-d09: ok wall=68s out=5476ch
+onyx-d04: FAIL wall=158s out=0ch
+onyx-d05: ok wall=113s out=2080ch
+onyx-d09: FAIL wall=420s out=0ch
+DONE done=27 failed=3

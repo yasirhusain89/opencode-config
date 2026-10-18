@@ -1,0 +1,21 @@
+{
+ "run_id": "lynx-d01",
+ "diff": "d01",
+ "contender": "lynx",
+ "model": "opencode/space-bunny-free",
+ "wall_ms": 26711,
+ "exit": 0,
+ "killed": false,
+ "response": "Note: this workspace is the opencode config repo — `python/` and commit `dcd660d` are not present here, so the review is based on the diff text alone (no source verification possible).\n\n---\n\n**1. SEVERITY: blocking**\n- **WHERE:** `python/ollama_agents/statement-extractor.v1.json:7` + `python/ollama_helper.py:162-172` (`ollama_chat` response handling)\n- **ISSUE:** Halving `num_predict` to 2000 truncates long transaction arrays, and nothing in `ollama_chat` checks `data.get(\"done_reason\") == \"length\"`, so a truncated response falls through to `parsed = None` and returns an **empty** `llm_used: false` payload — indistinguishable from \"model unreachable\", silently losing the user's whole import.\n- **FIX:** In `ollama_chat`, if `done_reason == \"length\"`, set `last_err = \"truncated-at-num-predict\"` and return no payload (or surface the flag); in `do_extract_statement`, translate that into an explicit error/partial-result path instead of the empty fallback.\n\n**2. SEVERITY: blocking**\n- **WHERE:** `python/ollama_agents/statement-extractor.v1.json:7` vs. `docs/python-reference.md:146` and the `ollama_helper.py:376` comment\n- **ISSUE:** The stated rationale is \"extraction generates far more tokens than categorize/explain\", yet this same commit cuts extraction's token budget 4000→2000 — a 100+ transaction statement needs far more than 2000 tokens of JSON, so the cap guarantees the failure in finding 1 exactly where it was introduced.\n- **FIX:** Revert `num_predict` to 4000 (or scale it with `len(markdown)`, e.g. `min(8000, 500 * len(markdown)//500)`); the latency fix belongs in the timeout, not the token cap.\n\n**3. SEVERITY: major**\n- **WHERE:** `python/ollama_helper.py:154, 401` — no corresponding change under `src-tauri/`\n- **ISSUE:** Only the Python-side HTTP timeout was raised to 120 s; the commit message itself cites a 15 s budget, which must live in the Tauri command or the Rust→Python invocation, so the fix is likely inert end-to-end (Rust kills the child at 15 s) and a 120 s synchronous call will freeze the import UI with no progress or cancel path.\n- **FIX:** Raise the Rust-side command/invocation timeout to match (≥120 s), and verify the frontend awaits it with a progress/cancel indicator before shipping.\n\n**4. SEVERITY: minor**\n- **WHERE:** `python/ollama_helper.py:377-379`\n- **ISSUE:** `timeout_ms` is unbounded, so any large (or `Infinity`) value pins the worker for an arbitrary period — `max(1.0, inf)` → `float('inf')` reaches `urlopen(timeout=...)`.\n- **FIX:** Clamp both ends: `timeout_s = min(600.0, max(1.0, float(...) / 1000.0))`.\n\n**5. SEVERITY: minor**\n- **WHERE:** `python/tests/test_statement.py:91-93`\n- **ISSUE:** Only the default path is covered — no test for a caller override (`timeout_ms: 5000` → `5.0`), invalid values (`\"abc\"`, `None`, `0`, `-1` → fallbacks), and no test that `ollama_chat` actually forwards `timeout_s` to `urlopen` (monkeypatch `urlopen` and assert the kwarg).\n- **FIX:** Add parametrized cases for the four branches above plus a `urlopen`-spy assertion, and a regression test for the `done_reason == \"length\"` truncation path from finding 1.\n\n**6. SEVERITY: minor**\n- **WHERE:** `python/ollama_helper.py:120` (new kwarg) vs. `python/tests/test_statement.py:88`\n- **ISSUE:** Adding a keyword arg breaks any remaining 3-arg monkeypatched `ollama_chat`/`fake_chat` stub in the suite — `test_extract_statement_falls_back_without_llm` was not updated in this diff and will fail with `TypeError` if its stub has the old signature.\n- **FIX:** Grep the suite for `def fake_chat` / `ollama_chat` stubs and add `timeout_s=None` to each, or accept `**kwargs`.\n\nVERDICT: FIX",
+ "tokens": {
+  "total": 36793,
+  "input": 2883,
+  "output": 998,
+  "reasoning": 22,
+  "cache": {
+   "write": 0,
+   "read": 32890
+  }
+ },
+ "error": null
+}

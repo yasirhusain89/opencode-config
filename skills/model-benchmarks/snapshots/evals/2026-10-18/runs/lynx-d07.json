@@ -1,0 +1,21 @@
+{
+ "run_id": "lynx-d07",
+ "diff": "d07",
+ "contender": "lynx",
+ "model": "opencode/space-bunny-free",
+ "wall_ms": 20892,
+ "exit": 0,
+ "killed": false,
+ "response": "I'll ground this against the actual repo and the real crate API rather than reviewing from memory.\nFound the repo. Let me examine the actual code and toolchain.",
+ "tokens": {
+  "total": 47314,
+  "input": 9634,
+  "output": 167,
+  "reasoning": 332,
+  "cache": {
+   "write": 0,
+   "read": 37181
+  }
+ },
+ "error": null
+}

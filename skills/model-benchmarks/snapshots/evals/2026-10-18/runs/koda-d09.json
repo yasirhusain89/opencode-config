@@ -1,0 +1,21 @@
+{
+ "run_id": "koda-d09",
+ "diff": "d09",
+ "contender": "koda",
+ "model": "opencode/nemotron-3.5-super-vl-free",
+ "wall_ms": 113237,
+ "exit": 0,
+ "killed": false,
+ "response": "SEVERITY: major\nWHERE: scripts/ci-watch.sh:44,92,110 (runs_tsv and gh run view calls)\nISSUE: gh CLI failures are silently swallowed with `2>/dev/null`, so a transient network/auth/rate-limit error mid-watch makes the watcher proceed with empty/stale data and print misleading messages or wrong exit codes instead of surfacing the error — a CI watcher that can't distinguish \"all green\" from \"gh broke\" defeats its purpose.\nFIX: Stop suppressing gh stderr (or capture and report it), and exit non-zero with a clear message whenever `gh run list`/`gh run view` fails.\n\nSEVERITY: minor\nWHERE: scripts/ci-watch.sh:124 (after `--rerun-failed` loop)\nISSUE: `--rerun-failed` triggers `gh run rerun --failed` but immediately reports \"✓ ci-watch: all green\" (exit 0) without waiting for the rerun jobs to finish, giving false confidence.\nFIX: Re-poll after rerun until the rerun jobs complete, or state that the rerun was triggered and only exit 0 once confirmed green.\n\nSEVERITY: minor\nWHERE: scripts/ci-watch.sh:103\nISSUE: The log digest matches step names against `$2` of `gh run view --log` output, which is plain text not TSV, so targeted step-log extraction never matches and falls through to a blunt tail of the whole log.\nFIX: Pull failed steps/log from the already-fetched `gh run view --json jobs` payload instead of grepping raw log text.\n\nSEVERITY: minor\nWHERE: scripts/ci-watch.sh:30\nISSUE: `cd \"$(git rev-parse --show-toplevel)\"` silently changes to HOME when not inside a git repo (empty cd target), then runs gh against the wrong directory.\nFIX: Guard it: `root=\"$(git rev-parse --show-toplevel)\" || exit 2; cd \"$root\"`.\n\nSEVERITY: minor\nWHERE: scripts/ci-watch.sh (new file, no tests)\nISSUE: New polling/failure/rerun behavior has no test coverage.\nFIX: Add shell tests (e.g., bats/shunit) mocking gh to cover success, failure digest, cancelled, timeout, and rerun paths.\n\nVERDICT: FIX",
+ "tokens": {
+  "total": 41687,
+  "input": 6271,
+  "output": 522,
+  "reasoning": 4542,
+  "cache": {
+   "write": 0,
+   "read": 30352
+  }
+ },
+ "error": null
+}
