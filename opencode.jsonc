@@ -94,7 +94,15 @@
       "~/.aws/**": "deny",
       "~/.gnupg/**": "deny",
       "~/Library/Keychains/**": "deny",
-      "*": "ask"
+      "*": "ask",
+      // Last-match-wins: these must sit after "*" to actually take effect.
+      // Defense in depth for plugins/path-guard.ts — the plugin is the real
+      // guard (it also covers in-project paths, symlinks and bash); this keeps
+      // the native boundary closed even if the plugin is disabled.
+      "~/Documents": "deny",
+      "~/Documents/**": "deny",
+      "~/Downloads": "deny",
+      "~/Downloads/**": "deny"
     },
     "webfetch": "allow",
     "websearch": "allow",
