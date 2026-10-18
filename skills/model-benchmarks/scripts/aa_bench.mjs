@@ -66,7 +66,9 @@ function parseArgs(argv) {
 
 // --- coding-agent index ------------------------------------------------------
 // Harnesses (chart legend always starts a new entry on one of these).
-const HARNESSES = ['Claude Code', 'Codex', 'Devin Fusion', 'SWE-2', 'Muse Code', 'Opencode', 'Kimi Code CLI', 'Grok Build', 'Antigravity SDK'];
+// 2026-10: AA renamed Antigravity SDK -> Antigravity CLI and added Mirror
+// (Beam 1.0's harness); old names kept for older pages.
+const HARNESSES = ['Claude Code', 'Codex', 'Devin Fusion', 'SWE-2', 'Muse Code', 'Opencode', 'Kimi Code CLI', 'Grok Build', 'Antigravity SDK', 'Antigravity CLI', 'Mirror'];
 
 function parseAgentChart(text, chartTitle) {
   const L = linesOf(text);
@@ -75,7 +77,8 @@ function parseAgentChart(text, chartTitle) {
   // legend: lines until the first pure number / percent / $ / time value
   let i = h + 1;
   while (i < L.length && L[i] !== 'Color by') i++;
-  while (i < L.length && L[i] !== '14 of 15 models' && L[i] !== '15 of 15 models') i++;
+  // bar-count anchor: "14 of 15 models" pre-2026-10, "15 of 42 models" after
+  while (i < L.length && !/^\d+ of \d+ models$/.test(L[i])) i++;
   i++;
   const legend = [];
   const isVal = l => /^(\d+%?|\$[\d.]+|[\d.]+[mh])$/.test(l);

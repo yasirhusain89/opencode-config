@@ -137,6 +137,37 @@ eq(matchEng(engByNorm, 'no-such-model-xyz'), null, 'matchEng miss');
   ], 'parseAgentChart SWE-2 fold');
 }
 
+// parseAgentChart: 2026-10 layout — regex "N of M models" anchor, wrapped
+// legend lines, Devin Fusion two-model entry, Mirror harness
+{
+  const t = ['Terminal-Bench 4.0 Benchmark Score', 'Color by', 'Model', 'Agent', '15 of 42 models',
+    'Antigravity CLI', 'Gemini 4 Argon', 'Muse Code', 'Muse Wonder Full', '(max)',
+    'Muse Code', 'Muse Wonder', '(max)', 'Grok Build', 'Grok 4.7', '(xhigh)',
+    'Devin Fusion', 'Opus 5.5 Max', 'GPT-6 Luna High', 'Claude Code', 'Sonnet 5.5', '(max)',
+    'Codex', 'GPT-6.1 Sol', '(max)', 'Kimi Code CLI', 'Kimi K3', 'Claude Code', 'Opus 5.5', '(max)',
+    'Codex', 'GPT-6 Astra', '(max)', 'Claude Code', 'Fable 5.1', '(max)', '(with fallback)',
+    'Opencode', 'GLM-5.3', 'Muse Code', 'Muse Spark Open', '(xhigh)', 'Claude Code', 'Haiku 5.5', '(max)',
+    'Mirror', 'Beam 1.0',
+    '58', '57', '56', '55', '54', '52', '51', '44', '43', '41', '38', '33', '30', '17', '15'].join('\\n');
+  eq(parseAgentChart(t, 'Terminal-Bench 4.0 Benchmark Score'), [
+    { entry: 'Antigravity CLI Gemini 4 Argon', value: '58' },
+    { entry: 'Muse Code Muse Wonder Full (max)', value: '57' },
+    { entry: 'Muse Code Muse Wonder (max)', value: '56' },
+    { entry: 'Grok Build Grok 4.7 (xhigh)', value: '55' },
+    { entry: 'Devin Fusion Opus 5.5 Max GPT-6 Luna High', value: '54' },
+    { entry: 'Claude Code Sonnet 5.5 (max)', value: '52' },
+    { entry: 'Codex GPT-6.1 Sol (max)', value: '51' },
+    { entry: 'Kimi Code CLI Kimi K3', value: '44' },
+    { entry: 'Claude Code Opus 5.5 (max)', value: '43' },
+    { entry: 'Codex GPT-6 Astra (max)', value: '41' },
+    { entry: 'Claude Code Fable 5.1 (max) (with fallback)', value: '38' },
+    { entry: 'Opencode GLM-5.3', value: '33' },
+    { entry: 'Muse Code Muse Spark Open (xhigh)', value: '30' },
+    { entry: 'Claude Code Haiku 5.5 (max)', value: '17' },
+    { entry: 'Mirror Beam 1.0', value: '15' },
+  ], 'parseAgentChart 2026-10 layout (N-of-M anchor, Mirror, Devin two-model)');
+}
+
 if (__failures) { console.error(__failures + ' assertion(s) failed'); process.exitCode = 1; }
 `;
 
@@ -178,7 +209,8 @@ function cli(args, env) {
   eq(r.status, 0, 'cli inventory exits 0 without playwright');
   let j = null;
   try { j = JSON.parse(r.stdout); } catch { /* assert below */ }
-  ok(j && j.providers && j.providers.opencode && j.providers.opencode.length === 7, 'cli inventory opencode lists 7');
+  ok(j && j.providers && j.providers.opencode && j.providers.opencode.length >= 1,
+    'cli inventory opencode lists models (free shelf churns — count not pinned)');
   ok(j && j.partial === false, 'cli inventory partial false');
 }
 

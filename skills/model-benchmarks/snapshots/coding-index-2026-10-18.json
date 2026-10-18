@@ -33,9 +33,192 @@
     "Claude Code - Sonnet 5.5 (max) (Anthropic)": 14.19
   },
   "benchmarks": {
-    "DeepSWE v1.1": [],
-    "Terminal-Bench 4.0": [],
-    "SWE-Atlas-QnA": []
+    "DeepSWE v1.1": [
+      {
+        "entry": "Antigravity CLI Gemini 4 Argon",
+        "value": "79"
+      },
+      {
+        "entry": "Muse Code Muse Wonder Full (max)",
+        "value": "77"
+      },
+      {
+        "entry": "Muse Code Muse Wonder (max)",
+        "value": "76"
+      },
+      {
+        "entry": "Grok Build Grok 4.7 (xhigh)",
+        "value": "73"
+      },
+      {
+        "entry": "Devin Fusion Opus 5.5 Max GPT-6 Luna High",
+        "value": "73"
+      },
+      {
+        "entry": "Claude Code Sonnet 5.5 (max)",
+        "value": "72"
+      },
+      {
+        "entry": "Codex GPT-6.1 Sol (max)",
+        "value": "70"
+      },
+      {
+        "entry": "Kimi Code CLI Kimi K3",
+        "value": "68"
+      },
+      {
+        "entry": "Claude Code Opus 5.5 (max)",
+        "value": "68"
+      },
+      {
+        "entry": "Codex GPT-6 Astra (max)",
+        "value": "68"
+      },
+      {
+        "entry": "Claude Code Fable 5.1 (max) (with fallback)",
+        "value": "64"
+      },
+      {
+        "entry": "Opencode GLM-5.3",
+        "value": "61"
+      },
+      {
+        "entry": "Muse Code Muse Spark Open (xhigh)",
+        "value": "60"
+      },
+      {
+        "entry": "Claude Code Haiku 5.5 (max)",
+        "value": "46"
+      },
+      {
+        "entry": "Mirror Beam 1.0",
+        "value": "40"
+      }
+    ],
+    "Terminal-Bench 4.0": [
+      {
+        "entry": "Claude Code Sonnet 5.5 (max)",
+        "value": "66"
+      },
+      {
+        "entry": "Claude Code Opus 5.5 (max)",
+        "value": "63"
+      },
+      {
+        "entry": "Devin Fusion Opus 5.5 Max GPT-6 Luna High",
+        "value": "62"
+      },
+      {
+        "entry": "Muse Code Muse Wonder Full (max)",
+        "value": "59"
+      },
+      {
+        "entry": "Claude Code Fable 5.1 (max) (with fallback)",
+        "value": "58"
+      },
+      {
+        "entry": "Antigravity CLI Gemini 4 Argon",
+        "value": "56"
+      },
+      {
+        "entry": "Codex GPT-6 Astra (max)",
+        "value": "56"
+      },
+      {
+        "entry": "Codex GPT-6.1 Sol (max)",
+        "value": "53"
+      },
+      {
+        "entry": "Muse Code Muse Wonder (max)",
+        "value": "47"
+      },
+      {
+        "entry": "Opencode GLM-5.3",
+        "value": "40"
+      },
+      {
+        "entry": "Grok Build Grok 4.7 (xhigh)",
+        "value": "33"
+      },
+      {
+        "entry": "Claude Code Haiku 5.5 (max)",
+        "value": "30"
+      },
+      {
+        "entry": "Kimi Code CLI Kimi K3",
+        "value": "21"
+      },
+      {
+        "entry": "Muse Code Muse Spark Open (xhigh)",
+        "value": "6"
+      },
+      {
+        "entry": "Mirror Beam 1.0",
+        "value": "4"
+      }
+    ],
+    "SWE-Atlas-QnA": [
+      {
+        "entry": "Devin Fusion Opus 5.5 Max GPT-6 Luna High",
+        "value": "70"
+      },
+      {
+        "entry": "Muse Code Muse Wonder Full (max)",
+        "value": "68"
+      },
+      {
+        "entry": "Muse Code Muse Wonder (max)",
+        "value": "67"
+      },
+      {
+        "entry": "Claude Code Sonnet 5.5 (max)",
+        "value": "67"
+      },
+      {
+        "entry": "Claude Code Opus 5.5 (max)",
+        "value": "66"
+      },
+      {
+        "entry": "Kimi Code CLI Kimi K3",
+        "value": "66"
+      },
+      {
+        "entry": "Claude Code Fable 5.1 (max) (with fallback)",
+        "value": "65"
+      },
+      {
+        "entry": "Grok Build Grok 4.7 (xhigh)",
+        "value": "63"
+      },
+      {
+        "entry": "Codex GPT-6 Astra (max)",
+        "value": "62"
+      },
+      {
+        "entry": "Opencode GLM-5.3",
+        "value": "59"
+      },
+      {
+        "entry": "Muse Code Muse Spark Open (xhigh)",
+        "value": "58"
+      },
+      {
+        "entry": "Codex GPT-6.1 Sol (max)",
+        "value": "58"
+      },
+      {
+        "entry": "Antigravity CLI Gemini 4 Argon",
+        "value": "56"
+      },
+      {
+        "entry": "Mirror Beam 1.0",
+        "value": "40"
+      },
+      {
+        "entry": "Claude Code Haiku 5.5 (max)",
+        "value": "34"
+      }
+    ]
   },
   "partial": false
 }

@@ -11,9 +11,9 @@
     --warnbg: #fff8e6; --goodbg: #eef7ee;
   }
   [data-theme="dark"] {
-    --bg: #161616; --fg: #e8e8e8; --muted: #aaa; --line: #333;
-    --head: #222; --row2: #1c1c1c; --accent: #7aa5ff; --warn: #e0b34c;
-    --warnbg: #2a230f; --goodbg: #12240f;
+    --bg: #0d1117; --fg: #e6edf3; --muted: #8d96a0; --line: #30363d;
+    --head: #161b22; --row2: #111820; --accent: #4493f8; --warn: #d29922;
+    --warnbg: rgba(187,128,9,.15); --goodbg: rgba(63,185,80,.15);
   }
   * { box-sizing: border-box; }
   body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
@@ -39,6 +39,8 @@
   .tag { display: inline-block; font-size: .72rem; border: 1px solid var(--line);
     border-radius: 3px; padding: 0 .3rem; margin: .05rem .15rem .05rem 0; white-space: nowrap; }
   code { font-size: .82em; }
+  ::selection { background: rgba(68,147,248,.35); }
+  [data-theme="dark"] thead th { box-shadow: 0 1px 0 var(--line), 0 4px 8px rgba(1,4,9,.6); }
   pre { background: var(--head); padding: .6rem .8rem; overflow-x: auto; font-size: .78rem; }
   #themeBtn { background: var(--head); color: var(--fg); border: 1px solid var(--line);
     border-radius: 4px; padding: .25rem .6rem; cursor: pointer; font-size: .8rem; }
@@ -50,7 +52,7 @@
 <header class="top">
   <div>
     <h1>Model / Harness / Provider Selection Guide</h1>
-    <div class="meta">Snapshot 2026-09-16 · Sources: Artificial Analysis (scraped), Zen + Z.ai terms &amp; privacy docs, local opencode usage DB · <span class="tag">refresh via model-benchmarks skill</span></div>
+    <div class="meta">Snapshot 2026-10-18 · Sources: Artificial Analysis (scraped; agentic charts re-scraped 10-18 after parser fix), Zen + Z.ai terms &amp; privacy docs, OR value report 2026-10-18, local opencode usage DB (Sep) · <span class="tag">refresh via model-benchmarks skill</span></div>
   </div>
   <button id="themeBtn" title="toggle theme">theme</button>
 </header>
@@ -74,46 +76,51 @@
   <th data-sort="n" class="num">tok/s ⇅</th><th data-sort="n" class="num">Verbosity ⇅</th><th data-sort="t">$/1M in/out ⇅</th>
 </tr></thead>
 <tbody>
-<tr><td>Claude Fable 5.1 (max, Claude Code)</td><td class="num">57</td><td class="num">53</td><td class="num">62</td><td class="num">64</td><td class="num">58</td><td class="num">65</td><td class="num">$7.63</td><td class="num">$12.40</td><td class="num">65</td><td class="num">190</td><td>10 / 50 (Z)</td></tr>
-<tr><td>GPT-6 Astra (max, Codex)</td><td class="num">55</td><td class="num">53</td><td class="num">62</td><td class="num">68</td><td class="num">56</td><td class="num">62</td><td class="num">$3.26</td><td class="num">$7.47</td><td class="num">60</td><td class="num">60</td><td>10 / 50 (Z)</td></tr>
-<tr><td>Claude Opus 5 (max, Claude Code)</td><td class="num">54</td><td class="num">51</td><td class="num">60</td><td class="num">63</td><td class="num">55</td><td class="num">62</td><td class="num">$5.86</td><td class="num">$10.80</td><td class="num">50</td><td class="num">140</td><td>5 / 25 (Z)</td></tr>
-<tr><td>Muse Spark 1.3 (max, Muse Code)</td><td class="num">49</td><td class="num">48</td><td class="num">54</td><td class="num">72</td><td class="num">32</td><td class="num">59</td><td class="num">$1.60</td><td class="num">$3.98</td><td class="num">221</td><td class="num">170</td><td>1.25 / 4.25 (FP)</td></tr>
-<tr><td>Muse Spark 1.2 (xhigh)</td><td class="num">—</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">181</td><td class="num">130</td><td>1.25 / 4.25 (FP)</td></tr>
-<tr><td>GLM-5.3 (max, Opencode)</td><td class="num">47</td><td class="num">45</td><td class="num">54</td><td class="num">61</td><td class="num">40</td><td class="num">59</td><td class="num">$2.01</td><td class="num">$4.24</td><td class="num">72</td><td class="num">210</td><td>1.40 / 4.40 (FP)</td></tr>
-<tr><td>Grok 4.6 (high/xhigh)</td><td class="num">45</td><td class="num">44</td><td class="num">47</td><td class="num">65</td><td class="num">18</td><td class="num">58</td><td class="num">$1.86</td><td class="num">$3.57</td><td class="num">59</td><td class="num">94</td><td>2 / 6 (FP)</td></tr>
-<tr><td>GLM-5.3-Flash</td><td class="num">44</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">114</td><td class="num">180</td><td>0.15 / 0.50 (FP)</td></tr>
-<tr><td>Kimi K3 (max)</td><td class="num">43</td><td class="num">44</td><td class="num">52</td><td class="num">68</td><td class="num">21</td><td class="num">66</td><td class="num">$2.00</td><td class="num">$5.05</td><td class="num">35</td><td class="num">160</td><td>3 / 15 (FP)</td></tr>
-<tr><td>Gemini 3.8 Flash (high)</td><td class="num">43</td><td class="num">41</td><td class="num">42</td><td class="num">66</td><td class="num">15</td><td class="num">45</td><td class="num">$1.24</td><td class="num">$2.47</td><td class="num">330</td><td class="num">170</td><td>1.50 / 7.50 (Z)</td></tr>
-<tr><td>Qwen3.8 2.4T A95B</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
-<tr><td>Qwen3.8-Flash-Next</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
-<tr><td>DeepSeek V4.1 Flash (max)</td><td class="num">39</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">$0.27</td><td class="num">—</td><td class="num">210</td><td class="num">250</td><td>0.30 / 1.20 (FP)</td></tr>
-<tr><td>GLM-5.2</td><td class="num">37</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
-<tr><td>DeepSeek V4 Pro 0813 (max, Codex)</td><td class="num">37</td><td class="num">36</td><td class="num">43</td><td class="num">57</td><td class="num">10</td><td class="num">62</td><td class="num">$0.67</td><td class="num">$0.24</td><td class="num">91</td><td class="num">160</td><td>1.32 / 3.96 (FP)</td></tr>
-<tr><td>GPT-5.6 Luna (max)</td><td class="num">36</td><td class="num">38</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">$0.18</td><td class="num">—</td><td class="num">115</td><td class="num">150</td><td>0.20 / 1.20 (Z, -50%→Sep 18)</td></tr>
-<tr><td>DeepSeek V4 Flash 0731 (max, Codex)</td><td class="num">35</td><td class="num">—</td><td class="num">~39*</td><td class="num">54</td><td class="num">11</td><td class="num">51</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">240</td><td>0.44 / 1.32 (FP)</td></tr>
-<tr><td>DeepSeek V4 Pro (base, max)</td><td class="num">32</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
-<tr><td>MiniMax-M3</td><td class="num">32</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.30 / 1.20 (Z)</td></tr>
-<tr><td>Kimi K2.6</td><td class="num">31</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.95 / 4.00 (Z)</td></tr>
-<tr><td>GLM-5.1</td><td class="num">31</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
-<tr><td>Kimi K2.7 Code</td><td class="num">30</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
-<tr><td>Inkling Small / MiMo-V2.5-Pro</td><td class="num">29</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
-<tr><td>GPT-5.6 Sol (max, Codex)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">72</td><td class="num">37</td><td class="num">54</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>2 / 10 (Z)</td></tr>
+<tr><td>Claude Opus 5.5 (max w/ fallback, Claude Code)</td><td class="num">58</td><td class="num">58</td><td class="num">66</td><td class="num">68</td><td class="num">63</td><td class="num">66</td><td class="num">$5.98</td><td class="num">$13.04</td><td class="num">97</td><td class="num">260</td><td>4 / 20 (FP)</td></tr>
+<tr><td>Claude Sonnet 5.5 (max w/ fallback, Claude Code)</td><td class="num">57</td><td class="num">56</td><td class="num">68</td><td class="num">72</td><td class="num">66</td><td class="num">67</td><td class="num">—</td><td class="num">$14.19</td><td class="num">140</td><td class="num">420</td><td>2 / 10 (FP)</td></tr>
+<tr><td>Gemini 4 Argon (high, Antigravity CLI)</td><td class="num">55</td><td class="num">53</td><td class="num">64</td><td class="num">79</td><td class="num">56</td><td class="num">56</td><td class="num">$1.99</td><td class="num">$5.84</td><td class="num">—</td><td class="num">110</td><td>2 / 10 (FP)</td></tr>
+<tr><td>Muse Wonder Full (max, Muse Code)</td><td class="num">56</td><td class="num">—</td><td class="num">—</td><td class="num">77</td><td class="num">59</td><td class="num">68</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>4 / 20 (FP)</td></tr>
+<tr><td>Muse Wonder (max, Muse Code)</td><td class="num">47</td><td class="num">52</td><td class="num">63</td><td class="num">76</td><td class="num">47</td><td class="num">67</td><td class="num">$4.52</td><td class="num">$8.05</td><td class="num">176</td><td class="num">130</td><td>4 / 20 (FP)</td></tr>
+<tr><td>GPT-6 Astra (max, Codex)</td><td class="num">54</td><td class="num">53</td><td class="num">62</td><td class="num">68</td><td class="num">56</td><td class="num">62</td><td class="num">$3.26</td><td class="num">$7.47</td><td class="num">57</td><td class="num">60</td><td>10 / 50 (FP)</td></tr>
+<tr><td>Claude Fable 5.1 (max w/ fallback, Claude Code)</td><td class="num">55</td><td class="num">53</td><td class="num">62</td><td class="num">64</td><td class="num">58</td><td class="num">65</td><td class="num">$7.63</td><td class="num">$12.39</td><td class="num">71</td><td class="num">190</td><td>10 / 50 (FP)</td></tr>
+<tr><td>GPT-6.1 Sol (max, Codex)</td><td class="num">54</td><td class="num">52</td><td class="num">60</td><td class="num">70</td><td class="num">53</td><td class="num">58</td><td class="num">$0.72</td><td class="num">$1.55</td><td class="num">64</td><td class="num">67</td><td>2 / 10 (FP)</td></tr>
+<tr><td>Grok 4.7 (xhigh, Grok Build)</td><td class="num">47</td><td class="num">46</td><td class="num">56</td><td class="num">73</td><td class="num">33</td><td class="num">63</td><td class="num">$3.74</td><td class="num">$8.82</td><td class="num">97</td><td class="num">240</td><td>2 / 6 (FP)</td></tr>
+<tr><td>Devin Fusion (Opus 5.5 Max + GPT-6 Luna High)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">73</td><td class="num">62</td><td class="num">70</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+<tr><td>GLM-5.3 (max, Opencode)</td><td class="num">47</td><td class="num">45</td><td class="num">54‡</td><td class="num">61</td><td class="num">40</td><td class="num">59</td><td class="num">$2.01</td><td class="num">$4.24‡</td><td class="num">93</td><td class="num">210</td><td>1.40 / 4.40 (FP)</td></tr>
+<tr><td>Kimi K3 (max, Kimi Code CLI)</td><td class="num">43</td><td class="num">44</td><td class="num">52‡</td><td class="num">68</td><td class="num">21</td><td class="num">66</td><td class="num">$2.00‡</td><td class="num">—</td><td class="num">43</td><td class="num">160</td><td>3 / 15 (FP)</td></tr>
+<tr><td>MiMo-V2.6-Pro</td><td class="num">46</td><td class="num">46</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">$0.13</td><td class="num">—</td><td class="num">48</td><td class="num">140</td><td>0.43 / 0.87 (FP)</td></tr>
+<tr><td>Claude Haiku 5.5 (max, Claude Code)</td><td class="num">44</td><td class="num">—</td><td class="num">—</td><td class="num">46</td><td class="num">30</td><td class="num">34</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.10 / 0.50 (OR)</td></tr>
+<tr><td>Muse Spark Open (xhigh, Muse Code)</td><td class="num">39</td><td class="num">—</td><td class="num">—</td><td class="num">60</td><td class="num">6</td><td class="num">58</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>1.25 / 4.25 (OR)</td></tr>
+<tr><td>GLM-5.3-Flash</td><td class="num">43</td><td class="num">42</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">77</td><td class="num">180</td><td>0.15 / 0.50 (FP; OR 0.048/0.20)</td></tr>
+<tr><td>DeepSeek V4.1 Flash (max)</td><td class="num">38</td><td class="num">39</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">$0.49</td><td class="num">—</td><td class="num">227</td><td class="num">250</td><td>0.30 / 1.20 (FP; OR 0.061/0.144)</td></tr>
+<tr><td>GPT-6 Luna (max)</td><td class="num">33</td><td class="num">38</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">124</td><td class="num">140</td><td>0.10 / 0.50 (FP)</td></tr>
+<tr><td>Gemini 3.8 Flash (high)</td><td class="num">40</td><td class="num">41</td><td class="num">42‡</td><td class="num">66‡</td><td class="num">15‡</td><td class="num">45‡</td><td class="num">$1.24‡</td><td class="num">$2.47‡</td><td class="num">150</td><td class="num">170</td><td>0.75 / 3.75 (FP, halved)</td></tr>
+<tr><td>Muse Spark 1.3 (max, Muse Code)</td><td class="num">49‡</td><td class="num">48</td><td class="num">54‡</td><td class="num">72‡</td><td class="num">32‡</td><td class="num">59‡</td><td class="num">$1.60‡</td><td class="num">$3.98‡</td><td class="num">139</td><td class="num">170</td><td>1.25 / 4.25 (FP)</td></tr>
+<tr><td>DeepSeek V4 Flash 0731 (max, Codex)</td><td class="num">35‡</td><td class="num">34</td><td class="num">~39*‡</td><td class="num">54‡</td><td class="num">11‡</td><td class="num">51‡</td><td class="num">—</td><td class="num">—</td><td class="num">149</td><td class="num">240</td><td>0.14 / 0.28 (FP; OR 0.007/0.45)</td></tr>
+<tr><td>DeepSeek V4 Pro 0813 (max, Codex)</td><td class="num">37‡</td><td class="num">36</td><td class="num">43‡</td><td class="num">57‡</td><td class="num">10‡</td><td class="num">62‡</td><td class="num">$0.67‡</td><td class="num">$0.24‡</td><td class="num">93</td><td class="num">160</td><td>1.32 / 3.96 (FP)</td></tr>
+<tr><td>Claude Sonnet 5 (max)</td><td class="num">40‡</td><td class="num">38</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">83</td><td class="num">370</td><td>2 / 10 (FP)</td></tr>
+<tr><td>Step 5 Preview</td><td class="num">45</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>1 / 2.70 (OR)</td></tr>
+<tr><td>Qwen3.8 Max (0902)</td><td class="num">45</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+<tr><td>Qwen3.8 27B (xhigh)</td><td class="num">33</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.24 / 2.20 (OR)</td></tr>
+<tr><td>Gemini 3.5 Flash-Lite</td><td class="num">—</td><td class="num">22</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">437</td><td class="num">59</td><td>0.30 / 2.50 (FP)</td></tr>
+<tr><td>MiniMax-M3</td><td class="num">31</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.30 / 1.20 (Z)</td></tr>
+<tr><td>Kimi K2 Horizon 375B A23B</td><td class="num">31</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+<tr><td>Kimi K2.7 Code</td><td class="num">30‡</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.656 / 3.30 (OR)</td></tr>
+<tr><td>Mirror Beam 1.0 (501B)</td><td class="num">30</td><td class="num">—</td><td class="num">—</td><td class="num">40</td><td class="num">4</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>1 / 3 (OR); free (opencode)</td></tr>
+<tr><td>Nemotron 3.5 Super VL</td><td class="num">28</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.10 / 0.40 (OR); free (opencode/OR)</td></tr>
 <tr><td>Nemotron 3 Ultra 550B</td><td class="num">—</td><td class="num">~48</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>free (opencode/OR)</td></tr>
-<tr><td>Nemotron 3 Super 120B</td><td class="num">—</td><td class="num">36</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>free (opencode/OR)</td></tr>
-<tr><td>Gemma 4 31B</td><td class="num">—</td><td class="num">39.2</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>free (OR)</td></tr>
-<tr><td>Ling-3.0-flash (fam.)</td><td class="num">—</td><td class="num">38</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>free fin-variant</td></tr>
-<tr><td>Claude Sonnet 5 (max effort)</td><td class="num">40</td><td class="num">38</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">84</td><td class="num">370</td><td>2 / 10 (FP)</td></tr>
-<tr><td>Claude Sonnet 4.6 (high, non-reasoning)</td><td class="num">—</td><td class="num">25</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">41</td><td class="num">—</td><td>3 / 15 (FP)</td></tr>
-<tr><td>Gemini 3.5 Flash-Lite</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">366</td><td class="num">59</td><td>0.30 / 2.50 (FP)</td></tr>
-<tr><td>Qwen3.5 Plus</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.20 / 1.20 (Z)</td></tr>
+<tr><td>Gemma 4 31B</td><td class="num">—</td><td class="num">39.2</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.20 / 0.40 (OR)</td></tr>
+<tr><td>Ling-3.0-flash (fam.)</td><td class="num">—</td><td class="num">38</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>0.021 / 0.063 (OR)</td></tr>
+<tr><td>Muse Spark 1.2 (xhigh)</td><td class="num">—</td><td class="num">40</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">369</td><td class="num">130</td><td>1.25 / 4.25 (FP)</td></tr>
 </tbody>
 </table>
-<p class="note">Eng = AA Engineering Index v1.1 · Intel = Intelligence Index v4.3 · CAI = Coding Agent Index v1.5 (DeepSWE + Terminal-Bench 4.0 + SWE-Atlas-QnA) · $/task II = weighted avg per Intelligence task, CAI = per agentic task · (Z) = Zen pricing, (FP) = first-party AA pricing · * DS Flash 39 inferred from chart rank order — estimate only · Verbosity = output tokens (M) to run the full Intelligence Index — higher burns more $/task at the same $/1M price (§14); medians differ by peer group (90/92/140M) · Sonnet 4.6 page omits the sentence (brand-new page) · V4.1 Flash, GLM-5.3-Flash, Nemotron, Gemma 4, Sonnet 5, Luna, Qwen3.5 Plus have no agentic data (absence ≠ weakness).</p>
+<p class="note">Eng = AA Engineering Index · Intel = Intelligence Index · CAI = Coding Agent Index (DeepSWE + Terminal-Bench 4.0 + SWE-Atlas-QnA; composite published for top-8 only) · $/task II = weighted avg per Intelligence task, CAI = per agentic task · <b>‡ = 2026-09-16 value</b> (model has since left the AA Engineering/CAI charts — cutoff now ~28 Eng rows / CAI top-8 at 56; not re-measured, not zero) · * DS Flash composite inferred from chart rank order — estimate only · (FP) = AA first-party page 2026-10-18, (OR) = OpenRouter 2026-10-18, (Z) = Zen · Verbosity = output tokens (M) to run the full Intelligence Index — medians differ by peer group (85 / 96 / 130M); worst offender Sonnet 5.5 at 420M vs 85 median · New 10-18 wave: Opus 5.5, Sonnet 5.5, Gemini 4 Argon, Muse Wonder(+Full), GPT-6.1 Sol, Grok 4.7, MiMo-V2.6, Devin Fusion (two-model fused agent), Mirror Beam · Pruned as dominated/superseded: Opus 5 (Intel 51 — 5.5 same price), Grok 4.6 (4.7 same price), Sonnet 4.6, GLM-5.1/5.2, K2.6, Qwen3.8-Flash-Next, DS V4 Pro base, Inkling/MiMo-V2.5-Pro · Gemini 3.8 Flash FP price halved to $0.75/$3.75 · Spark 1.3 & DS Pro/Flash off the Eng chart but still purchasable/OR-routable.</p>
 
-<h2 id="access">3. Provider access (2026-09-16)</h2>
+<h2 id="access">3. Provider access (2026-10-18)</h2>
+<p class="warn" style="padding:.4rem .6rem"><b>⚠ Dead pins:</b> opencode removed the Muse Spark contributor free shelf — <code>brainstorm</code>, <code>docs-writer</code>, <code>domain-companion</code> and the config <code>model</code>/<code>small_model</code> still pin <code>muse-spark-1.x-contributor-free</code>, which no longer resolves. Re-pin (see §8) and restart opencode.</p>
 <ul>
-<li><b>opencode</b> (7, free shelf, all limited-time + data-use terms): <code>big-pickle</code>, <code>ling-3.0-flash-fin-free</code>, <code>mimo-v2.5-free</code>, <code>muse-spark-1.2-contributor-free</code>, <code>muse-spark-1.3-contributor-free</code>, <code>nemotron-3-ultra-free</code>, <code>nemotron-3.5-lightning-free</code></li>
-<li><b>nvidia</b> (102, trial credits via build.nvidia.com key) — agent-relevant: <code>deepseek-ai/deepseek-v4-pro</code> + <code>deepseek-v4-pro-0813</code>, <code>deepseek-v4-flash</code> + <code>deepseek-v4-flash-0731</code>; <code>qwen/qwen3-coder-480b-a35b-instruct</code>, <code>qwen3.5-122b-a10b</code>, <code>qwen3.5-397b-a17b</code>; <code>minimaxai/minimax-m2.7</code>, <code>minimax-m3</code>; <code>moonshotai/kimi-k3</code>; <code>nvidia/nemotron-3-super-120b-a12b</code>, <code>nemotron-3-ultra-550b-a55b</code>, <code>nemotron-3.5-lightning-30b-a3b</code>; <code>openai/gpt-oss-120b</code>; <code>mistralai/mistral-large-3-675b-instruct-2512</code>; <code>stepfun-ai/step-3.5-flash</code>; <code>thinkingmachines/inkling</code> (full list in skill snapshot)</li>
+<li><b>opencode</b> (10, free shelf, limited-time + data-use terms): <code>beam-free</code>, <code>big-pickle</code>, <code>deepseek-v4.1-flash-free</code>, <code>glm-5.3-flash-free</code>, <code>longcat-2.5-preview-free</code>, <code>mimo-v2.6-flash-free</code>, <code>nemotron-3-ultra-free</code>, <code>nemotron-3.5-lightning-free</code>, <code>nemotron-3.5-super-vl-free</code>, <code>space-bunny-free</code></li>
+<li><b>nvidia</b> (~56 models, trial credits via build.nvidia.com key; catalog shrank from 102 — DeepSeek V4 Pro/Flash, Qwen coder/3.5, MiniMax, StepFun, Inkling, GPT-OSS-120B all removed) — agent-relevant now: <code>deepseek-ai/deepseek-v4.1-flash</code>; <code>google/gemma-4-31b-it</code>; <code>moonshotai/kimi-k3</code>; <code>z-ai/glm-5.3</code>, <code>z-ai/glm-5.3-flash</code>; <code>nvidia/nemotron-3-ultra-550b-a55b</code>, <code>nemotron-3.5-lightning-30b-a3b</code>, <code>nemotron-3.5-super-vl-120b-a12b</code>; <code>openai/gpt-oss-20b</code>; <code>meta/muse-glimmer-30b</code>; <code>poolside/laguna-xs-2.1</code> (full list in skill snapshot)</li>
 <li><b>ollama</b> (local): <code>qwen3.8:latest</code> · <b>Not in CLI:</b> Zen paid shelf (billing + key), OpenRouter <code>:free</code> (keep price-0 AND <code>tools</code> support), Groq free tier, Z.ai direct, Google AI Studio, GitHub Models</li>
 </ul>
 
@@ -121,34 +128,39 @@
 <table id="freeTable">
 <thead><tr><th data-sort="t">Provider ⇅</th><th data-sort="t">Free pick ⇅</th><th>AA signal</th><th>Terms / limits</th></tr></thead>
 <tbody>
-<tr><td>opencode</td><td><code>muse-spark-1.3-contributor-free</code></td><td>Eng 49, DeepSWE 72 — best free signal</td><td>limited-time; <b>trains Meta models</b></td></tr>
+<tr><td>opencode</td><td><code>space-bunny-free</code></td><td>§17 reviewer winner — deepest true findings, ~31s</td><td>stealth provider, terms unverified — treat as train-on-data; ~20% no-delivery when it wanders (repo-absent cwd)</td></tr>
+<tr><td>opencode</td><td><code>glm-5.3-flash-free</code></td><td>Intel 42 / Eng 43 — now measured</td><td>§17: near-equal depth, best calibration; 2×420s provider timeouts; data-use terms</td></tr>
+<tr><td>opencode</td><td><code>nemotron-3.5-super-vl-free</code></td><td>Eng 28</td><td>§17: 100% delivery, shallowest, one hallucinated major; NVIDIA trial terms — logged</td></tr>
+<tr><td>opencode</td><td><code>deepseek-v4.1-flash-free</code></td><td>Intel 39, $0.49/task II</td><td>limited-time; data-use terms</td></tr>
+<tr><td>opencode</td><td><code>beam-free</code></td><td>Eng 30 · DS 40 / TB 4 / QnA 40</td><td>Mirror 501B; limited-time; data-use terms</td></tr>
+<tr><td>opencode</td><td><code>mimo-v2.6-flash-free</code></td><td>family Eng/Intel 46 (Pro); flash unevaluated</td><td>data-use terms</td></tr>
 <tr><td>opencode</td><td><code>nemotron-3-ultra-free</code></td><td>Intel ~48; Eng/CAI unknown</td><td>limited-time; NVIDIA trial terms — logged, no confidential data</td></tr>
 <tr><td>opencode</td><td><code>nemotron-3.5-lightning-free</code></td><td>unevaluated</td><td>same trial terms</td></tr>
-<tr><td>opencode</td><td><code>mimo-v2.5-free</code></td><td>Intel 22 base OR Pro 43/Eng 29 (ambiguous)</td><td>trains on data</td></tr>
-<tr><td>opencode</td><td><code>ling-3.0-flash-fin-free</code></td><td>finance-tuned</td><td>trains on data; niche</td></tr>
-<tr><td>opencode</td><td><code>big-pickle</code></td><td>stealth, zero data</td><td>trains on data; sandbox only</td></tr>
-<tr><td>NVIDIA trial</td><td><code>deepseek-v4-pro-0813</code>, <code>kimi-k3</code>, <code>qwen3-coder-480b</code>, <code>gpt-oss-120b</code>…</td><td>per master table</td><td>trial credits, rate-limited</td></tr>
-<tr><td>OpenRouter :free</td><td> Nemotron-3-ultra/super/lightning, <code>gemma-4-31b-it</code> (Intel 39.2), <code>inkling-small</code> (Eng 29)</td><td>as above</td><td>rate-limited/routed; reject <code>z-ai/glm-5.2:free</code> (no tools)</td></tr>
+<tr><td>opencode</td><td><code>longcat-2.5-preview-free</code>, <code>big-pickle</code></td><td>unevaluated / stealth</td><td>big-pickle: zero data claim, sandbox only</td></tr>
+<tr><td>NVIDIA trial</td><td><code>deepseek-v4.1-flash</code>, <code>kimi-k3</code>, <code>z-ai/glm-5.3</code> (+flash), <code>gemma-4-31b</code>, <code>nemotron-3-ultra</code>, <code>nemotron-3.5-super-vl</code>, <code>gpt-oss-20b</code>…</td><td>per master table</td><td>trial credits, rate-limited; DS V4 Pro/Flash removed 10-18</td></tr>
+<tr><td>OpenRouter :free</td><td><code>nemotron-3.5-super-vl/lightning</code>, <code>nemotron-3-ultra</code>, <code>gemma-4-26b-a4b/31b-it</code> (Intel 39.2), <code>inkling-small</code> (Eng 29), <code>laguna-s/xs-2.1</code></td><td>as left</td><td>rate-limited/routed; reject tool-less endpoints; <code>space-bunny-alpha</code> gone 10-18</td></tr>
 <tr><td>Z.ai direct</td><td><code>GLM-4.7-Flash</code> (~200K coding), <code>GLM-4.5-Flash</code>, <code>GLM-4.6V-Flash</code></td><td>older 4.x gen, no current AA data</td><td><b>permanent $0, no card</b>, ~1 req/s (observed)</td></tr>
-<tr><td>Groq</td><td><code>gpt-oss-120b/20b</code>, <code>qwen3.6/3.8-27b</code></td><td>oss Intel ~33</td><td>ongoing, no card, ~8K TPM — low-volume only</td></tr>
-<tr><td>Google AI Studio</td><td>Gemini Flash tier</td><td>Flash-Lite 366 tps</td><td>free tokens, modest quota, trains on data</td></tr>
+<tr><td>Groq</td><td><code>gpt-oss-120b/20b</code></td><td>oss Intel ~33</td><td>ongoing, no card, ~8K TPM — low-volume only</td></tr>
+<tr><td>Google AI Studio</td><td>Gemini Flash tier</td><td>Flash-Lite 437 tps</td><td>free tokens, modest quota, trains on data</td></tr>
 <tr><td>GitHub Models</td><td>full catalog throttled</td><td>—</td><td>150 RPD, 8K/req — prototyping only</td></tr>
-<tr><td>Ollama local</td><td><code>qwen3.8:latest</code></td><td>family Eng ~40</td><td>free, private, hardware-bound</td></tr>
+<tr><td>Ollama local</td><td><code>qwen3.8:latest</code></td><td>family Eng ~40 (Max 0902: 45)</td><td>free, private, hardware-bound</td></tr>
 </tbody>
 </table>
-<p class="note">Excluded: Cerebras (no permanent free tier — $5/30-day trial + card), Hugging Face ($0.10/mo ≈ nothing for agents).</p>
+<p class="note">Excluded: Cerebras (no permanent free tier — $5/30-day trial + card), Hugging Face ($0.10/mo ≈ nothing for agents). <b>Changed 10-18:</b> <code>muse-spark-1.x-contributor-free</code> and <code>ling-3.0-flash-fin-free</code> left the opencode shelf (the trains-Meta deal ended); OR still routes <code>meta/muse-spark-1.3-contributor</code> paid at $0.10/$0.20 — same training terms apply.</p>
 
-<h2 id="deals">5. Good deals (paid, cheap)</h2>
+<h2 id="deals">5. Good deals (paid, cheap) — 2026-10-18</h2>
 <table>
 <thead><tr><th>Deal</th><th class="num">$/1M in/out</th><th>Signal</th><th>Catch</th></tr></thead>
 <tbody>
-<tr><td>Zen DeepSeek V4 Flash</td><td class="num">0.14 / 0.28</td><td>3× below first-party</td><td>needs Zen billing</td></tr>
-<tr><td>Zen GLM-5.3-Flash</td><td class="num">0.15 / 0.50</td><td>Eng 44</td><td>no agentic data</td></tr>
-<tr><td>Zen GPT-5.6 Luna</td><td class="num">0.20 / 1.20</td><td>Eng 36, $0.18/task</td><td class="warn"><b>50% off ends 2026-09-18</b></td></tr>
-<tr><td>Zen Qwen3.5 Plus</td><td class="num">0.20 / 1.20</td><td>unevaluated</td><td>trial only</td></tr>
-<tr><td>Zen MiniMax M3 / M2.7</td><td class="num">0.30 / 1.20</td><td>M3 Eng 32</td><td>—</td></tr>
-<tr><td>Zen Kimi K2.7 Code</td><td class="num">0.95 / 4.00</td><td>Eng 30</td><td>—</td></tr>
-<tr><td>Zen paid Muse Spark 1.3</td><td class="num">1.25 / 4.25</td><td>Eng 49, DeepSWE 72</td><td>zero-retention (vs contributor terms)</td></tr>
+<tr><td>OR DeepSeek V4 Flash 0731</td><td class="num">0.007 / 0.45</td><td>DS 54, CAI ~39*, $0.24/task — input nearly free</td><td class="warn">retiring; unlisted-route churn</td></tr>
+<tr><td>OR GLM-5.3-Flash</td><td class="num">0.048 / 0.20</td><td>Intel 42 / Eng 43 — 3× below first-party</td><td>no agentic data</td></tr>
+<tr><td>OR DeepSeek V4.1 Flash</td><td class="num">0.061 / 0.144</td><td>Intel 39, $0.49/task</td><td>no agentic data</td></tr>
+<tr><td>OR Gemma 4 26B A4B</td><td class="num">0.068 / 0.225</td><td>Intel 39.2</td><td>no agentic data; 31B rose to 0.20/0.40</td></tr>
+<tr><td>GPT-6 Luna (FP = OR)</td><td class="num">0.10 / 0.50</td><td>Eng 33 / Intel 38 — price cut, no expiry</td><td>weak Eng</td></tr>
+<tr><td>OR Claude Haiku 5.5</td><td class="num">0.10 / 0.50</td><td>Eng 44 · DS 46 / TB 30 — fresh agentic at deal price</td><td>batch route $0.05/$0.25 (queued)</td></tr>
+<tr><td>OR MiMo-V2.6 Flash</td><td class="num">0.14 / 0.28</td><td>family Eng/Intel 46, $0.13/task II</td><td>48 tps — slow</td></tr>
+<tr><td>OR Muse Spark 1.3 contributor</td><td class="num">0.10 / 0.20</td><td>DS 72, CAI 54 — best quality-per-dollar</td><td class="warn">trains Meta models</td></tr>
+<tr><td>OR paid Muse Spark 1.3</td><td class="num">1.25 / 4.25</td><td>zero-retention (vs contributor terms)</td><td>pricey at volume</td></tr>
 <tr><td>Z.ai Coding Plan Lite</td><td class="num">~$18/mo</td><td>flagship GLM access, 80 prompts/5h</td><td>subscription, quota-based</td></tr>
 </tbody>
 </table>
@@ -179,23 +191,25 @@
 <table>
 <thead><tr><th>Agent</th><th>Pick</th><th>Why (axis)</th></tr></thead>
 <tbody>
-<tr><td>researcher</td><td><code>opencode/glm-5.3</code> or Spark; pin off DeepSeek</td><td>T-Bench 40 (harness-native) / 32+fast; DS Pro scores 10 — disqualified as primary</td></tr>
-<tr><td>reviewer</td><td>DS Pro <code>-0813</code> (value) · Spark (quality) · Gemini 3.8F (speed)</td><td>DeepSWE 57@$0.24 vs 72@$3.98 vs 66@$2.47/11.7m — state the axis</td></tr>
-<tr><td>security-reviewer</td><td>paid <code>opencode/muse-spark-1.3</code></td><td>DeepSWE co-leader 72, low volume absorbs $3.98/task, zero-retention</td></tr>
-<tr><td>docs-writer / domain-companion</td><td>free tier (Groq oss-120b, Google free, Z.ai GLM-4.5-Flash $0)</td><td>quality bar low; latency/price rule. Note Z.ai finance-use clause for domain advice</td></tr>
+<tr><td>researcher</td><td><code>opencode/nemotron-3.5-super-vl-free</code> (pinned) — upgrade: paid Gemini 4 Argon</td><td>100% delivery (§17); Argon TB 56 fresh, $5.84/task — state the axis before paying</td></tr>
+<tr><td>reviewer</td><td><code>opencode/space-bunny-free</code> (pinned) · fallback <code>opencode/glm-5.3-flash-free</code></td><td>§17 winner ~31s; GLM-flash near-equal depth but 2×420s timeouts; paid: GPT-6.1 Sol $1.55/task CAI</td></tr>
+<tr><td>security-reviewer</td><td>paid <code>opencode/muse-spark-1.3</code> or GPT-6.1 Sol</td><td>DeepSWE co-leader 72‡ zero-retention; Sol CAI 60 @ $1.55/task, fresher model</td></tr>
+<tr><td>docs-writer / domain-companion</td><td class="warn"><b>pin DEAD</b> — switch to <code>opencode/glm-5.3-flash-free</code> or <code>nemotron-3.5-super-vl-free</code></td><td>muse-spark-1.x-contributor-free removed from shelf 10-18; restart opencode after re-pin</td></tr>
+<tr><td>config model / small_model</td><td class="warn"><b>pin DEAD</b> — switch to <code>opencode/glm-5.3-flash-free</code></td><td>muse-spark-1.2-contributor-free removed; Intel 42 / Eng 43 free at $0</td></tr>
 </tbody>
 </table>
-<p class="note">⚠ <b>DeepSeek V4 Pro/Flash are retiring Sep 2026</b> (DeepSeek routes <code>deepseek-v4-pro</code> → V4.1-Flash since Sep 14; Baseten EOL Sep 25; details §14). Any <code>*-v4-pro/flash</code> pin is now a migration task, not a steady state — see §14 fallback design and §17 eval before re-pinning.</p>
+<p class="note">⚠ <b>DeepSeek V4 Pro/Flash are retiring Sep–Oct 2026</b> — confirmed gone from the NVIDIA catalog and the AA Engineering chart 10-18 (DeepSeek routes <code>deepseek-v4-pro</code> → V4.1-Flash). OR still routes <code>-0731</code> at $0.007/$0.45; treat any <code>*-v4-pro/flash</code> pin as a migration task — see §14 fallback design and §17 eval before re-pinning.</p>
 
 <h2 id="caveats">9. Caveats &amp; refresh</h2>
 <ul>
-<li class="note">Scores are model×harness (Codex vs Muse Code vs Opencode vs Claude Code) — cross-harness transfer is approximate. AA benchmarks (max)/(high) effort variants; served default-effort scores lower. AA measures reference endpoints, not NVIDIA NIM. “—” means unevaluated, never weak.</li>
-<li class="note">Refresh: <code>node scripts/aa_bench.mjs check … --out snapshots/…</code>, <code>… coding …</code>, <code>… inventory …</code>, <code>node scripts/aa_bench.test.mjs</code> (see model-benchmarks skill), then update the tables above. Restart opencode to reload skill/config changes.</li>
+<li class="note">Scores are model×harness (Claude Code vs Codex vs Muse Code vs Opencode vs Antigravity CLI vs Grok Build) — cross-harness transfer is approximate. AA benchmarks (max)/(high) effort variants; served default-effort scores lower. AA measures reference endpoints, not NVIDIA NIM. "—" means unevaluated, never weak. New 10-18 harness names: Antigravity SDK → <b>Antigravity CLI</b>, new <b>Mirror</b> (Beam), and Devin Fusion now runs a fused two-model agent (Opus 5.5 Max + GPT-6 Luna High).</li>
+<li class="note">Refresh: <code>node scripts/aa_bench.mjs check … --out snapshots/…</code>, <code>… coding …</code>, <code>… inventory …</code>, <code>node scripts/aa_bench.test.mjs</code> (see model-benchmarks skill), then update the tables above. 2026-10-18: chart parser fixed for AA redesign ("N of M models" anchor + Mirror/Antigravity CLI harnesses); needs playwright-core browser rebuild after pw-core upgrades (<code>npx playwright-core install chromium-headless-shell</code>).</li>
+<li class="note">Weekly launchd pull missed 10-05 and 10-12 (machine asleep at Mon 06:00; log gap) — run <code>scripts/weekly_pull.sh</code> by hand after boot, or move the schedule. Verified 10-18 manually.</li>
 </ul>
 <pre>open ~/.config/opencode/skills/model-benchmarks/model-selection-guide.html</pre>
 
 <h2 id="sites">11. Other scoring sites (beyond AA)</h2>
-<p class="note">AA is one lens. Cross-checks below, verified 2026-09-16. Benchmarks disagree sometimes (e.g. DS Pro: Vellum open SWE-bench #1 vs AA DeepSWE 12th) — harness/task differences; don't over-index any single board.</p>
+<p class="note">AA is one lens. Cross-checks below, verified 2026-09-16 (notables pre-date the October wave — re-verify before quoting). Benchmarks disagree sometimes (e.g. DS Pro: Vellum open SWE-bench #1 vs AA DeepSWE 12th) — harness/task differences; don't over-index any single board.</p>
 <table>
 <thead><tr><th>Site</th><th>What it measures</th><th>Why it complements AA</th><th>Machine-readable?</th></tr></thead>
 <tbody>
@@ -208,50 +222,59 @@
 </tbody>
 </table>
 
-<h2 id="orvalue">12. OpenRouter value ranking (2026-09-16)</h2>
-<p class="note">From the weekly pull (<code>snapshots/reports/2026-09-16-value.md</code>). Refreshed Mondays 06:00 by launchd; full tiers + deltas in the report file.</p>
+<h2 id="orvalue">12. OpenRouter value ranking (2026-10-18)</h2>
+<p class="note">From the weekly pull (<code>snapshots/reports/2026-10-18-value.md</code>). 471 routes (394 tool-capable). Refreshed Mondays 06:00 by launchd (missed 10-05/10-12 — run by hand); full tiers + deltas in the report file.</p>
 <table>
 <thead><tr><th data-sort="t">Route ⇅</th><th data-sort="n" class="num">$/1M in ⇅</th><th data-sort="n" class="num">$/1M out ⇅</th><th>AA signal</th></tr></thead>
 <tbody>
-<tr><td><code>deepseek/deepseek-v4-flash-0731</code></td><td class="num">0.06</td><td class="num">0.12</td><td>CAI ~39, DS 54 — cheapest agentic data point</td></tr>
-<tr><td><code>meta/muse-spark-1.3-contributor</code></td><td class="num">0.10</td><td class="num">0.20</td><td>Eng 49, DS 72 — best quality-per-dollar (trains Meta)</td></tr>
-<tr><td><code>z-ai/glm-5.3-flash</code></td><td class="num">0.10</td><td class="num">0.33</td><td>Eng 44, no agentic data</td></tr>
-<tr><td><code>google/gemma-4-31b</code></td><td class="num">0.09</td><td class="num">0.34</td><td>Intel 39.2</td></tr>
+<tr><td><code>deepseek/deepseek-v4-flash-0731</code></td><td class="num">0.007</td><td class="num">0.45</td><td>DS 54, CAI ~39* — input nearly free; retiring</td></tr>
+<tr><td><code>z-ai/glm-5.3-flash</code></td><td class="num">0.048</td><td class="num">0.20</td><td>Intel 42 / Eng 43 — dropped 3× this month</td></tr>
 <tr><td><code>inclusionai/ling-3.0-flash</code></td><td class="num">0.021</td><td class="num">0.063</td><td>Intel 38 — cheapest scored model</td></tr>
-<tr><td><code>openai/gpt-oss-120b</code></td><td class="num">0.037</td><td class="num">0.17</td><td>Intel ~33 — docs-grade</td></tr>
+<tr><td><code>anthropic/claude-haiku-5.5</code></td><td class="num">0.10</td><td class="num">0.50</td><td>Eng 44 · DS 46 / TB 30 — fresh agentic at deal price</td></tr>
+<tr><td><code>openai/gpt-6-luna</code></td><td class="num">0.10</td><td class="num">0.50</td><td>Eng 33 / Intel 38 — price cut, no expiry</td></tr>
+<tr><td><code>meta/muse-spark-1.3-contributor</code></td><td class="num">0.10</td><td class="num">0.20</td><td>DS 72 · CAI 54 — best quality-per-dollar (trains Meta)</td></tr>
+<tr><td><code>xiaomi/mimo-v2.6-flash</code></td><td class="num">0.14</td><td class="num">0.28</td><td>family Eng/Intel 46, $0.13/task II</td></tr>
+<tr><td><code>nvidia/nemotron-3.5-super-vl:free</code></td><td class="num">0</td><td class="num">0</td><td>Eng 28 — new free route (also opencode shelf)</td></tr>
 <tr><td><code>nvidia/nemotron-3-ultra-550b-a55b:free</code></td><td class="num">0</td><td class="num">0</td><td>Intel ~48 — best free signal</td></tr>
 </tbody>
 </table>
 
 <h2 id="cost">13. Monthly cost projection (our real volumes)</h2>
-<p>Method (2026-09-16): Sep 13–15 usage DB — 3,816 turns, 74.2M input / 1.36M output / 0.85M reasoning tokens (~27K in/turn; cache-read recorded as 0, i.e. caching currently earns nothing). ×30 days ≈ <b>742M in / 22M out+reasoning per month</b>. Applied candidate prices at current token mix (reasoning billed as output). Caveats: per-model verbosity differs (reasoning models emit more) — treat as ±30%; prices drift.</p>
+<p>Method (2026-10-18 re-run of the 2026-09-16 method): Sep 13–15 usage DB — 3,816 turns, 74.2M input / 1.36M output / 0.85M reasoning tokens (~27K in/turn; cache-read recorded as 0, i.e. caching currently earns nothing). ×30 days ≈ <b>742M in / 22M out+reasoning per month</b>. Applied 2026-10-18 prices at current token mix (reasoning billed as output). Caveats: per-model verbosity differs (Sonnet 5.5 would burn ~5× the median output) — treat as ±30%; prices drift.</p>
 <table>
 <thead><tr><th>Candidate (route)</th><th class="num">$/mo in</th><th class="num">$/mo out</th><th class="num">$/mo total</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td>DS Flash 0731 (OR $0.06/$0.12)</td><td class="num">45</td><td class="num">3</td><td class="num"><b>47</b></td><td>cheapest credible reviewer</td></tr>
-<tr><td>Gemma 4 31B (OR $0.09/$0.34)</td><td class="num">67</td><td class="num">7</td><td class="num"><b>74</b></td><td>no agentic data</td></tr>
+<tr><td>DS Flash 0731 (OR $0.007/$0.45)</td><td class="num">5</td><td class="num">10</td><td class="num"><b>15</b></td><td>cheapest credible reviewer; retiring</td></tr>
+<tr><td>GLM-5.3-Flash (OR $0.048/$0.20)</td><td class="num">36</td><td class="num">4</td><td class="num"><b>40</b></td><td>Intel 42 now measured</td></tr>
+<tr><td>DS V4.1 Flash (OR $0.061/$0.144)</td><td class="num">45</td><td class="num">3</td><td class="num"><b>48</b></td><td>no agentic data</td></tr>
+<tr><td>Gemma 4 26B (OR $0.068/$0.225)</td><td class="num">50</td><td class="num">5</td><td class="num"><b>56</b></td><td>no agentic data</td></tr>
 <tr><td>Spark contributor (OR $0.10/$0.20)</td><td class="num">74</td><td class="num">4</td><td class="num"><b>79</b></td><td>you pay $0, Meta trains — $79/mo of value</td></tr>
-<tr><td>GLM-5.3-Flash (OR $0.10/$0.33)</td><td class="num">74</td><td class="num">7</td><td class="num"><b>81</b></td><td>Zen route $122</td></tr>
-<tr><td>GPT-5.6 Luna (Zen $0.20/$1.20)</td><td class="num">148</td><td class="num">26</td><td class="num"><b>175</b></td><td>doubles after Sep 18 discount end</td></tr>
-<tr><td>DS V4.1 Flash (FP $0.30/$1.20)</td><td class="num">223</td><td class="num">26</td><td class="num"><b>249</b></td><td>no agentic data</td></tr>
-<tr><td>DS Pro 0813 (OR $0.98/$2.95)</td><td class="num">727</td><td class="num">65</td><td class="num"><b>792</b></td><td>vs $0 on NVIDIA trial / $0.24/task CAI framing</td></tr>
-<tr><td>Spark paid ($1.25/$4.25)</td><td class="num">927</td><td class="num">94</td><td class="num"><b>1,021</b></td><td>fine for low-volume security, brutal for reviewer volume</td></tr>
-<tr><td>Gemini 3.8F (Zen $1.50/$7.50)</td><td class="num">1,113</td><td class="num">165</td><td class="num"><b>1,278</b></td><td>speed costs</td></tr>
-<tr><td>Kimi K3 (FP $3/$15)</td><td class="num">2,226</td><td class="num">330</td><td class="num"><b>2,556</b></td><td>disqualified on cost alone</td></tr>
-<tr><td>Claude Opus 5 ($5/$25)</td><td class="num">3,710</td><td class="num">550</td><td class="num"><b>4,260</b></td><td>flagship reference — ~54× Spark-contributor, ~90× DS-Flash</td></tr>
-<tr><td>Nemotron Ultra free / NVIDIA trial / Ollama</td><td class="num">0</td><td class="num">0</td><td class="num"><b>0</b></td><td>within allowances; terms apply</td></tr>
+<tr><td>GPT-6 Luna ($0.10/$0.50)</td><td class="num">74</td><td class="num">11</td><td class="num"><b>85</b></td><td>price cut, no expiry (was $0.20/$1.20)</td></tr>
+<tr><td>Claude Haiku 5.5 (OR $0.10/$0.50)</td><td class="num">74</td><td class="num">11</td><td class="num"><b>85</b></td><td>fresh agentic: DS 46 / TB 30</td></tr>
+<tr><td>MiMo-V2.6 (OR $0.14/$0.28)</td><td class="num">104</td><td class="num">6</td><td class="num"><b>110</b></td><td>Eng/Intel 46; 48 tps — slow</td></tr>
+<tr><td>Kimi K3 (OR $0.249/$11.94)</td><td class="num">185</td><td class="num">263</td><td class="num"><b>447</b></td><td>input cheap, output brutal</td></tr>
+<tr><td>DS Pro 0813 (OR $0.66/$1.98)</td><td class="num">490</td><td class="num">44</td><td class="num"><b>533</b></td><td>retiring; off AA Eng chart</td></tr>
+<tr><td>Gemini 3.8 Flash (OR $0.825/$4.125)</td><td class="num">612</td><td class="num">91</td><td class="num"><b>703</b></td><td>FP halved to 0.75/3.75; OR adds margin</td></tr>
+<tr><td>Grok 4.7 ($2/$6)</td><td class="num">1,484</td><td class="num">132</td><td class="num"><b>1,616</b></td><td>T-Bench 33 — weak for researcher work</td></tr>
+<tr><td>GPT-6.1 Sol ($2/$10)</td><td class="num">1,484</td><td class="num">220</td><td class="num"><b>1,704</b></td><td>cheapest frontier $/task CAI ($1.55)</td></tr>
+<tr><td>Sonnet 5.5 ($2/$10)</td><td class="num">1,484</td><td class="num">220</td><td class="num"><b>1,704</b></td><td>CAI #1 but 420M verbosity inflates out</td></tr>
+<tr><td>Spark paid ($1.25/$4.25)</td><td class="num">928</td><td class="num">94</td><td class="num"><b>1,021</b></td><td>zero-retention; fine for low-volume security</td></tr>
+<tr><td>Muse Wonder ($4/$20)</td><td class="num">2,968</td><td class="num">440</td><td class="num"><b>3,408</b></td><td>fastest top-tier (22.4m)</td></tr>
+<tr><td>Opus 5.5 ($4/$20)</td><td class="num">2,968</td><td class="num">440</td><td class="num"><b>3,408</b></td><td>Intel #1</td></tr>
+<tr><td>Fable 5.1 ($10/$50)</td><td class="num">7,420</td><td class="num">1,100</td><td class="num"><b>8,520</b></td><td>~570× DS-Flash — flagship reference</td></tr>
+<tr><td>Nemotron free / NVIDIA trial / Ollama</td><td class="num">0</td><td class="num">0</td><td class="num"><b>0</b></td><td>within allowances; terms apply</td></tr>
 </tbody>
 </table>
-<p class="note">Reproduce: assistant-message token sums by day from <code>~/.local/share/opencode/opencode.db</code> (<code>message.data → $.tokens.{input,output,reasoning,cache}</code>), ×30, × candidate $/1M. Headline: paid-Spark-everywhere ≈ $1k/mo; the shortlist (DS-Flash/GLM-flash/Spark-contrib) runs the whole workload for $47–81/mo.</p>
+<p class="note">Reproduce: assistant-message token sums by day from <code>~/.local/share/opencode/opencode.db</code> (<code>message.data → $.tokens.{input,output,reasoning,cache}</code>), ×30, × candidate $/1M. Headline: paid-frontier-everywhere now runs $1.6k–8.5k/mo; the shortlist (DS-Flash/GLM-flash/V4.1F/Spark-contrib) runs the whole workload for <b>$15–79/mo</b> — October's price war cut the floor ~3×.</p>
 
-<h2 id="capability">14. Capability gaps: tool-calling, context, latency (2026-09-16)</h2>
+<h2 id="capability">14. Capability gaps: tool-calling, context, latency (2026-10-18)</h2>
 <p><b>Tool-calling (BFCL): void.</b> The official Berkeley board is stale (Apr 2026) — <b>none</b> of our 20 finalists appear on it. Only exact-variant score found: Ling-3.0-flash 0.730 (llm-stats BFCL-v4 mirror). Do not rank finalists on tool-calling; use Aider's edit-format compliance or §17 evals instead.</p>
-<p><b>Context:</b> 1M cohort — Spark 1.3, GLM-5.3(+Flash), DS V4 family, Kimi K3, MiniMax M3, Luna, Sonnet 5. Smaller: Grok 4.6 (500K), Gemma 4 (256K), GPT-OSS (131K), Ling/Step/Qwen-coder (256K served). Long-context evidence: Kimi K3 AA-LCR <b>88.7% (leader)</b>; Nemotron Ultra RULER 94.7 @1M; Super 91–96 @1M. Warnings: MiniMax "1M" = 512K+YARN; Nemotron 1M needs max-model-len override — validate recall before large-repo review use.</p>
-<p><b>Reasoning-token burn / verbosity:</b> max-effort models buy benchmark points with output tokens — our DB shows reasoning ≈ output volume on Spark runs (0.85M vs 1.36M over 3 days, both billed as output). AA flags the worst offenders (V4.1 Flash generated 250M eval tokens vs 140M median). Rule: compare <b>$/task, never $/1M</b>, when a reasoning model faces a non-reasoning one; cap effort for loops. §13 projections already bill reasoning as output (±30% across models).</p>
+<p><b>Context:</b> 1M cohort — Spark 1.3, GLM-5.3(+Flash), DS V4 family, Kimi K3, MiniMax M3, Luna/Sol (1025K), Wonder, Sonnet 5/5.5. Smaller: Gemma 4 (256K), GPT-OSS (131K), Ling/Step/Qwen-coder (256K served); Grok 4.6/4.7 (500K). Long-context evidence: Kimi K3 AA-LCR <b>88.7% (leader)</b>; Nemotron Ultra RULER 94.7 @1M; Super 91–96 @1M. Warnings: MiniMax "1M" = 512K+YARN; Nemotron 1M needs max-model-len override — validate recall before large-repo review use; Gemini 4 Argon context unlisted at pull time.</p>
+<p><b>Reasoning-token burn / verbosity:</b> max-effort models buy benchmark points with output tokens — our DB shows reasoning ≈ output volume on Spark runs (0.85M vs 1.36M over 3 days, both billed as output). AA flags the worst offenders (2026-10-18: Sonnet 5.5 generated 420M eval tokens vs 85M peer median — ~5×; V4.1 Flash 250M vs 130M). Rule: compare <b>$/task, never $/1M</b>, when a reasoning model faces a non-reasoning one; cap effort for loops. §13 projections already bill reasoning as output (±30% across models).</p>
 
 <h2 id="ops">15. Operational resilience: 429s, reliability, deprecation</h2>
 <p><b>No native failover exists in opencode</b> (confirmed vs config schema + feature request #7602): single <code>agent.&lt;name&gt;.model</code>, no retry/backoff keys — only <code>provider.&lt;id&gt;.options.timeout/headerTimeout/chunkTimeout</code>. At 300+ calls/hr the loop dies on 429 unless you add rotation. Achievable design: (1) paired agents (<code>reviewer</code> + <code>reviewer-fallback</code>, different vendors) switched manually or via wrapper catching 429/FreeUsageLimitError with exp-backoff+jitter and <code>--model</code> rotation; (2) OpenRouter <code>models:[primary,fallback]</code> + <code>allow_fallbacks</code> for automatic in-gateway failover (+ per-endpoint uptime API for routing); (3) community plugins/proxy (auto-fallback, circuit-breaker) — vet before trusting; (4) never use <code>*-free</code> Zen IDs for 25-step loops. Reliability notes: Zen has no status page/SLA (quota, not uptime, is the failure mode); Groq has a real per-model status page; Google free = sheddable; NVIDIA trial has silent removals.</p>
-<p><b>Deprecation risk (2026-09-16):</b> <span class="tag">HIGH — DS V4 Pro retiring</span> (DeepSeek routes <code>deepseek-v4-pro</code> → V4.1-Flash since Sep 14; <code>v4-flash</code> retired Sep 10; Baseten EOL Sep 25) · <span class="tag">HIGH — MiniMax M2.7</span> (NVIDIA EOL Jul 27) · <span class="tag">MEDIUM — Kimi K2.6/K2.7-Code</span> (Baseten EOL Sep 25; K2.8 preview out) · <span class="tag">MEDIUM — GLM-5.2/5.1</span> (superseded; NIM degradation reports) · LOW: Spark 1.3, GLM-5.3(+Flash), Gemini 3.8, Kimi K3, M3, Luna/Sol, Sonnet 5/4.6. Weight boring+stable; re-check via Zen deprecation table + <code>inventory</code>.</p>
+<p><b>Deprecation risk (2026-10-18):</b> <span class="tag">EXECUTED — DS V4 Pro/Flash retired</span> (gone from NVIDIA catalog + AA Eng chart 10-18; DeepSeek routes <code>deepseek-v4-pro</code> → V4.1-Flash; OR still routes <code>-0731</code> $0.007/$0.45) · <span class="tag">EXECUTED — MiniMax M2.7, Qwen3.5/coder, StepFun, Inkling off NVIDIA</span> (catalog shrank 102 → ~56) · <span class="tag">HIGH — Kimi K2.6/K2.7-Code, GLM-5.1/5.2</span> (off the AA Eng chart 10-18; K2.7 still OR-routable $0.656/$3.30) · LOW: current wave — Opus/Sonnet 5.5, Fable 5.1, Gemini 4, Wonder, Sol, Grok 4.7, GLM-5.3(+Flash), K3, MiMo-V2.6, Luna, M3. Weight boring+stable; re-check via Zen deprecation table + <code>inventory</code>.</p>
 
 <h2 id="compliance">16. Compliance, exit options, caching (2026-09-16)</h2>
 <p><b>Compliance:</b> strongest — Groq (SOC 2 II + DPA + conditional BAA), Google paid (SOC + DPA + EU regions + HIPAA path), NVIDIA (SOC + DPA), OpenRouter Enterprise (SOC 2 + signed DPA + EU lock + ZDR). Weakest — DeepSeek direct (PRC storage, DE/IT blocks, no SOC2/BAA), Zen/Z.ai/Moonshot/MiniMax (no published SOC 2 or BAA; Z.ai has API DPA). Disqualifiers for regulated/financial data: direct CN/SG routes without signed DPA + region pin; Zen free / AI-Studio unpaid (training use); default OR routing without ZDR/no-train.</p>
@@ -260,26 +283,24 @@
 
 <h2 id="evalproto">17. Mini-eval protocol (run before re-pinning)</h2>
 <p>Ten leaderboards lose to ten of <em>your</em> diffs. Corpus: 10 recent real diffs (bugfix, refactor, feature, dep bump, test-only, security-sensitive), frozen. Contenders: 2–3 (same frozen reviewer prompt, temp 0.1, fresh session each, strip model IDs, judge blind). Rubric per run (1–5): true positives · false positives (weight ×3 against) · actionability (concrete fix + file:line) · format compliance · log $/run + wall time. Decision: rank by (blocking issues caught − false alarms), break ties by $/run. Cost ≈ 30 runs × per-run cost — compute from §13 first. Re-run quarterly or when the shortlist changes; log scorecards under <code>skills/model-benchmarks/snapshots/evals/</code>.</p>
-<p><b>Result 2026-10-18 (monartha corpus, 28/30 runs):</b> 1. <code>space-bunny-free</code> — deepest true findings, fastest (~31s), but ~20% no-delivery when it wanders (repo-absent cwd); 2. <code>glm-5.3-flash-free</code> — near-equal depth, best calibration, killed by 2×420s provider timeouts; 3. <code>nemotron-3.5-super-vl-free</code> — 100% delivery, shallowest, one hallucinated major. All $0. Pin: reviewer → space-bunny, fallback/second-opinion → glm-5.3-flash. Spark-1.3-contributor via OR is blocked by the user's own privacy guardrails (paid-training exclusion) regardless of quality. Full rubric + per-diff ground truth: <code>snapshots/evals/2026-10-18/scorecard.md</code>.</p>
+<p><b>Result 2026-10-18 (monartha corpus, 28/30 runs):</b> 1. <code>space-bunny-free</code> — deepest true findings, fastest (~31s), but ~20% no-delivery when it wanders (repo-absent cwd); 2. <code>glm-5.3-flash-free</code> — near-equal depth, best calibration, killed by 2×420s provider timeouts; 3. <code>nemotron-3.5-super-vl-free</code> — 100% delivery, shallowest, one hallucinated major. All $0. Pin: reviewer → space-bunny, fallback/second-opinion → glm-5.3-flash. Spark-1.3-contributor via OR is blocked by the user's own privacy guardrails (paid-training exclusion) regardless of quality. Full rubric + per-diff ground truth: <code>snapshots/evals/2026-10-18/scorecard.md</code>. Pins applied 10-18: reviewer + security-reviewer → space-bunny, researcher → nemotron-3.5-super-vl; brainstorm/docs-writer/domain-companion + config still on dead muse-spark IDs (re-pin pending — §8).</p>
 
-<h2 id="harness">18. Harness comparisons (2026-09-16)</h2>
-<p><b>CAI is an agent×model table, not a model table.</b> Every Coding Agent Index score is a (harness, model, effort) triple — frontier labs are tested in their native scaffold, everyone else in opencode:</p>
+<h2 id="harness">18. Harness comparisons (2026-10-18)</h2>
+<p><b>CAI is an agent×model table, not a model table.</b> Every Coding Agent Index score is a (harness, model, effort) triple — frontier labs are tested in their native scaffold, everyone else in opencode. Fresh top-8 (composite cutoff moved up to 56; GLM-5.3 54‡, Spark 1.3 54‡, K3 52‡ now sit below it — their component charts are still fresh):</p>
 <table>
-<thead><tr><th>CAI</th><th>Harness</th><th>Model (effort)</th></tr></thead>
+<thead><tr><th>CAI</th><th class="num">$/task</th><th class="num">time</th><th>Harness</th><th>Model (effort)</th></tr></thead>
 <tbody>
-<tr><td class="num">62</td><td>Claude Code</td><td>Fable 5.1 (max)</td></tr>
-<tr><td class="num">62</td><td>Codex</td><td>GPT-6 Astra (max)</td></tr>
-<tr><td class="num">60</td><td>Claude Code</td><td>Opus 5 (max)</td></tr>
-<tr><td class="num">54</td><td>Muse Code</td><td>Spark 1.3 (max)</td></tr>
-<tr><td class="num">54</td><td>Opencode</td><td>GLM-5.3 (max)</td></tr>
-<tr><td class="num">52</td><td>Kimi Code CLI</td><td>Kimi K3 (max)</td></tr>
-<tr><td class="num">47</td><td>Grok Build</td><td>Grok 4.6 (xhigh)</td></tr>
-<tr><td class="num">43</td><td>Claude Code</td><td>Qwen3.8 Max</td></tr>
-<tr><td class="num">43</td><td>Codex</td><td>DeepSeek V4 Pro 0813 (max)</td></tr>
-<tr><td class="num">42</td><td>Antigravity SDK</td><td>Gemini 3.8 Flash (high)</td></tr>
+<tr><td class="num">68</td><td class="num">$14.19</td><td class="num">1.5h</td><td>Claude Code</td><td>Sonnet 5.5 (max)</td></tr>
+<tr><td class="num">66</td><td class="num">$13.04</td><td class="num">1.1h</td><td>Claude Code</td><td>Opus 5.5 (max)</td></tr>
+<tr><td class="num">64</td><td class="num">$5.84</td><td class="num">34.5m</td><td>Antigravity CLI</td><td>Gemini 4 Argon (high)</td></tr>
+<tr><td class="num">63</td><td class="num">$8.05</td><td class="num">22.4m</td><td>Muse Code</td><td>Muse Wonder (max)</td></tr>
+<tr><td class="num">62</td><td class="num">$12.39</td><td class="num">34.8m</td><td>Claude Code</td><td>Fable 5.1 (max) (with fallback)</td></tr>
+<tr><td class="num">62</td><td class="num">$7.47</td><td class="num">29.4m</td><td>Codex</td><td>GPT-6 Astra (max)</td></tr>
+<tr><td class="num">60</td><td class="num">$1.55</td><td class="num">24.4m</td><td>Codex</td><td>GPT-6.1 Sol (max)</td></tr>
+<tr><td class="num">56</td><td class="num">$8.82</td><td class="num">39.2m</td><td>Grok Build</td><td>Grok 4.7 (xhigh)</td></tr>
 </tbody>
 </table>
-<p><b>Read it as a confound warning:</b> Spark 54 (Muse Code) vs GLM-5.3 54 (Opencode) is a tie between <em>pairs</em>, not proof the models are equal — scaffolds contribute unknown points. Native-harness scores (Claude Code, Codex) likely flatter their models vs opencode-tested ones. AA also publishes agent wall-time per task (not yet captured — candidate for the next pull). <b>Aider polyglot</b> is the complementary harness axis: same fixed scaffold, varying edit format (diff/diff-fenced/whole/architect) with % well-formed per model — the closest public proxy for the tool-calling gap in §14 — but it is a generation stale (top rows gpt-5/o3/gemini-2.5; none of our 20 finalists) and its YAML (<code>aider/website/_data/polyglot_leaderboard.yml</code>) is the only pull-friendly source. Bottom line for us: §17 runs contenders in <em>our</em> harness (opencode), which is the only comparison that actually decides a pin.</p>
+<p><b>Read it as a confound warning:</b> Sonnet 5.5's #1 costs $14.19/task and 1.5h wall time; GPT-6.1 Sol delivers 60 at $1.55/task and 24.4m — the price/performance spread inside the same "top tier" is now 9×. Fresh per-component charts (15 entries each, incl. opencode-relevant rows): <b>GLM-5.3 (Opencode)</b> DS 61 / TB 40 / QnA 59 — unchanged from 09-16, reassuring stability; Wonder Full 77/59/68 vs Wonder 76/47/67 (T-Bench gap is the Full upgrade's main argument); Devin Fusion is now a fused two-model agent (Opus 5.5 Max + GPT-6 Luna High) at 73/62/70. Harness renames 10-18: Antigravity SDK → <b>Antigravity CLI</b>; new <b>Mirror</b> (Beam 1.0, 40/4/40 — T-Bench 4 is a red flag). <b>Aider polyglot</b> is the complementary harness axis: same fixed scaffold, varying edit format (diff/diff-fenced/whole/architect) with % well-formed per model — the closest public proxy for the tool-calling gap in §14 — but it is generations stale (top rows gpt-5/o3/gemini-2.5; none of our finalists) and its YAML (<code>aider/website/_data/polyglot_leaderboard.yml</code>) is the only pull-friendly source. Bottom line for us: §17 runs contenders in <em>our</em> harness (opencode), which is the only comparison that actually decides a pin.</p>
 
 <p class="note">Clean proprietary-code API paths: Groq (+ZDR), Z.ai API (DPA no-storage), Kimi API (FAQ claim, ToS caveat — get it in writing), DeepSeek direct (opt out first). Avoid for secrets: all contributor/free trainers, NVIDIA trial (logged), OpenRouter free without ZDR + train-opt-out.</p>
 </div>
