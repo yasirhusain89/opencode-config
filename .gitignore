@@ -3,3 +3,5 @@ bun.lock
 sync.sh.bak
 .zvec-grep/
 .idea/
+.DS_Store
+__pycache__/
