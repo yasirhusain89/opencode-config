@@ -84,12 +84,14 @@ async function check(entry, wants, label) {
 const data = JSON.parse(dataJS);
 
 await check(entryIndex, [
-  "Usage — Opus 5 equivalent",
-  `$${data.hero.opus5.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  "Usage — Opus 5.5 equivalent",
+  `$${data.hero.opus55.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
   `session.html#${data.sessions[0].id8}`,
   "Tool use by category",
   "Commit-landing ratio",
   "Methodology",
+  // pager appears once any table exceeds one page (10 rows)
+  ...(data.sessions.length > 10 ? ["Page 1 of 2"] : []),
 ], "index");
 
 // deep assertions on the first session file…
