@@ -5,6 +5,14 @@ description: Execute database migrations across ORMs and platforms with zero-dow
 
 # Database Migration
 
+> Scope note: this is the generic multi-ORM / zero-downtime playbook
+> (Sequelize, TypeORM, Prisma, cross-database moves). For MonArtha's
+> local-first single-user SQLite (`migrations/` dirs, `*.sql` schema
+> changes, sqlx/rusqlite/diesel), use `sqlite-migration-guard` instead —
+> it runs the deterministic destructive-operation validator plus review
+> gates. Use this skill only for cross-ORM / cross-database / zero-downtime
+> work outside that path.
+
 Master database schema and data migrations across ORMs (Sequelize, TypeORM, Prisma), including rollback strategies and zero-downtime deployments.
 
 ## When to Use This Skill

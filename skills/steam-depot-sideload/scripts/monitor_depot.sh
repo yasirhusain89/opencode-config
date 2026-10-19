@@ -1,5 +1,7 @@
 #!/bin/bash
 # monitor_depot.sh — track download_depot progress from Steam's console log.
+# Reports per depot (latest Downloading/complete/failed line + on-disk size),
+# because several depots can be in flight and their log lines interleave.
 # Usage: monitor_depot.sh [--watch [SECONDS]] [--log PATH] [--external /Volumes/DRIVE]
 set -euo pipefail
 
@@ -20,22 +22,26 @@ done
 
 report() {
   echo "=== $(date '+%H:%M:%S') ==="
-  grep -E "Downloading depot|Depot download complete|Depot download failed" "$LOG" 2>/dev/null | tail -3 | sed 's/^/  /'
-  if [[ -d "$CACHE" ]]; then
-    FILES=$(find "$CACHE" -type f 2>/dev/null | wc -l | tr -d ' ')
-    SIZE=$(du -sh "$CACHE" 2>/dev/null | cut -f1)
-    echo "  cache: $FILES files, $SIZE"
+  local EVENTS
+  EVENTS=$(grep -E "Downloading depot [0-9]+|Depot download (complete|failed)[^:]*: " "$LOG" 2>/dev/null | tail -30)
+  if [[ -z "$EVENTS" ]]; then
+    echo "  state: IDLE (no depot activity in log)"
   else
-    echo "  cache: (nothing downloaded yet)"
+    # per-depot status: for every depot with a "Downloading" line, print its
+    # latest Downloading / complete / failed line plus its on-disk size.
+    # (global "last line wins" breaks when several depots interleave.)
+    echo "$EVENTS" | grep -oE "Downloading depot [0-9]+" | awk '{print $NF}' | sort -u | while read -r D; do
+      LATEST=$(echo "$EVENTS" | grep -E "depot $D[ :)]|depot_$D" | tail -1 | sed -E 's/^\[[^]]+\] //; s/^/  /')
+      DIR=$(find "$CACHE/content" -maxdepth 2 -type d -name "depot_$D" 2>/dev/null | head -1)
+      if [[ -n "$DIR" ]]; then
+        ON_DISK=$(du -sh "$DIR" 2>/dev/null | cut -f1)
+      else
+        ON_DISK="(dir gone)"
+      fi
+      echo "  depot $D — on disk: $ON_DISK"
+      echo "$LATEST"
+    done
   fi
-  # unfinished = a "Downloading" line newer than the last "complete"/"failed"
-  LAST=$(grep -E "Downloading depot|Depot download complete|Depot download failed" "$LOG" 2>/dev/null | tail -1)
-  case "$LAST" in
-    *"Downloading depot"*) echo "  state: DOWNLOADING";;
-    *"complete"*)          echo "  state: COMPLETE";;
-    *"failed"*)            echo "  state: FAILED — fix cause, then re-run the same";;
-    *)                     echo "  state: IDLE (no depot activity in log)";;
-  esac
 }
 
 if [[ $WATCH -eq 1 ]]; then

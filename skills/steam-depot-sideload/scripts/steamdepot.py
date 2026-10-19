@@ -6,9 +6,9 @@ from console_log.txt, verifies a downloaded depot against its manifest, and
 writes/patches appmanifest_<appid>.acf so the Windows Steam client (Wine/Heroic)
 registers a sideloaded install.
 
-Subcommands: appinfo, licenses, verify, manifest
+Subcommands: appinfo, licenses, verify, manifest, reset
 """
-import argparse, json, os, re, sys, time
+import argparse, json, os, re, shutil, sys, time
 
 DEFAULT_LOG = os.path.expanduser(
     "~/Library/Application Support/Steam/logs/console_log.txt")
@@ -347,6 +347,36 @@ def cmd_manifest(args):
     return 0
 
 
+def cmd_reset(args):
+    """Delete a depot's download dir + resume-state file after a corrupted
+    resume ("same chunk requested twice" assertion or wedged progress).
+    QUIT the Steam client first — it holds the state file open in memory."""
+    import subprocess
+    running = subprocess.run(
+        ['pgrep', '-x', 'steam'], capture_output=True).returncode == 0
+    cache = os.path.join(os.path.expanduser(args.cache), 'content',
+                         f'app_{args.appid}')
+    depot = os.path.join(cache, f'depot_{args.depotid}')
+    state = os.path.join(cache, f'state_{args.appid}_{args.depotid}.patch')
+    if running and not args.force:
+        sys.stderr.write(
+            "Steam client appears to be running — quit it first "
+            "(it holds the state file open), then re-run.\n"
+            "Override with --force if you are sure it is quit.\n")
+        return 2
+    for p in (depot, state):
+        if os.path.exists(p):
+            if os.path.isdir(p):
+                shutil.rmtree(p)
+            else:
+                os.remove(p)
+            print(f"removed: {p}")
+        else:
+            print(f"(not present, skipping): {p}")
+    print("reset done — relaunch Steam, open console, re-run download_depot.")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(
         prog='steamdepot.py',
@@ -386,6 +416,18 @@ def main():
                    help='create new manifest even if one exists')
     p.add_argument('--dry-run', action='store_true')
     p.set_defaults(fn=cmd_manifest)
+
+    p = sub.add_parser('reset', help='wipe a depot dir + resume-state after '
+                                    'a corrupted resume (quit Steam first)')
+    p.add_argument('--appid', required=True, type=int)
+    p.add_argument('--depotid', required=True, type=int)
+    p.add_argument('--cache', default=os.path.join(
+        os.environ.get('STEAM_EXTERNAL', '/Volumes/YH-SanP2TB'),
+        'SteamDepotCache'),
+        help='depot-cache root (default: $STEAM_EXTERNAL/SteamDepotCache)')
+    p.add_argument('--force', action='store_true',
+                   help='skip the Steam-still-running check')
+    p.set_defaults(fn=cmd_reset)
 
     args = ap.parse_args()
     sys.exit(args.fn(args))
