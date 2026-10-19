@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-10-19T03:06:48.002Z",
+  "source_snapshot": "dashboard-2026-10-18.json",
+  "agents": {
+    "reviewer": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode/space-bunny-free",
+      "why": "zero-retention Go loop; free §16 winner as fallback",
+      "primaryLive": true
+    },
+    "researcher": {
+      "primary": "opencode/nemotron-3.5-super-vl-free",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "why": "no Go T-Bench fit except training-flagged Argon",
+      "primaryLive": true
+    },
+    "security-reviewer": {
+      "primary": "opencode-go/claude-haiku-5.5",
+      "fallback": "opencode/muse-spark-1.3",
+      "why": "cheapest scored quality; paid spark if proprietary",
+      "primaryLive": true
+    },
+    "docs-writer": {
+      "primary": "opencode/glm-5.3-flash-free",
+      "fallback": "opencode/nemotron-3.5-super-vl-free",
+      "why": "free tier is enough for latency/price roles",
+      "primaryLive": true
+    },
+    "domain-companion": {
+      "primary": "opencode/glm-5.3-flash-free",
+      "fallback": "opencode/nemotron-3.5-super-vl-free",
+      "why": "free tier is enough for latency/price roles",
+      "primaryLive": true
+    }
+  }
+}
