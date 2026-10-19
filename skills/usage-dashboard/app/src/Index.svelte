@@ -28,15 +28,38 @@
   const hist = $derived(data.hist.slice(-30));
   const clamp = (p) => Math.max(0, Math.min(100, p));
 
+  // table pagination (page state is per-table, in-memory)
+  const PAGE = 10;
+  let sessPage = $state(0);
+  let dayPage = $state(0);
+  const sessPages = $derived(Math.max(1, Math.ceil(data.sessions.length / PAGE)));
+  const dayPages = $derived(Math.max(1, Math.ceil(perday.length / PAGE)));
+  const sessRows = $derived(data.sessions.slice(sessPage * PAGE, sessPage * PAGE + PAGE));
+  const dayRows = $derived(perday.slice(dayPage * PAGE, dayPage * PAGE + PAGE));
+  const sessPrev = () => (sessPage = Math.max(0, sessPage - 1));
+  const sessNext = () => (sessPage = Math.min(sessPages - 1, sessPage + 1));
+  const dayPrev = () => (dayPage = Math.max(0, dayPage - 1));
+  const dayNext = () => (dayPage = Math.min(dayPages - 1, dayPage + 1));
+
   const maxCat = $derived(Math.max(...data.cats.map((c) => c.n), 1));
   const maxProj = $derived(Math.max(...data.projects.map((p) => p.cost), 1));
   const totalVar = $derived(data.variants.reduce((a, v) => a + v.msgs, 0) || 1);
   const maxHour = $derived(Math.max(...data.hours.map((x) => x.tokens), 1));
 </script>
 
+{#snippet pager(page, pages, total, prev, next)}
+  {#if pages > 1}
+    <div class="pager">
+      <button onclick={prev} disabled={page === 0}>‹ Prev</button>
+      <span class="pg">Page {page + 1} of {pages} · {total} rows</span>
+      <button onclick={next} disabled={page === pages - 1}>Next ›</button>
+    </div>
+  {/if}
+{/snippet}
+
 <div class="top">
   <div>
-    <h1>Usage — Opus 5 equivalent</h1>
+    <h1>Usage — Opus 5.5 equivalent</h1>
     <div class="sub">Generated {data.generated} · opencode · refreshes daily 08:00</div>
   </div>
   <Theme />
@@ -44,19 +67,27 @@
 
 <div class="hero">
   <div class="card big">
-    <div class="k">Would cost on Opus 5</div>
-    <div class="v">{money(h.opus5)}</div>
+    <div class="k">Would cost on Opus 5.5</div>
+    <div class="v">{money(h.opus55)}</div>
     <div class="s">{h.sessions} sessions · {num(h.messages)} messages</div>
   </div>
   <div class="card big">
     <div class="k">Actually paid</div>
     <div class="v ok">{money(h.actual)}</div>
     <div class="s">{h.prov} / {h.model}</div>
+    <div class="s">{h.paid_note}</div>
   </div>
+  {#if h.quota}
+    <div class="card">
+      <div class="k">Go quota · rolling 5h</div>
+      <div class="v">{h.quota.rolling?.percent?.toFixed(0) ?? "–"}%</div>
+      <div class="s">week {h.quota.weekly?.percent?.toFixed(0) ?? "–"}% · month {h.quota.monthly?.percent?.toFixed(0) ?? "–"}% · as of {String(h.quota.fetched_at || "").slice(0, 16).replace("T", " ")}</div>
+    </div>
+  {/if}
   <div class="card">
     <div class="k">Avoided</div>
     <div class="v ok">{money(h.avoided)}</div>
-    <div class="s">vs Opus 5 list price</div>
+    <div class="s">vs Opus 5.5 list price</div>
   </div>
   <div class="card">
     <div class="k">Cache hit</div>
@@ -70,8 +101,8 @@
   </div>
   <div class="card">
     <div class="k">Time with opencode</div>
-    <div class="v">{hrs(h.overall_min)}</div>
-    <div class="s">wall-clock union · {hrs(h.sum_min)} summed</div>
+    <div class="v">{hrs(h.active_min)}</div>
+    <div class="s">active assistant turns · {hrs(h.overall_min)} wall union</div>
   </div>
 </div>
 
@@ -102,16 +133,12 @@
     {/if}
   </div>
   <div class="card">
-    <div class="k">In use · {h.model}</div>
-    <div class="v ok">{money(h.actual)}</div>
-    <table class="rates"><tbody>
-      <tr><td>Input</td><td class="r">$0.00</td></tr>
-      <tr><td>Output</td><td class="r">$0.00</td></tr>
-      <tr><td>Cache</td><td class="r">n/a</td></tr>
-    </tbody></table>
+    <div class="k">Model mix · by messages</div>
+    {#each h.mix as u}
+      <div class="mixrow"><span>{u.name}</span><b>{u.pct}%</b></div>
+    {/each}
     <div class="s">
-      Free contributor tier · recorded spend across {num(h.messages)} messages.
-      Rates not published; cost as recorded by opencode.
+      Recorded spend across {num(h.messages)} messages.
     </div>
   </div>
 </div>
@@ -119,9 +146,12 @@
 <details>
   <summary><b>Top-20 comparison</b> (AA intelligence index; your usage priced on each)</summary>
   <div class="s">
-    Top 20 by Artificial Analysis Intelligence Index (scraped 2026-09-14) + the paid
-    equivalents of the free models in use (✓). Cost/task is AA's weighted cost per
-    Intelligence Index task; the last column prices YOUR token mix at that model's rates.
+    Top 20 by Artificial Analysis Intelligence Index (scraped 2026-10-19) + the
+    paid equivalents of free tiers (✓ = 100+ msgs of that family in your history).
+    Cost/task is AA's weighted cost per Intelligence Index task; the last column
+    prices YOUR token mix at that model's rates. That is a pricing lens, not a
+    savings prediction — switching models changes cache behavior and verbosity,
+    so realized cost will differ.
   </div>
   <table><tbody>
     <tr>
@@ -138,8 +168,8 @@
       <tr>
         <td>{e.name}{#if e.in_use} <span class="ok-flag">✓</span>{/if}</td>
         <td>{e.creator}</td>
-        <td class="r">{e.aa}</td>
-        <td class="r">${e.cpt.toFixed(2)}</td>
+        <td class="r">{e.aa ?? "–"}</td>
+        <td class="r">{e.cpt != null ? `$${e.cpt.toFixed(2)}` : "n/a"}</td>
         <td class="r">${e.pin.toFixed(2)}</td>
         <td class="r">${e.pout.toFixed(2)}</td>
         <td class="r">${e.pcr.toFixed(2)}</td>
@@ -156,10 +186,10 @@
 </h2>
 <div class="hist">
   {#each hist as b}
-    <div class="hcol" title={`${b.date}: ${money(b.opus5)}`}>
-      <div class="hval">{money(b.opus5)}</div>
+    <div class="hcol" title={`${b.date}: ${money(b.opus55)}`}>
+      <div class="hval">{money(b.opus55)}</div>
       <div class="htrack">
-        <div class="hfill" style={`height:${(100 * b.opus5 / data.max_hist).toFixed(1)}%`}></div>
+        <div class="hfill" style={`height:${(100 * b.opus55 / data.max_hist).toFixed(1)}%`}></div>
       </div>
       <div class="hdate">{b.date.slice(5)}</div>
     </div>
@@ -168,23 +198,25 @@
   {/each}
 </div>
 <div class="s">
-  Each bar is that day's Opus-5-equivalent usage. Past days freeze once snapshotted;
+  Each bar is that day's Opus 5.5-equivalent usage. Past days freeze once snapshotted;
   today's bar refreshes on every run. Days before the first snapshot are backfilled
   from the sessions DB.
 </div>
 
 <h2>Cost per day</h2>
 <table><tbody>
-  <tr><th>Day</th><th>Sessions</th><th>Tokens</th><th style="text-align:right">Opus 5</th></tr>
-  {#each perday as d}
+  <tr><th>Day</th><th>Sessions</th><th>Active</th><th>Tokens</th><th style="text-align:right">Opus 5.5</th></tr>
+  {#each dayRows as d}
     <tr>
       <td class="mono">{d.day}</td>
       <td>{d.sessions}</td>
+      <td>{hrs(d.active)}</td>
       <td>{fmt(d.tokens)}</td>
       <td class="r">{money(d.cost)}</td>
     </tr>
   {/each}
-</tbody></table>
+  </tbody></table>
+  {@render pager(dayPage, dayPages, perday.length, dayPrev, dayNext)}
 
 <h2>Tool use by category</h2>
 <div class="s">
@@ -226,14 +258,15 @@
   <summary><b>Cost per project directory</b></summary>
   <table><tbody>
     <tr>
-      <th>Directory</th><th>Sessions</th><th>Time</th><th>Input</th>
-      <th>Out+reas</th><th>CacheRead</th><th style="text-align:right">Opus 5</th><th></th>
+      <th>Directory</th><th>Sessions</th><th>Time</th><th>Active</th><th>Input</th>
+      <th>Out+reas</th><th>CacheRead</th><th style="text-align:right">Opus 5.5</th><th></th>
     </tr>
     {#each data.projects as p}
       <tr>
         <td class="mono">{p.dir}</td>
         <td>{p.sessions}</td>
         <td class="mono">{hrs(p.mins)}</td>
+        <td class="mono">{hrs(p.active_min)}</td>
         <td>{fmt(p.input)}</td>
         <td>{fmt(p.out_r)}</td>
         <td>{fmt(p.cache_read)}</td>
@@ -249,11 +282,11 @@
 </details>
 
 <details>
-  <summary><b>Cost per model</b> (Opus-5 equivalent vs actually recorded)</summary>
+  <summary><b>Cost per model</b> (Opus 5.5 equivalent vs actually recorded)</summary>
   <table><tbody>
     <tr>
       <th>Model</th><th>Msgs</th><th>Input</th><th>Out+reas</th><th>CacheRead</th>
-      <th style="text-align:right">Opus 5</th><th style="text-align:right">Paid</th>
+      <th style="text-align:right">Opus 5.5</th><th style="text-align:right">Paid</th>
     </tr>
     {#each data.models as m}
       <tr>
@@ -274,7 +307,7 @@
   <table><tbody>
     <tr>
       <th>Provider</th><th>Models</th><th>Msgs</th><th>Input</th><th>Out+reas</th>
-      <th>CacheRead</th><th style="text-align:right">Opus 5</th><th style="text-align:right">Paid</th>
+      <th>CacheRead</th><th style="text-align:right">Opus 5.5</th><th style="text-align:right">Paid</th>
     </tr>
     {#each data.providers as p}
       <tr>
@@ -290,10 +323,27 @@
     {/each}
   </tbody></table>
   <div class="s">
-    Costs priced at Opus-5 rates on each provider's traffic; Paid is what the provider
+    Costs priced at Opus 5.5 rates on each provider's traffic; Paid is what the provider
     recorded (free tiers = $0). The nvidia/z-ai GLM-5.3-Flash traffic is the
     post-free-quota switch.
   </div>
+  {#if data.credits?.providers?.openrouter && !data.credits.providers.openrouter.error}
+    {@const oc = data.credits.providers.openrouter}
+    <div class="s">
+      OpenRouter key: ${oc.budget_spend_usd ?? oc.usage ?? 0} spent of ${oc.budget_usd ?? oc.limit ?? "?"} loaded
+      (${oc.budget_remaining_usd ?? oc.limit_remaining ?? "?"} left) · free-model daily quota
+      {oc.free_daily ? `${oc.free_daily.used}/${oc.free_daily.limit} used` : "n/a"} ·
+      as of {String(data.credits.fetched_at || "").slice(0, 16).replace("T", " ")}
+    </div>
+  {/if}
+  {#if data.billing_flags?.length}
+    <div class="s">
+      ⚠ Non-free model IDs on key-authed providers (opencode records $0 — verify billing):
+      {#each data.billing_flags as f, i}
+        <span class="mono">{f.provider} / {f.model}</span> ({num(f.msgs)} msgs){i < data.billing_flags.length - 1 ? ", " : ""}
+      {/each}
+    </div>
+  {/if}
 </details>
 
 <h2>Reliability &amp; efficiency — per provider</h2>
@@ -323,7 +373,8 @@
   <div class="s">
     All providers: turn p50 {data.latency.p50.toFixed(0)}s · p95
     {data.latency.p95.toFixed(0)}s · {data.latency.tps.toFixed(0)} tok/s p50 ·
-    {data.latency.total_min.toFixed(0)} min total across {num(data.latency.msgs)} turns
+    {data.latency.total_min.toFixed(0)} min total across {num(data.latency.msgs)} turns.
+    {#if data.rate429?.count}⚠ {data.rate429.count} rate-limited (429) turn(s) in the last 24h{#if data.rate429.by_model.length}: {data.rate429.by_model.map(([m, n]) => `${m} ×${n}`).join(", ")}{/if}.{/if}
   </div>
 {/if}
 <details>
@@ -344,21 +395,21 @@
 </details>
 
 <details>
-  <summary><b>Per session</b> (top 20 by Opus-5 cost; ✓ = commit within 24h after, ✗ = none)</summary>
+  <summary><b>Per session</b> (featured: 12 costliest + most errors + most turns; ✓ landed · ✗ no commit · blank = no code edit, no git, or window still open)</summary>
   <table><tbody>
     <tr>
       <th>Session</th><th>Project</th><th>Started</th><th>Ended</th><th>Min</th>
       <th>Msgs</th><th>In+Cache</th><th>Out+reas</th>
-      <th style="text-align:right">Opus 5</th><th>Calls</th>
+      <th style="text-align:right">Opus 5.5</th><th>Calls</th>
       <th style="text-align:right">Err</th><th></th>
     </tr>
-    {#each data.sessions as s}
+    {#each sessRows as s}
       <tr>
         <td class="mono"><a href={`session.html#${s.id8}`}>{s.id8}</a></td>
         <td class="mono">{s.project}</td>
         <td class="mono">{s.start}</td>
         <td class="mono">{s.end}</td>
-        <td>{s.dur_min.toFixed(0)}</td>
+        <td title={`wall span ${s.dur_min.toFixed(0)} min`}>{s.active_min.toFixed(0)}</td>
         <td>{s.msgs}</td>
         <td>{fmt(s.in_cache)}</td>
         <td>{fmt(s.out_r)}</td>
@@ -379,6 +430,20 @@
     Times are local. Landing check matches git log in the session's project dir.
     Click a session id for its own page (effectiveness / efficiency detail).
   </div>
+  {@render pager(sessPage, sessPages, data.sessions.length, sessPrev, sessNext)}
+</details>
+
+<details>
+  <summary><b>Session habits</b> (aggregates across all {data.habits.n} prompted sessions)</summary>
+  <table><tbody>
+    <tr><th>Habit</th><th style="text-align:right">Value</th><th>What it means</th></tr>
+    <tr><td>User turns / session</td><td class="r">p50 {data.habits.turns_p50} · p90 {data.habits.turns_p90}</td><td>high p90 = requirements up front would cut re-prompt churn</td></tr>
+    <tr><td>Sessions with idle gaps &gt;15 min</td><td class="r">{data.habits.gap_sessions} ({Math.round(100 * data.habits.gap_sessions / Math.max(data.habits.n, 1))}%) · {data.habits.gap_hours} h idle</td><td>end the session when stepping away so the prompt cache stays warm</td></tr>
+    <tr><td>Sessions with cut-short turns</td><td class="r">{data.habits.cut_sessions} ({Math.round(100 * data.habits.cut_sessions / Math.max(data.habits.n, 1))}%)</td><td>batch feedback and let runs finish to cut re-work</td></tr>
+    <tr><td>Turns started right after a tool error</td><td class="r">{data.habits.after_err_turns}</td><td>fixing env/permissions first is usually faster than re-prompting</td></tr>
+    <tr><td>First prompt size</td><td class="r">p50 {fmt(data.habits.prompt_p50)} chars · p90 {fmt(data.habits.prompt_p90)}</td><td>large pastes re-bill every turn — point at a file instead</td></tr>
+    <tr><td>Clean sessions (no flags)</td><td class="r">{data.habits.clean} ({Math.round(100 * data.habits.clean / Math.max(data.habits.n, 1))}%)</td><td>&lt;8 turns, no gaps, no cut turns, no post-error re-prompts</td></tr>
+  </tbody></table>
 </details>
 
 <details>
@@ -407,20 +472,19 @@
 </details>
 
 <details>
-  <summary><b>Hour-of-day activity</b> (UTC tokens; when sessions start)</summary>
+  <summary><b>Hour-of-day activity</b> (local time; when sessions start)</summary>
   <div class="heatstrip">
     {#each data.hours as c}
       {@const pct = Math.max(100 * c.tokens / maxHour, 4)}
       {@const alpha = 0.15 + 0.85 * (c.tokens / maxHour)}
-      <div class="hcell2" title={`${String(c.h).padStart(2, "0")}:00 UTC · ${fmt(c.tokens)} tokens · ${c.sessions} sessions`}>
+      <div class="hcell2" title={`${String(c.h).padStart(2, "0")}:00 local · ${fmt(c.tokens)} tokens · ${c.sessions} sessions`}>
         <div class="hfill2" style={`height:${pct.toFixed(1)}%;opacity:${alpha.toFixed(2)}`}></div>
         <div class="hlab">{String(c.h).padStart(2, "0")}</div>
       </div>
     {/each}
   </div>
   <div class="s">
-    Peak hours are when expensive sessions happen and when the daily 08:00 regen lands
-    relative to your overnight block.
+    Peak hours are when expensive sessions run (local time).
   </div>
 </details>
 
@@ -439,14 +503,47 @@
       </div>
       <div class="card">
         <div class="k">Not checkable</div>
-        <div class="v">{data.landing.total - data.landing.checkable}</div>
+        <div class="v">{data.landing.total - data.landing.checkable - data.landing.no_intent}</div>
         <div class="s">sessions in non-git or missing directories</div>
+      </div>
+      <div class="card">
+        <div class="k">No code intent</div>
+        <div class="v">{data.landing.no_intent}</div>
+        <div class="s">Q&A / exploration — no edit or patch calls, excluded from ratio</div>
+      </div>
+      <div class="card">
+        <div class="k">Window still open</div>
+        <div class="v">{data.landing.pending}</div>
+        <div class="s">ended &lt;24h ago — too recent to judge, excluded from ratio</div>
       </div>
     </div>
     <div class="s">
       Matching: git log --all in each session's project dir; a commit timestamped
-      within 24h after the session's last message counts as landed. Solo/personal
-      sessions can legitimately end without commits (exploration, questions).
+      within 24h after the session's last message counts as landed. Sessions that
+      never edited code are not failures — they sit outside the ratio.
+    </div>
+    <div class="grid2">
+      <div>
+        <b>Landed rate by model</b>
+        <table><tbody>
+          <tr><th>Model</th><th style="text-align:right">Sessions</th><th style="text-align:right">Landed</th><th style="text-align:right">Rate</th></tr>
+          {#each data.landing.by_model as r}
+            <tr><td class="mono">{r.name}</td><td class="r">{r.n}</td><td class="r">{r.landed}</td><td class="r">{r.rate}%</td></tr>
+          {/each}
+        </tbody></table>
+      </div>
+      <div>
+        <b>Landed rate by dominant effort</b>
+        <table><tbody>
+          <tr><th>Variant</th><th style="text-align:right">Sessions</th><th style="text-align:right">Landed</th><th style="text-align:right">Rate</th></tr>
+          {#each data.landing.by_variant as r}
+            <tr><td class="mono">{r.name}</td><td class="r">{r.n}</td><td class="r">{r.landed}</td><td class="r">{r.rate}%</td></tr>
+          {/each}
+        </tbody></table>
+      </div>
+    </div>
+    <div class="s">
+      Code-intent sessions only. Single-digit samples are anecdote, not evidence.
     </div>
   </details>
 {/if}
@@ -455,12 +552,21 @@
   <summary><b>Methodology</b></summary>
   <p class="note">
     Source: <span class="mono">~/.local/share/opencode/opencode.db</span> (session
-    counters; message token JSON; part tool calls), read-only. Rates (Sep 2026): Opus 5
-    standard $5/$25 + $0.50 cache read, $6.25 cache write; GPT-5.6 Sol promo $4/$20 +
-    $0.40 read, $5.00 write (list $5/$30 + $0.50/$6.25, promo ~Nov 21); GLM-5.3
-    $1.40/$4.40 + $0.26 read via Z.ai (cache-write unpublished). Top-20 comparison +
-    pricing scraped from artificialanalysis.ai on 2026-09-14 (refresh via the
-    usage-dashboard skill). Reasoning billed as output everywhere. This page is
+    counters; message token JSON; part tool calls), read-only. Basis (Oct 2026):
+    Opus 5.5 standard $4/$20 + $0.20 cache read, $5.00 cache write; Sonnet 5.5
+    $2/$10; Fable 5.1 $10/$50; GLM-5.3-Flash $0.15/$0.50 via Z.AI
+    (cache-write unpublished). Top-20 comparison + pricing scraped from
+    artificialanalysis.ai on 2026-10-19 (refresh via the
+    usage-dashboard skill). Reasoning billed as output everywhere. Time figures are
+    active assistant-turn minutes (wall spans shown separately; hours are local).
+    The landing ratio counts only sessions that edited code — Q&A/exploration
+    sits outside it. Actually paid =
+    flat subscriptions (OpenCode Go $10/mo since Oct 2026, covering opencode-go
+    metered usage) plus any metered cost on non-covered providers;     per-row Paid
+    figures are recorded metered value, not bills. Billing flags list non-free
+    model IDs served by key-authed providers (nvidia, openrouter), where opencode
+    records $0 — confirm free-tier status on the provider billing page. The 429
+    count scans opencode.log for rate-limited turns in the trailing 24h. This page is
     rendered by Svelte templates
     (<span class="mono">skills/usage-dashboard/app/src</span>) from
     <span class="mono">data.js</span> (JSON data, no fetch — works offline from

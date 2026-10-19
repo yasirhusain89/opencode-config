@@ -33,6 +33,12 @@ Data and presentation are split:
 - `~/.opencode/usage-dashboard/data.js` + `sessions/*.js` — generated data.
   Do not hand-edit; regenerate.
 - `~/.opencode/usage-dashboard/history.jsonl` — daily snapshots (365 kept).
+- `<skill dir>/scripts/generate.test.mjs` — fixture tests for generate.py
+  (fake HOME + fixture DB + temp git repos, asserts subscriptions / active
+  time / intent-aware landing / pending window / in_use flags / featured
+  selection / habits / landed-by-model). Run after ANY generate.py change:
+  `PYTHON=/opt/homebrew/bin/python3 node scripts/generate.test.mjs` and
+  `PYTHON=/usr/bin/python3 node scripts/generate.test.mjs` (3.9 gate).
 - `~/Library/LaunchAgents/ai.opencode.usage-dashboard.plist` — launchd, daily 08:00 + RunAtLoad.
 - Source DB (read-only): `~/.local/share/opencode/opencode.db`. Tables: `session`
   (tokens/cost columns), `message` (JSON data: providerID, modelID, variant, tokens,
@@ -49,6 +55,39 @@ open ~/.opencode/usage-dashboard/dashboard.html
 
 Verify under both pythons if generate.py changed:
 `/opt/homebrew/bin/python3` and `/usr/bin/python3` (user id 501, launchctl gui/501).
+Run the fixture suite under both too (see Files). `OCUD_HOME=/tmp/x` redirects
+the generator at a sandbox HOME (used by the tests; never set it in launchd).
+
+## Go quota snapshot (optional, needs an API key)
+
+`scripts/go_quota.mjs` fetches plan-window percentages
+(`GET opencode.ai/zen/go/v1/usage`) into `quota.json`, which generate.py merges
+as `hero.quota` (newest card, "as of" timestamp; absent file = card hidden).
+Key: `$OPENCODE_API_KEY`, else `~/.local/share/opencode/.go-api-key`
+(chmod 600 — lives next to auth.json, outside the config repo).
+Create one at opencode.ai dashboard → API keys, then:
+`node scripts/go_quota.mjs`. Daily regen does NOT refetch (no network in the
+generator by design) — re-run by hand when curious, e.g. during a 429 storm.
+
+## Provider credit snapshots (optional, no new secrets needed)
+
+`scripts/provider_credits.mjs` reads keys from opencode's own `auth.json` and
+queries each provider's key/balance endpoint (OpenRouter `/auth/key` today;
+NVIDIA has no known balance API — dashboard shows "unknown" there instead of
+a silent $0). Writes `credits.json`, merged by generate.py as `hero.credits`
+and shown under Cost-per-provider (absent file = hidden). Re-run by hand when
+the billing-flags warning appears or monthly: `node scripts/provider_credits.mjs`.
+Keys are only sent as Bearer headers — never printed or stored.
+
+## TUI quota readout (`/quota` command)
+
+`~/.config/opencode/command/quota.md` defines a `/quota` slash command backed by
+`scripts/quota-status.mjs` (local snapshot files only, no network, always exit 0).
+It prints Go plan windows (when `go_quota.mjs` has run), the OpenRouter key
+budget, recorded paid/metered, 24h 429s, and billing flags — then the agent
+flags anything needing attention. A persistent quota widget in the TUI header is
+not possible (1.x TUI config covers theme/keybinds/cursor/attention only), so an
+on-demand command is the lever. The script honors `$OCUD_OUT` for tests.
 
 ## Change templates (layout, metrics display, tip rules)
 
@@ -61,7 +100,8 @@ npm run check    # SSR render test vs real data; must print check OK
 
 Then regenerate data (above) and open both `dashboard.html` and a
 `session.html#<id8>` page. Session subpages prune themselves: generate.py
-rewrites `sessions/` to the current top 20 and deletes stale files.
+rewrites `sessions/` to the featured set (12 costliest + most errors +
+most turns, de-duplicated) and deletes stale files.
 Per-session tool-time bar: share of active tool-call time per category
 (`state.time.start/end`), `sleep`-first bash counted as `Wait/idle`.
 

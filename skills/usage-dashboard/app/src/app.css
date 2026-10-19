@@ -68,3 +68,15 @@ a:hover{text-decoration:underline}
 .back{display:inline-block;margin-bottom:6px;font-size:13px}
 .act{max-width:360px;font-size:13px}
 .act .s{margin:1px 0 0}
+/* mount placeholder: shown only until Svelte replaces #app content */
+#app:empty::after{content:"loading…";display:block;border:1px solid var(--border);
+border-radius:14px;padding:16px 18px;background:var(--soft);font-size:12px;color:#888}
+/* table pagination */
+.pager{display:flex;align-items:center;gap:10px;margin:8px 0 4px;font-size:12px;color:#888}
+.pager button{font:inherit;font-size:12px;color:var(--fg);background:var(--soft);
+border:1px solid var(--border);border-radius:99px;padding:4px 14px;cursor:pointer}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager .pg{font-variant-numeric:tabular-nums}
+/* hero model-mix rows */
+.mixrow{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:2px 0}
+.mixrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
