@@ -23,10 +23,25 @@ session pulls everything, so a refresh is a single command.
   `inventory [provider...]` (default: opencode nvidia ollama) dumps
   `opencode models <provider>` via `$OPENCODE_BIN`, else `which opencode`,
   else `~/.opencode/bin/opencode`.
-- `<skill dir>/scripts/aa_bench.test.mjs` — no-network/no-browser tests:
-  parser fixtures (incl. the `11.7m`-as-name regression and the SWE-2
-  fold), CLI exit codes, and a playwright-free `inventory` run. Run with
-  `node <skill dir>/scripts/aa_bench.test.mjs`; all green before commit.
+- `<skill dir>/scripts/aa_bench.test.mjs` + `dashboard.test.mjs` —
+  no-network/no-browser tests: parser fixtures (incl. the `11.7m`-as-name
+  regression, the SWE-2 fold, and the 2026-10 "N of M models" chart
+  layout), CLI exit codes, a playwright-free `inventory` run, and
+  dashboard fixtures (comment-line pin decoys, 429 filtering, splice
+  safety). Run both before commit; all green before commit.
+- `<skill dir>/scripts/dashboard.mjs` — regenerates the guide's LIVE
+  sections from ground truth (DB usage, log 429s, agent pins, newest
+  access snapshot): `node scripts/dashboard.mjs [--date YYYY-MM-DD]
+  --out snapshots/dashboard-$DATE.json [--html FILE]
+  [--write-guide model-selection-guide.html]`. Stdlib + `sqlite3` CLI
+  only. Splices the §1 dashboard + §8 usage tbodys (strict anchors,
+  aborts on ambiguity). Emits per-route reliability (msgs, fail %,
+  median turn latency, actual $), dead-pin + AA-coverage drift,
+  Go pacing (days to weekly sub-cap), metered-vs-projected Go spend,
+  and `snapshots/routing-YYYY-MM-DD.json` (machine-readable
+  primary/fallback pins per agent for wrappers to consume).
+  Run it on every refresh — never hand-edit those two tables (they carry
+  a `generated` marker comment).
 - `<skill dir>/snapshots/` — dated ground truth: `access-YYYY-MM-DD.json`
   (full provider catalogs), `coding-index-YYYY-MM-DD.json` (raw agentic
   scrape), `agentic-table-YYYY-MM-DD.md` (curated table + footnotes),
@@ -38,9 +53,10 @@ session pulls everything, so a refresh is a single command.
 
 ```bash
 D=~/.config/opencode/skills/model-benchmarks/scripts
-node $D/aa_bench.mjs check deepseek-v4-pro deepseek-v4-1-flash deepseek-v4-flash \
-  glm-5-3-flash glm-5-3 gemini-3-8-flash gemini-3-5-flash-lite \
-  claude-sonnet-5 kimi-k3 grok-4-6 muse-spark-1-3 \
+node $D/aa_bench.mjs check \
+  deepseek-v4-pro deepseek-v4-1-flash deepseek-v4-flash glm-5-3-flash glm-5-3 \
+  gemini-3-8-flash gemini-3-5-flash-lite claude-sonnet-5 kimi-k3 grok-4-6 muse-spark-1-3 \
+  claude-opus-5-5 gemini-4-argon muse-wonder gpt-6-1-sol grok-4-7 mimo-v2-6-pro gpt-6-luna claude-sonnet-5-5 \
   --out /tmp/aa_bench.json
 node $D/aa_bench.mjs coding --out /tmp/aa_coding.json
 # provider catalogs (save dated snapshots, not /tmp)
@@ -57,10 +73,13 @@ Notes:
 - `--config DIR` overrides the opencode config dir (default
   `~/.config/opencode`); reads `agent/*.md` (`agents/` too) `^model:` lines
   plus `"model"` / `"small_model"` from opencode.json(c).
-- `check` is ~1 + N page loads (~12 for the example command), ~2-4 min;
+- `check` is ~1 + N page loads, ~2-6 min depending on slug count;
   `coding` is 1 page + 3 tab clicks, ~2-3 min. No `--out` prints JSON to
   stdout. Sites occasionally block scrapers; on failure, retry once,
   then fall back to websearch excerpts.
+- After any pull, update the dated snapshots, the guide's tables, and log
+  operational notes (parser fixes, missed pulls, incidents) in
+  `snapshots/CHANGELOG.md` — run-log does not belong in the guide.
 - AA slugs: lowercase, dots become dashes
   (`DeepSeek V4.1 Flash (max)` → `deepseek-v4-1-flash`). Effort variants in
   parentheses are part of the display name only — the slug has no suffix.
@@ -68,10 +87,20 @@ Notes:
 
 ## Schedule (weekly pull + report)
 
-- `scripts/weekly_pull.sh` — unattended: OR catalog → dated snapshot, then
-  value report with deltas vs previous catalog. Re-runnable by hand.
+- `scripts/weekly_pull.sh` — unattended full refresh: OR catalog snapshot,
+  value report with deltas, provider `inventory`, dashboard regen + guide
+  splice, AA index version check (`aa_version.mjs` vs
+  `snapshots/aa-index-version.txt`), both test suites, and CHANGELOG
+  appends on findings (dead pins, AA-coverage gaps, version drift).
+  Idempotent: exits early when the newest catalog is < 7 days old, so it
+  is safe on a login-time (RunAtLoad) catch-up as well as the Monday
+  schedule, and safe to re-run by hand. Tested end-to-end in a fake-HOME
+  sandbox (see CHANGELOG 2026-10-18).
 - launchd `~/Library/LaunchAgents/ai.opencode.model-benchmarks.plist` —
-  Mondays 06:00 local. Logs to `snapshots/reports/weekly.log`.
+  Mondays 06:00 local plus RunAtLoad catch-up (fires at login/boot when a
+  Monday was missed; the script's 7-day staleness guard makes catch-up
+  runs near-instant when there is nothing to do). Logs to
+  `snapshots/reports/weekly.log`.
   Verify: `launchctl print gui/501/ai.opencode.model-benchmarks`.
   Reports land in `snapshots/reports/YYYY-MM-DD-value.md`.
 - `scripts/or_catalog.mjs [--out FILE]` — standalone OR catalog pull
@@ -82,86 +111,107 @@ Notes:
   + deltas). Refresh `AA_BENCH` from the skill snapshots + guide whenever
   AA publishes new numbers; family matching is substring rules
   (`FAMILY_RULES`, specific-first).
-- AA benchmark pulls (`check` / `coding`) stay manual — refresh those
+- AA benchmark pulls (`check` / `coding`), the BFCL cross-check (§13 of
+  the guide), and this skill's embedded tables stay manual — refresh those
   snapshots and the guide tables on the same cadence when models launch.
+
+## Version-watch policy (drift control)
+
+Re-pull on ANY of: AA publishes a new Coding Agent Index version, a new
+model wave lands on the benchmark pages, or 30 days since the last pull —
+whichever comes first. Between pulls, `dashboard.mjs` surfaces drift for
+free from local ground truth: dead agent pins (model IDs gone from the
+newest access snapshot), check pins with `aa_slug: null` (no AA coverage),
+snapshot ages vs today, and Go spend pacing vs caps. Re-verify Go console
+monthly limits on the same cadence (promos change them).
+Run-log lives in `snapshots/CHANGELOG.md`, never in the guide.
+
+## Mini-eval runs (guide §16 protocol, hardened 2026-10-19)
+
+Corpus: 10 frozen diffs covering bugfix / security / feature / dep-bump /
+test-only / ops / refactor. Judge MUST be pinned (model id + version +
+date in the scorecard); key stays sealed until scoring is done; disclose
+deviations. Minimum 6 diffs before any stop; drop only on mathematical
+futility; pause (don't score) on 2 consecutive provider DNFs and re-run on
+a fallback route; never stop the leader early. With n=10 only tier gaps
+resolve — report per-type wins, not just the net score.
 - Other scoring sites (LMArena, Aider polyglot, SWE-bench, Vellum) are
   documented in the guide (§11) for hand cross-checks; only the Aider YAML
   (`aider/website/_data/polyglot_leaderboard.yml`) is pull-friendly today.
 
-## Access snapshot (2026-09-16)
+## Access snapshot (2026-10-18)
 
-From `snapshots/access-2026-09-16.json`: opencode 7 models, nvidia 102,
+From `snapshots/access-2026-10-18.json`: opencode 10 free, nvidia ~56,
 ollama 1. Agent-relevant subset (full lists in the snapshot):
 
-- **opencode** (free shelf, all limited-time + data-use terms, see
-  Free-tier sweep): `big-pickle`, `ling-3.0-flash-fin-free`,
-  `mimo-v2.5-free`, `muse-spark-1.2-contributor-free`,
-  `muse-spark-1.3-contributor-free`, `nemotron-3-ultra-free`,
-  `nemotron-3.5-lightning-free`
-- **nvidia** (trial credits via build.nvidia.com key): floating AND pinned
-  snapshots — `deepseek-ai/deepseek-v4-pro` + `deepseek-v4-pro-0813`,
-  `deepseek-v4-flash` + `deepseek-v4-flash-0731`; `qwen/qwen3-coder-480b-a35b-instruct`,
-  `qwen3.5-122b-a10b`, `qwen3.5-397b-a17b`, `qwen2.5-coder-32b-instruct`;
-  `minimaxai/minimax-m2.7`, `minimax-m3`; `moonshotai/kimi-k3`;
-  `nvidia/nemotron-3-super-120b-a12b`, `nemotron-3-ultra-550b-a55b`,
-  `nemotron-3.5-lightning-30b-a3b`; `openai/gpt-oss-120b`, `gpt-oss-20b`;
-  `mistralai/mistral-large-3-675b-instruct-2512`;
-  `stepfun-ai/step-3.5-flash`, `step-3.7-flash`;
-  `thinkingmachines/inkling`; `meta/muse-glimmer-30b`
+- **opencode** (free shelf, limited-time + data-use terms):
+  `beam-free`, `big-pickle`, `deepseek-v4.1-flash-free`,
+  `glm-5.3-flash-free`, `longcat-2.5-preview-free`,
+  `mimo-v2.6-flash-free`, `nemotron-3-ultra-free`,
+  `nemotron-3.5-lightning-free`, `nemotron-3.5-super-vl-free`,
+  `space-bunny-free` (muse-spark contributor + ling-fin REMOVED 10-18 —
+  pins to those IDs are dead)
+- **nvidia** (~56, trial credits; catalog shrank from 102 — DS V4 Pro/Flash,
+  Qwen coder/3.5, MiniMax, StepFun, Inkling, GPT-OSS-120B removed):
+  `deepseek-ai/deepseek-v4.1-flash`; `google/gemma-4-31b-it`;
+  `moonshotai/kimi-k3`; `z-ai/glm-5.3`, `z-ai/glm-5.3-flash`;
+  `nvidia/nemotron-3-ultra-550b-a55b`, `nemotron-3.5-lightning-30b-a3b`,
+  `nemotron-3.5-super-vl-120b-a12b`; `openai/gpt-oss-20b`;
+  `meta/muse-glimmer-30b`; `poolside/laguna-xs-2.1`
 - **ollama** (local, free): `qwen3.8:latest`
 - Not in CLI (separate methods): Zen paid shelf (billing + key, see
   `/docs/zen/` pricing), OpenRouter `:free` (playwright-fetch
   `/api/v1/models`, keep price-0 AND `tools` support), Groq free tier
   (no card, thin limits). Cerebras: NO permanent free tier — exclude.
 
-## Agentic coding benchmarks (2026-09-16)
+## Agentic coding benchmarks (2026-10-18)
 
-From `snapshots/agentic-table-2026-09-16.md` (raw:
-`coding-index-2026-09-16.json`). Coding Agent Index v1.5, composite =
+From `snapshots/coding-index-2026-10-18.json` (parser re-fixed for the
+AA redesign — see CHANGELOG). Coding Agent Index v1.5, composite =
 DeepSWE + Terminal-Bench 4.0 + SWE-Atlas-QnA. Scores are **model×harness**.
 
 | Setup | Index | DeepSWE | T-Bench | QnA | $/task | time |
 |---|---|---|---|---|---|---|
-| Claude Code Fable 5.1 max | 62 | 64 | 58 | 65 | $12.40 | 34.8m |
+| Claude Code Sonnet 5.5 max | 68 | 72 | 66 | 67 | $14.19 | 1.5h |
+| Claude Code Opus 5.5 max | 66 | 68 | 63 | 66 | $13.04 | 1.1h |
+| Antigravity Gemini 4 Argon | 64 | 79 | 56 | 56 | $5.84 | 34.5m |
+| Muse Code Muse Wonder max | 63 | 76 | 47 | 67 | $8.05 | 22.4m |
+| Claude Code Fable 5.1 max | 62 | 64 | 58 | 65 | $12.39 | 34.8m |
 | Codex GPT-6 Astra max | 62 | 68 | 56 | 62 | $7.47 | 29.4m |
-| Claude Code Opus 5 max | 60 | 63 | 55 | 62 | $10.80 | 41.9m |
-| Muse Code Spark 1.3 max | 54 | 72 | 32 | 59 | $3.98 | 18.4m |
-| Opencode GLM-5.3 | 54 | 61 | 40 | 59 | $4.24 | 48.1m |
-| Kimi K3 | 52 | 68 | 21 | 66 | $5.05 | 1.0h |
-| Grok 4.6 xhigh | 47 | 65 | 18 | 58 | $3.57 | 19.5m |
-| Qwen3.8 Max | 43 | 51 | 17 | 62 | $3.48 | 1.1h |
-| Codex DS Pro 0813 max | 43 | 57 | 10 | 62 | $0.24 | 40.3m |
-| Antigravity Gemini 3.8F high | 42 | 66 | 15 | 45 | $2.47 | 11.7m |
-| Codex DS Flash 0731 max | ~39* | 54 | 11 | 51 | — | — |
-| Codex GPT-5.6 Sol max | — | 72 | 37 | 54 | — | — |
+| Codex GPT-6.1 Sol max | 60 | 70 | 53 | 58 | $1.55 | 24.4m |
+| Grok Build Grok 4.7 xhigh | 56 | 73 | 33 | 63 | $8.82 | 39.2m |
 
-`*` DS Flash composite ~39 inferred from chart rank order (value in
-footnote only — never present it as measured). Missing entirely (no
-agentic data): V4.1 Flash, GLM-5.3-Flash, Nemotron 3 Ultra/Super, Gemma 4,
-Sonnet 5, GPT-5.6 Luna, Qwen3.5 Plus, MiniMax M3, Kimi K2.7. Role map:
-DeepSWE ≈ reviewer, T-Bench ≈ researcher, QnA ≈ technical QA.
+Below the top-8 cutoff (fresh 10-18 component charts): Opencode GLM-5.3
+(61/40/59), Kimi Code CLI Kimi K3 (68/21/66), Muse Code Muse Spark Open
+(60/6/58), Claude Code Haiku 5.5 (46/30/34), Mirror Beam 1.0 (40/4/40).
+Stale 09-16 composites (off current charts, not re-measured): Spark 1.3 54,
+Gemini 3.8F 42, DS Pro 0813 43, DS Flash ~39*. Role map: DeepSWE ≈
+reviewer, T-Bench ≈ researcher, QnA ≈ technical QA. Missing agentic data:
+V4.1 Flash, GLM-5.3-Flash, Nemotron 3 Ultra/Super VL, Gemma 4, Sonnet 5,
+Qwen3.5 Plus, MiniMax M3, GPT-6 Luna, Step 5, Qwen3.8 family.
 
-## Free top-tier by provider + good deals (2026-09-16)
+## Free top-tier by provider + good deals (2026-10-18)
 
-From `snapshots/free-deals-2026-09-16.md`. Free tiers change fastest of
+From `snapshots/reports/2026-10-18-value.md`. Free tiers change fastest of
 all — re-verify no-card/no-expiry claims every sweep.
 
-Free: opencode `muse-spark-1.3-contributor-free` (Eng 49 — best free
-signal, trains Meta models) and `nemotron-3-ultra-free` (Intel ~48, Eng
-unknown, trial-logged); NVIDIA trial credits (`deepseek-v4-pro-0813`,
-`kimi-k3`, `qwen3-coder-480b`, `minimax-m3`, `gpt-oss-120b`, …);
-OpenRouter `:free` (same Nemotrons + `gemma-4-31b-it` Intel 39.2 +
-`inkling-small` Eng 29; require `tools` support); Z.ai direct
-`GLM-4.7-Flash` (~200K coding, permanent $0, ~1 req/s — 4.x gen, not 5.x);
-Groq (`gpt-oss-120b`, ~8K TPM, low-volume only); Google AI Studio free
-tier (modest quota, trains on data); GitHub Models (150 RPD, 8K/req —
-prototyping only); Ollama local. Excluded: Cerebras (no permanent free),
-Hugging Face ($0.10/mo ≈ nothing).
+Free: opencode `space-bunny-free` (§17 winner), `glm-5.3-flash-free`
+(Intel 42/Eng 43), `nemotron-3.5-super-vl-free` (Eng 28),
+`nemotron-3-ultra-free` (Intel ~48), `deepseek-v4.1-flash-free`,
+`beam-free`, `mimo-v2.6-flash-free`; NVIDIA trial (`deepseek-v4.1-flash`,
+`kimi-k3`, `glm-5.3`+flash, `gemma-4-31b`, nemotron trio, `gpt-oss-20b`
+— DS V4 Pro/Flash REMOVED 10-18); OpenRouter `:free` (nemotrons +
+`gemma-4-31b` Intel 39.2 + `inkling-small` Eng 29; require `tools`
+support); Z.ai direct `GLM-4.7-Flash` (permanent $0, ~1 req/s);
+Groq (`gpt-oss-120b`, ~8K TPM); Google AI Studio (trains); GitHub Models
+(150 RPD); Ollama local. Excluded: Cerebras, Hugging Face.
 
-Deals (Zen billing): DeepSeek V4 Flash $0.14/$0.28 (3× below first-party);
-GLM-5.3-Flash $0.15/$0.50 (Eng 44); GPT-5.6 Luna $0.20/$1.20 (Eng 36 —
-50% off ends 2026-09-18); Qwen3.5 Plus $0.20/$1.20 (unevaluated); paid
-Spark 1.3 $1.25/$4.25 (zero-retention); Z.ai Coding Plan ~$18/mo Lite.
+Deals (Oct-18 OR): DS V4 Flash 0731 $0.007/$0.45 (retiring); GLM-5.3-Flash
+$0.048/$0.20 (3× below FP); DS V4.1 Flash $0.061/$0.144; Luna $0.10/$0.50
+(price cut); Haiku 5.5 $0.10/$0.50 (DS 46/TB 30); Spark contributor
+$0.10/$0.20 (trains Meta); paid Spark 1.3 $1.25/$4.25 (zero-retention);
+Z.ai Coding Plan ~$18/mo. Go plan caps our loop: GLM-flash $60/mo
+(review loop ≈ $5.9/day), DS V4.1 $80/mo, Spark contrib $60/mo.
 
 ## Reading the output
 
@@ -169,7 +219,7 @@ Spark 1.3 $1.25/$4.25 (zero-retention); Z.ai Coding Plan ~$18/mo Lite.
   display name. These are **global leaders**, NOT filtered to your slugs.
   Cost per Task = weighted-average USD per Intelligence Index task (lower
   is better). Speed = output tok/s on the reference endpoint.
-- `engineering[]` — top ~26 rows as observed 2026-09-16
+- `engineering[]` — top ~28 rows as observed 2026-10-18
   `{rank, name, engineering}`. Higher is better. Incorporates
   AA-Omniscience, HLE, CritPt, GDPval-AA v2, AA-Briefcase, Terminal-Bench
   v4.0. Models below the cutoff are off-chart: report as "no Engineering
@@ -230,15 +280,22 @@ Spark 1.3 $1.25/$4.25 (zero-retention); Z.ai Coding Plan ~$18/mo Lite.
 Free endpoints change fast — re-verify each sweep, never trust memory:
 
 - `opencode models <provider>` lists the local catalog (needs no key for
-  the free shelf). Zen free shelf (all limited-time, all train on or log
-  your data — see Privacy section of `/docs/zen/`): `big-pickle`,
-  `mimo-v2.5-free`, `ling-3.0-flash-fin-free`, `nemotron-3-ultra-free`,
-  `nemotron-3.5-lightning-free`, `muse-spark-*-contributor-free`.
-- Zen pricing page (`/docs/zen/` Pricing table) is the authority for paid
-  cheap shelf (e.g. DeepSeek V4 Flash $0.14/$0.28 — far below first-party).
-- NVIDIA provider exposes floating AND pinned snapshots separately
-  (`deepseek-v4-pro` vs `deepseek-v4-pro-0813` — Eng 37 vs 32). Always
-  prefer the pinned ID; build.nvidia.com access is trial-credit based.
+  the free shelf). Zen/Go free shelf (all limited-time, all train on or
+  log your data — see Privacy section of `/docs/zen/`): `beam-free`,
+  `big-pickle`, `deepseek-v4.1-flash-free`, `glm-5.3-flash-free`,
+  `longcat-2.5-preview-free`, `mimo-v2.6-flash-free`,
+  `nemotron-3-ultra-free`, `nemotron-3.5-lightning-free`,
+  `nemotron-3.5-super-vl-free`, `space-bunny-free`. Per-model daily caps
+  (~200/day observed on glm-5.3-flash 10-18) — volume loops need Go or
+  trial/direct keys.
+- `opencode-go/*` routes (Go $10/mo) carry monthly dollar caps per model
+  (GLM-5.3-Flash $60, DS V4.1 Flash $80, Spark contributor $60); measure
+  the loop's $/day from the DB before pinning a loop on one.
+- NVIDIA provider exposes floating AND pinned snapshots separately —
+  but the trial catalog shrank 10-18 (DS V4 Pro/Flash, Qwen, MiniMax,
+  StepFun, Inkling, GPT-OSS-120B removed): always re-list with
+  `inventory` and prefer pinned IDs; build.nvidia.com access is
+  trial-credit based and throttles hard (~429s observed 10-18).
 - OpenRouter `:free` set: in a playwright page on openrouter.ai, run
   `fetch('/api/v1/models')`, keep `pricing.prompt == 0 &&
   pricing.completion == 0`, and require `supported_parameters` to include
@@ -249,6 +306,7 @@ Free endpoints change fast — re-verify each sweep, never trust memory:
   card required) — exclude from free sweeps.
 - Privacy gate for proprietary code: contributor/trial/free models
   (Spark contributor, Big Pickle, MiMo/Ling free, Nemotron trial,
-  OR free) train on or log prompts. Keep reviewer/researcher diffs on
-  zero-retention endpoints; free models are for trials and low-stakes
+  OR free, Space Bunny) train on or log prompts. Keep reviewer/researcher
+  diffs on zero-retention endpoints (Go GLM family, paid Spark,
+  Groq+ZDR, Z.ai API); free models are for trials and low-stakes
   agents (docs-writer, domain-companion) unless the user accepts the terms.
