@@ -4,33 +4,19 @@
 - Keep diffs surgical: no reformatting, no stylistic churn, no out-of-scope refactors.
 - Plan before multi-file edits: for changes spanning >2 files, schema migrations, or public API changes, present a short plan and wait for confirmation.
 - Verify before declaring done: run the relevant build, tests, or linters and report the result.
+- Before changing model pins, plugins, eval protocol, or retrieval: check EXPERIENCE.md for prior incidents.
 - Prefer editing existing files over creating new ones; never create docs unless asked.
+- Keep the machine alive: one foreground check per bash call — `sleep` ≤120s,
+  waits return within 5min (re-check next turn), never `watch`/`tail -f`,
+  never detach (`nohup`/`setsid`/trailing `&`, `caffeinate`) except
+  dev-server sessions with `OPENCODE_ALLOW_BG=1`, never launch GUI apps/URLs
+  (`open` of files and `open -R` are fine). `plugins/exec-guard.ts` enforces
+  this; bypass only per-session via its env overrides, and kill anything you
+  detach.
+- Locate code with native Grep/glob and GitNexus graph tools (`query`, `context`, `trace`); for meaning-based search use the project's `semantic:q` script when present; read the file before citing it.
 
-<!-- ZVEC_GREP_START -->
-## zvec-grep
-
-Choose the evidence source before the retrieval mode.
-
-### Workspace evidence
-- Use the current workspace as the evidence source when the user asks about local material, prior context establishes it as relevant, or the question concerns how the current project works—even if the workspace is not mentioned explicitly.
-- A workspace may contain any mix of code, documents, configuration, and data.
-- Do not use workspace retrieval for unrelated open-world questions, current external facts, or web content that does not depend on local evidence.
-
-### Retrieval routing
-- When an exact word, phrase, name, date, identifier, filename, path, configuration key, error message, source fragment, literal, or regex is known and locating its occurrences is sufficient, use `zvec_grep_zvec_grep_rg` when it is listed by the current host; otherwise native Grep or `rg`.
-- Use `zvec_grep_zvec_grep_search` when wording or location is unknown, or when the answer requires semantic, conceptual, fuzzy, or paraphrase discovery; relationships, chronology, causality, architecture, or data or control flow; or comparison or synthesis across files, sections, or documents.
-- For a mixed task with exact anchors that still requires relationships or cross-file synthesis, call `zvec_grep_zvec_grep_search` with the concept and anchors, then use `zvec_grep_zvec_grep_rg` when it is listed by the current host; otherwise native Grep or `rg` for focused follow-up.
-- When no sufficient exact anchor is available and the user asks whether conceptually related material exists locally, make at most one focused `zvec_grep_zvec_grep_search` probe using the question plus distinctive names, dates, or terms. This probe does not apply to exact quotations, configuration keys, filenames, regexes, or exhaustive occurrence requests. Continue only when results are relevant; otherwise stop and report that the indexed workspace did not establish the answer.
-- Before broad file reads or delegating workspace discovery, use the appropriate search route. Do not delegate solely to locate material, and stop when the evidence is sufficient.
-
-### Search evidence
-- Search results include bounded source snippets. Treat a sufficient snippet as already-read evidence, and read a cited file only when a required detail falls outside the snippet.
-
-### Freshness and index lifecycle
-- Pass a daemon-visible absolute `root` on every zvec-grep workspace call.
-- Read `freshness` and `background_refresh` from search results without a status preflight.
-- When results are `served_from_current_index`, use them when sufficient instead of waiting for the background refresh.
-- If the index is missing but exact or regex lookup can answer the task, use `zvec_grep_zvec_grep_rg` when it is listed by the current host; otherwise native Grep or `rg`.
-- Creating, rebuilding, or dropping a persistent index requires an explicit user request or authorization; never do so silently.
-
-<!-- ZVEC_GREP_END -->
+<!-- semantic fallback: when GitNexus graph lookups come back empty/UNKNOWN, or -->
+<!-- the question is "find code by meaning" (unknown vocabulary), use -->
+<!-- `npm run semantic:q -- "concept"` (ollama + sqlite-vec over agent/, skills/, -->
+<!-- docs/, plugins/, command/). Rebuild with `npm run index:semantic`. Needs -->
+<!-- `ollama serve` + the nomic-embed-text model. Lexical fallback: native Grep. -->

@@ -1,5 +1,9 @@
 {
   "dependencies": {
     "@opencode-ai/plugin": "1.18.30"
+  },
+  "scripts": {
+    "index:semantic": "uv run --with sqlite-vec python scripts/semantic_index.py index",
+    "semantic:q": "uv run --with sqlite-vec python scripts/semantic_index.py query"
   }
 }

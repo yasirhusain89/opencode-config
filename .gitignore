@@ -1,7 +1,8 @@
 node_modules
 bun.lock
 sync.sh.bak
-.zvec-grep/
 .idea/
 .DS_Store
 __pycache__/
+# Local semantic code index (ollama + sqlite-vec; rebuild with npm run index:semantic)
+.semindex/

@@ -6,13 +6,15 @@ Global [opencode](https://opencode.ai) configuration for yasirhusain89. This rep
 
 | Path | Purpose |
 | --- | --- |
-| `opencode.jsonc` | Providers (Ollama local), `model` + `small_model` (both `opencode/muse-spark-1.3-contributor-free`), permissions, MCP servers (gitnexus, zvec_grep) |
-| `AGENTS.md` | Global agent instructions (operating constitution + zvec-grep retrieval routing) — auto-loaded into every session |
-| `agent/` | 6 custom agents (all `opencode/muse-spark-1.3-contributor-free`): `reviewer` (35 steps), `security-reviewer` (40 steps), `docs-writer`, `researcher` (40 steps), `domain-companion` (finance/app-design companion grounded in Mint/YNAB/Monarch/Copilot patterns), `brainstorm` (30 steps, Socratic design + visual decision pages, hands off to gitnexus-plan) |
-| `skills/` | 30 skills: GitNexus suite (12), superpowers ports (7: `test-driven-development`, `systematic-debugging`, `verification-before-completion`, `using-git-worktrees`, `finishing-a-development-branch`, `dispatching-parallel-agents`, `writing-skills`), marketplace (5: `tauri-v2`, `commit-work`, `dependency-updater`, `database-migration`, `svelte-testing`), house-built (`test-runner`, `sqlite-migration-guard`, `html-report`, `gh-workflow`), `usage-dashboard` + `model-benchmarks` |
-| `plugins/` | Auto-loaded hooks: `secret-guard.ts`, `github-safety.ts` (no `plugin` config entry needed) |
+| `opencode.jsonc` | Providers (Ollama local), `model` + `small_model` (both `opencode/muse-spark-1.3-contributor-free`), permissions, MCP server (gitnexus) |
+| `AGENTS.md` | Global agent instructions (operating constitution) — auto-loaded into every session |
+| `agent/` | 6 custom agents: `reviewer` (35 steps, `opencode/space-bunny-free`) + `security-reviewer` (40 steps, `opencode/space-bunny-free`), `researcher` (40 steps, `opencode/nemotron-3.5-super-vl-free`), `brainstorm` (30 steps), `docs-writer` (15 steps), `domain-companion` (15 steps, finance/app-design companion grounded in Mint/YNAB/Monarch/Copilot patterns — last three on `opencode/muse-spark-1.3-contributor-free`). Pins come from the 2026-10-18 mini-eval (`skills/model-benchmarks/snapshots/evals/2026-10-18/scorecard.md`); Spark-1.3 is dropped as an agent model (OpenRouter privacy guardrails) |
+| `skills/` | 31 skills: GitNexus suite (12), superpowers ports (7: `test-driven-development`, `systematic-debugging`, `verification-before-completion`, `using-git-worktrees`, `finishing-a-development-branch`, `dispatching-parallel-agents`, `writing-skills`), marketplace (5: `tauri-v2`, `commit-work`, `dependency-updater`, `database-migration` — generic; prefer `sqlite-migration-guard` for local SQLite — `svelte-testing`), house-built (5: `test-runner`, `sqlite-migration-guard`, `html-report`, `gh-workflow`, `steam-depot-sideload` one-off game sideload), `usage-dashboard` + `model-benchmarks` |
+| `plugins/` | Auto-loaded hooks (no `plugin` config entry needed): `secret-guard.ts`, `github-safety.ts`, `path-guard.ts` (blocks `~/Documents`/`~/Downloads`), `disk-guard.ts` (blocks large downloads/extracts when <10GiB free) |
 | `command/` | `/sync-config` (sync this repo), `/decision-page` (visual Q&A decision pages; see also the `brainstorm` agent) |
+| `scripts/` | `semantic_index.py` — local semantic code index (ollama `nomic-embed-text` + sqlite-vec, `.semindex/` gitignored); `npm run index:semantic` rebuilds, `npm run semantic:q -- "concept"` searches. Same pattern as monartha's `python/semantic_index.py` |
 | `sync.sh` | The sync script the command runs |
+| `EXPERIENCE.md` | Harness lessons (Harness2-style): pinned decisions + prior incidents with evidence. Check before changing pins, plugins, eval protocol, or retrieval |
 
 ## Setup
 
@@ -34,10 +36,9 @@ Global [opencode](https://opencode.ai) configuration for yasirhusain89. This rep
    cd ~/.config/opencode && npm install
    ```
 
-4. Machine-specific paths — `opencode.jsonc` references Homebrew-installed binaries; adjust if yours differ:
+4. Machine-specific path — `opencode.jsonc` references a Homebrew-installed binary; adjust if yours differs:
 
    - `gitnexus`: `/opt/homebrew/bin/gitnexus` (verify with `which gitnexus`)
-   - `zg` (zvec-grep): `/opt/homebrew/bin/zg` (verify with `which zg`)
 
 5. Authenticate providers that need it (`opencode auth login` — covers `model`/`small_model` and all agents on the opencode gateway):
 
@@ -54,10 +55,6 @@ Optional — track it from PyCharm as a project folder (a symlink; edits write t
 ```bash
 ln -s ~/.config/opencode ~/PycharmProjects/opencode-config
 ```
-
-## Search index
-
-zvec-grep indexes this repo for semantic search: `zg index` (run after big changes). The generated `.zvec-grep/` dir is machine-local runtime state — gitignored and PyCharm-excluded, never commit it.
 
 ## When the gateway quota runs out
 
