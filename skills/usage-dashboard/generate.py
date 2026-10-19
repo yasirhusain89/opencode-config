@@ -2,7 +2,7 @@
 """opencode usage dashboard generator (stdlib only, python3.9+ compatible).
 
 Reads ~/.local/share/opencode/opencode.db read-only, prices usage at
-Claude Opus 5 standard rates, appends a daily snapshot to history.jsonl,
+Claude Opus 5.5 standard rates, appends a daily snapshot to history.jsonl,
 and writes data.js + sessions/*.js (JSON payloads loaded by the Svelte
 templates in app/src; no HTML is generated here).
 
@@ -10,77 +10,112 @@ Usage:  python3 generate.py   (safe to run any time; idempotent per day)
 """
 import datetime
 import json
+import os
 import pathlib
 import re
 import sqlite3
 import subprocess
 import sys
 
-HOME = pathlib.Path.home()
+# Test hook: point HOME at a sandbox (fixture DB + output) instead of ~.
+# Usage: OCUD_HOME=/tmp/fakehome python3 generate.py
+_home = os.environ.get("OCUD_HOME")
+HOME = pathlib.Path(_home) if _home else pathlib.Path.home()
 DB = HOME / ".local/share/opencode/opencode.db"
+LOG_FILE = DB.parent / "log" / "opencode.log"  # next to the DB (follows OCUD_HOME)
 OUT_DIR = HOME / ".opencode/usage-dashboard"
 HISTORY = OUT_DIR / "history.jsonl"
 DATA_JS = OUT_DIR / "data.js"
 SESS_DIR = OUT_DIR / "sessions"
+# Go plan-window snapshot written by scripts/go_quota.mjs (absent = unknown).
+QUOTA_FILE = OUT_DIR / "quota.json"
+# Provider credit snapshot written by scripts/provider_credits.mjs.
+CREDITS_FILE = OUT_DIR / "credits.json"
 
-# Claude Opus 5 standard pricing (2026-07-24, unchanged from Opus 4.8)
-PRICE_IN = 5.00 / 1_000_000       # $/token input
-PRICE_OUT = 25.00 / 1_000_000     # $/token output (incl. reasoning/thinking)
-PRICE_CACHE_READ = 0.50 / 1_000_000   # 90% off input
-PRICE_CACHE_WRITE = 6.25 / 1_000_000  # 5-min TTL, 1.25x input
+# Claude Opus 5.5 standard pricing (2026-10-07 rate card; was Opus 5 $5/$25)
+PRICE_IN = 4.00 / 1_000_000       # $/token input
+PRICE_OUT = 20.00 / 1_000_000     # $/token output (incl. reasoning/thinking)
+PRICE_CACHE_READ = 0.20 / 1_000_000   # 95% off input
+PRICE_CACHE_WRITE = 5.00 / 1_000_000  # 5-min TTL, 1.25x input
 
-# Top-20 AA leaderboard (scraped 2026-09-14 from artificialanalysis.ai) with
-# family token pricing from the model pages (per 1M tokens; cw=None unpublished).
+# Top-20 AA leaderboard (scraped 2026-10-19 from artificialanalysis.ai) with
+# family token pricing from the model pages (per 1M tokens; cw=5-min write,
+# 1.25x input derived where AA doesn't publish it; Sonnet 5.5 from Anthropic's
+# official 2026-10-07 rate card as its AA page had no pricing yet).
 # Refresh via the usage-dashboard skill (aa_model_info.mjs + aa_snippet.py).
 TOP_MODELS = [
-    {"name": "Claude Fable 5.1 (max w/ fallback)", "creator": "Anthropic",
-     "aa": 53, "cpt": 7.63, "pin": 10.00, "pout": 50.00, "pcr": 0.25, "pcw": None},
-    {"name": "Claude Fable 5.1 (xhigh w/ fallback)", "creator": "Anthropic",
-     "aa": 53, "cpt": 5.98, "pin": 10.00, "pout": 50.00, "pcr": 0.25, "pcw": None},
-    {"name": "GPT-6 Astra (max)", "creator": "OpenAI",
-     "aa": 53, "cpt": 3.26, "pin": 10.00, "pout": 50.00, "pcr": 1.00, "pcw": 12.50},
-    {"name": "GPT-6 Astra (xhigh)", "creator": "OpenAI",
-     "aa": 53, "cpt": 2.31, "pin": 10.00, "pout": 50.00, "pcr": 1.00, "pcw": 12.50},
-    {"name": "Claude Fable 5.1 (high w/ fallback)", "creator": "Anthropic",
-     "aa": 51, "cpt": 3.91, "pin": 10.00, "pout": 50.00, "pcr": 0.25, "pcw": None},
-    {"name": "GPT-6 Astra (high)", "creator": "OpenAI",
-     "aa": 51, "cpt": 1.72, "pin": 10.00, "pout": 50.00, "pcr": 1.00, "pcw": 12.50},
-    {"name": "Claude Opus 5 (max)", "creator": "Anthropic",
-     "aa": 51, "cpt": 5.86, "pin": 5.00, "pout": 25.00, "pcr": 0.50, "pcw": 6.25},
-    {"name": "Claude Fable 5 (w/ fallback)", "creator": "Anthropic",
-     "aa": 50, "cpt": 8.75, "pin": 10.00, "pout": 50.00, "pcr": 1.00, "pcw": None},
-    {"name": "GPT-6 Astra (medium)", "creator": "OpenAI",
-     "aa": 50, "cpt": 1.54, "pin": 10.00, "pout": 50.00, "pcr": 1.00, "pcw": 12.50},
-    {"name": "Claude Opus 5 (xhigh)", "creator": "Anthropic",
-     "aa": 50, "cpt": 4.88, "pin": 5.00, "pout": 25.00, "pcr": 0.50, "pcw": 6.25},
-    {"name": "Claude Fable 5.1 (medium w/ fallback)", "creator": "Anthropic",
-     "aa": 49, "cpt": 2.98, "pin": 10.00, "pout": 50.00, "pcr": 0.25, "pcw": None},
-    {"name": "Claude Opus 5 (high)", "creator": "Anthropic",
-     "aa": 48, "cpt": 3.61, "pin": 5.00, "pout": 25.00, "pcr": 0.50, "pcw": 6.25},
-    {"name": "Muse Spark 1.3 (max)", "creator": "Meta",
-     "aa": 48, "cpt": 1.60, "pin": 1.25, "pout": 4.25, "pcr": 0.15, "pcw": None},
-    {"name": "GPT-5.6 Sol (max)", "creator": "OpenAI",
-     "aa": 47, "cpt": 1.99, "pin": 4.00, "pout": 20.00, "pcr": 0.40, "pcw": 5.00},
-    {"name": "Claude Fable 5.1 (low w/ fallback)", "creator": "Anthropic",
-     "aa": 47, "cpt": 2.37, "pin": 10.00, "pout": 50.00, "pcr": 0.25, "pcw": None},
-    {"name": "GPT-6 Astra (low)", "creator": "OpenAI",
-     "aa": 46, "cpt": 0.82, "pin": 10.00, "pout": 50.00, "pcr": 1.00, "pcw": 12.50},
-    {"name": "Muse Spark 1.3 (xhigh)", "creator": "Meta",
-     "aa": 45, "cpt": 1.37, "pin": 1.25, "pout": 4.25, "pcr": 0.15, "pcw": None},
-    {"name": "Claude Opus 5 (medium)", "creator": "Anthropic",
-     "aa": 45, "cpt": 2.19, "pin": 5.00, "pout": 25.00, "pcr": 0.50, "pcw": 6.25},
-    {"name": "GLM-5.3 (max)", "creator": "Z AI",
-     "aa": 45, "cpt": 2.01, "pin": 1.40, "pout": 4.40, "pcr": 0.26, "pcw": None},
-    {"name": "Grok 4.6 (high)", "creator": "SpaceXAI",
-     "aa": 44, "cpt": 1.86, "pin": 2.00, "pout": 6.00, "pcr": 0.50, "pcw": None},
+    {'name': 'Claude Opus 5.5 (max with fallback)', 'creator': 'Anthropic', 'aa': 58, 'cpt': 5.98,
+     'pin': 4, 'pout': 20, 'pcr': 0.2, 'pcw': 5.0},
+    {'name': 'Claude Sonnet 5.5 (max with fallback)', 'creator': 'Anthropic', 'aa': 56, 'cpt': 5.46,
+     'pin': 2, 'pout': 10, 'pcr': 0.1, 'pcw': 2.5},
+    {'name': 'Claude Opus 5.5 (xhigh with fallback)', 'creator': 'Anthropic', 'aa': 56, 'cpt': 3.46,
+     'pin': 4, 'pout': 20, 'pcr': 0.2, 'pcw': 5.0},
+    {'name': 'Claude Opus 5.5 (high with fallback)', 'creator': 'Anthropic', 'aa': 54, 'cpt': 1.82,
+     'pin': 4, 'pout': 20, 'pcr': 0.2, 'pcw': 5.0},
+    {'name': 'Claude Fable 5.1 (max with fallback)', 'creator': 'Anthropic', 'aa': 53, 'cpt': 7.63,
+     'pin': 10, 'pout': 50, 'pcr': 0.25, 'pcw': 12.5},
+    {'name': 'Claude Fable 5.1 (xhigh with fallback)', 'creator': 'Anthropic', 'aa': 53, 'cpt': 5.98,
+     'pin': 10, 'pout': 50, 'pcr': 0.25, 'pcw': 12.5},
+    {'name': 'GPT-6 Astra (max)', 'creator': 'OpenAI', 'aa': 53, 'cpt': 3.26,
+     'pin': 10, 'pout': 50, 'pcr': 1, 'pcw': 12.5},
+    {'name': 'Muse Wonder (max)', 'creator': 'Meta', 'aa': 52, 'cpt': 4.52,
+     'pin': 4, 'pout': 20, 'pcr': 0.2, 'pcw': 5.0},
+    {'name': 'GPT-6 Astra (xhigh)', 'creator': 'OpenAI', 'aa': 52, 'cpt': 2.31,
+     'pin': 10, 'pout': 50, 'pcr': 1, 'pcw': 12.5},
+    {'name': 'Claude Sonnet 5.5 (xhigh with fallback)', 'creator': 'Anthropic', 'aa': 52, 'cpt': 2.01,
+     'pin': 2, 'pout': 10, 'pcr': 0.1, 'pcw': 2.5},
+    {'name': 'GPT-6.1 Sol (max)', 'creator': 'OpenAI', 'aa': 52, 'cpt': 0.72,
+     'pin': 2, 'pout': 10, 'pcr': 0.1, 'pcw': 2.5},
+    {'name': 'Claude Opus 5.5 (medium with fallback)', 'creator': 'Anthropic', 'aa': 51, 'cpt': 1.34,
+     'pin': 4, 'pout': 20, 'pcr': 0.2, 'pcw': 5.0},
+    {'name': 'Claude Fable 5.1 (high with fallback)', 'creator': 'Anthropic', 'aa': 51, 'cpt': 3.91,
+     'pin': 10, 'pout': 50, 'pcr': 0.25, 'pcw': 12.5},
+    {'name': 'GPT-6.1 Sol (xhigh)', 'creator': 'OpenAI', 'aa': 51, 'cpt': 0.39,
+     'pin': 2, 'pout': 10, 'pcr': 0.1, 'pcw': 2.5},
+    {'name': 'GPT-6 Astra (high)', 'creator': 'OpenAI', 'aa': 51, 'cpt': 1.73,
+     'pin': 10, 'pout': 50, 'pcr': 1, 'pcw': 12.5},
+    {'name': 'GPT-6.1 Sol (high)', 'creator': 'OpenAI', 'aa': 50, 'cpt': 0.32,
+     'pin': 2, 'pout': 10, 'pcr': 0.1, 'pcw': 2.5},
+    {'name': 'GPT-6 Astra (medium)', 'creator': 'OpenAI', 'aa': 50, 'cpt': 1.54,
+     'pin': 10, 'pout': 50, 'pcr': 1, 'pcw': 12.5},
+    {'name': 'Claude Fable 5.1 (medium with fallback)', 'creator': 'Anthropic', 'aa': 49, 'cpt': 2.98,
+     'pin': 10, 'pout': 50, 'pcr': 0.25, 'pcw': 12.5},
+    {'name': 'Muse Spark 1.3 (max)', 'creator': 'Meta', 'aa': 48, 'cpt': 1.6,
+     'pin': 1.25, 'pout': 4.25, 'pcr': 0.15, 'pcw': 1.56},
+    {'name': 'GPT-6.1 Sol (medium)', 'creator': 'OpenAI', 'aa': 48, 'cpt': 0.21,
+     'pin': 2, 'pout': 10, 'pcr': 0.1, 'pcw': 2.5},
 ]
 # Models actually in use here (free tiers) with their paid AA equivalents;
 # appended to the comparison table so usage can be compared against same tier.
+# The "in use" badge is NOT read from here — it is derived from real DB usage
+# (IN_USE_MIN_MSGS below); these rows are paid-equivalent references.
 IN_USE_EQUIV = [
-    {"name": "GLM-5.3-Flash", "creator": "Z AI", "in_use": True,
+    {"name": "GLM-5.3-Flash", "creator": "Z AI",
      "aa": 42, "cpt": 0.25, "pin": 0.15, "pout": 0.50, "pcr": 0.03, "pcw": None},
-    {"name": "Qwen3.8 Max", "creator": "Alibaba", "in_use": True,
+    {"name": "Qwen3.8 Max", "creator": "Alibaba",
      "aa": 40, "cpt": 2.67, "pin": 2.00, "pout": 6.00, "pcr": 0.24, "pcw": None},
+    # Space Bunny: no AA page; rates from models.dev/Sovyron 2026-10-18
+    # (opencode-go $0.15/$0.60, cache read $0.03, cache write free).
+    {"name": "Space Bunny", "creator": "OpenCode",
+     "aa": None, "cpt": None, "pin": 0.15, "pout": 0.60, "pcr": 0.03, "pcw": 0.0},
+    # Nemotron 3.5 Super VL: no AA pricing page; rates from OpenRouter
+    # 2026-10-15 (Crusoe/DeepInfra $0.10/$0.40, cache read $0.08).
+    {"name": "Nemotron 3.5 Super VL", "creator": "NVIDIA",
+     "aa": None, "cpt": None, "pin": 0.10, "pout": 0.40, "pcr": 0.08, "pcw": None},
+]
+# A comparison row earns the "in use" badge when its model family reaches
+# this many assistant messages in the DB (free / Go / API variants count).
+IN_USE_MIN_MSGS = 100
+# Providers behind API keys: opencode records $0 cost for these, so any
+# non-free model served here may bill outside the dashboard. Flagged below
+# (confirm free-tier status on the provider billing page, or add the spend).
+METERED_PROVIDERS = {"nvidia", "openrouter"}
+# Flat-rate subscriptions. The DB's recorded `cost` is metered value only, so
+# plans are added here: `covers` providers are billed flat (their recorded
+# metered cost is NOT added on top), any other recorded cost counts as overage.
+SUBSCRIPTIONS = [
+    {"label": "OpenCode Go", "monthly": 10.00, "since": "2026-10",
+     "covers": ["opencode-go"]},
 ]
 
 # --- tool-use taxonomy (ordered for display) ---
@@ -161,12 +196,13 @@ def price_cost(d, pin, pout, pcr, pcw):
 
 
 def cost(d):
-    return price_cost(d, 5.00, 25.00, 0.50, 6.25)
+    return price_cost(d, 4.00, 20.00, 0.20, 5.00)
 
 
-# --- per-session metrics (top N by cost). Improvement tips live in the
+# --- per-session metrics. Improvement tips live in the
 # Svelte templates (app/src/lib/tips.js); Python emits raw numbers only. ---
-SESS_TOP_N = 20
+# Featured sessions (deep-dive pages): 12 costliest + up to 6 most errors
+# (>=3) + up to 6 most user turns (>=8), de-duplicated.
 GAP_MIN = 15        # idle gap between user turns (minutes)
 AFTER_ERR_S = 120   # user re-prompt within Ns of a tool error
 TL_MAX = 60         # cap turn-timeline rows per session file
@@ -441,7 +477,7 @@ def collect_session_metrics(cur, ids):
             "errors": errors, "err_rate": err_rate,
             "err_by_tool": err_by_tool, "streak": streak,
             "interrupted": interrupted,
-            "gaps": gaps, "after_err": after_err,
+            "gaps": gaps, "gap_ms": gap_ms, "after_err": after_err,
             "first_prompt": first_prompt,
             "active_min": active_s / 60.0, "idle_pct": idle_pct,
             "wall_min": wall_s / 60.0,
@@ -472,7 +508,6 @@ def main():
     total = {"input": row[1], "output": row[2], "reasoning": row[3],
              "cache_read": row[4], "cache_write": row[5],
              "sessions": row[0], "messages": 0}
-    actual = row[6]
 
     cur.execute("SELECT count(*) FROM message")
     total["messages"] = cur.fetchone()[0]
@@ -525,6 +560,16 @@ def main():
                            key=lambda p: -p["input"] - p["cache_read"])
     for p in provider_list:
         p["cost"] = cost(p)["total"]
+
+    # --- billing flags: non-free models on key-authed providers ($0 recorded) ---
+    billing_flags = sorted(
+        ({"provider": m["provider"],
+          "model": re.sub(r"^" + re.escape(m["provider"] or "") + "/",
+                          "", m["model"] or ""),
+          "msgs": m["messages"]} for m in models
+         if m["provider"] in METERED_PROVIDERS
+         and not re.search(r"(:free$|-free$)", m["model"] or "")),
+        key=lambda f: -f["msgs"])
 
     # --- per day ---
     cur.execute("""SELECT date(time_created/1000,'unixepoch','localtime'), count(*),
@@ -673,11 +718,99 @@ def main():
         sd["first"], sd["last"] = first, last
     session_rows_data.sort(key=lambda s: -s["cost"])
 
-    # --- per-session metrics (top N by cost): effectiveness/efficiency ---
+    # --- active assistant time per session (turn durations, all sessions).
+    # Wall spans (dur_min) include idle days; this is the honest work clock.
+    cur.execute("""SELECT session_id, coalesce(sum(
+        CASE WHEN CAST(json_extract(data,'$.time.completed') AS INTEGER)
+                  > CAST(json_extract(data,'$.time.created') AS INTEGER)
+        THEN (CAST(json_extract(data,'$.time.completed') AS INTEGER)
+            - CAST(json_extract(data,'$.time.created') AS INTEGER))
+        ELSE 0 END), 0) FROM message
+        WHERE json_extract(data,'$.role')='assistant'
+        GROUP BY session_id""")
+    active_by_session = {sid: ms / 60000.0 for sid, ms in cur.fetchall()}
+    cur.execute("""SELECT id, date(time_created/1000,'unixepoch','localtime')
+        FROM session""")
+    day_by_session = {sid: day for sid, day in cur.fetchall()}
+    for sd in session_rows_data:
+        sd["active_min"] = active_by_session.get(sd["id"], 0.0)
+        sd["day"] = day_by_session.get(sd["id"], "")
+    total_active = sum(sd["active_min"] for sd in session_rows_data)
+    active_by_dir = {}
+    active_by_day = {}
+    for sd in session_rows_data:
+        if sd["directory"]:
+            active_by_dir[sd["directory"]] = \
+                active_by_dir.get(sd["directory"], 0.0) + sd["active_min"]
+        if sd["day"]:
+            active_by_day[sd["day"]] = \
+                active_by_day.get(sd["day"], 0.0) + sd["active_min"]
+    for d in days:
+        d["active"] = active_by_day.get(d["day"], 0.0)
+
+    # --- code-intent per session (edit/write tool call or patch part).
+    # Sessions without any are Q&A/exploration: excluded from landing stats.
+    cur.execute("""SELECT DISTINCT session_id FROM part WHERE
+        json_extract(data,'$.type')='patch' OR
+        (json_extract(data,'$.type')='tool'
+         AND json_extract(data,'$.tool') IN ('edit','write'))""")
+    code_intent = {r[0] for r in cur.fetchall()}
+
+    # --- dominant effort variant + session model label (all sessions) ---
+    cur.execute("""SELECT session_id, json_extract(data,'$.variant'),
+        count(*) FROM message
+        WHERE json_extract(data,'$.role')='assistant'
+        GROUP BY session_id, 2""")
+    dom_var = {}
+    for sid, var, n in cur.fetchall():
+        v = var or "unset"
+        if sid not in dom_var or n > dom_var[sid][1]:
+            dom_var[sid] = (v, n)
+    for sd in session_rows_data:
+        sd["dom_var"] = dom_var.get(sd["id"], ("unset", 0))[0]
+        try:
+            sm = json.loads(sd["model"]) if sd["model"] else {}
+        except ValueError:
+            sm = {}
+        sd["model_label"] = ((sm.get("providerID") or "?") + " / "
+                             + short_model(sm.get("id"))) if sm else "?"
+
+    # --- per-session metrics (all sessions): effectiveness/efficiency ---
     sess_q = collect_session_metrics(
-        cur, [s["id"] for s in session_rows_data[:SESS_TOP_N]])
+        cur, [s["id"] for s in session_rows_data])
     for sd in session_rows_data:
         sd["q"] = sess_q.get(sd["id"])
+
+    # --- featured sessions: costliest + most errors + most turns ---
+    feat_ids = set(s["id"] for s in session_rows_data[:12])
+    feat_ids.update(s["id"] for s in
+                    sorted(session_rows_data, key=lambda s: -s["errors"])[:6]
+                    if s["errors"] >= 3)
+    feat_ids.update(s["id"] for s in
+                    sorted(session_rows_data,
+                           key=lambda s: -(s["q"] or {}).get("turns", 0))[:6]
+                    if (s["q"] or {}).get("turns", 0) >= 8)
+    featured = [s for s in session_rows_data if s["id"] in feat_ids]
+
+    # --- aggregate prompt/session habits (training lens, all sessions) ---
+    qall = [s["q"] for s in session_rows_data if s.get("q")]
+    t1 = [q["turns"] for q in qall if q["turns"] >= 1]
+    fp = [q["first_prompt"] for q in qall if q["turns"] >= 1]
+    habits = {
+        "n": len(t1),
+        "turns_p50": med(t1), "turns_p90": pctiles(sorted(t1), 0.90),
+        "gap_sessions": sum(1 for q in qall if q["gaps"] > 0),
+        "gap_hours": round(sum(q.get("gap_ms", 0) for q in qall)
+                     / 3600000.0, 1),
+        "cut_sessions": sum(1 for q in qall if q["interrupted"] > 0),
+        "after_err_turns": sum(q["after_err"] for q in qall),
+        "prompt_p50": med(fp), "prompt_p90": pctiles(sorted(fp), 0.90),
+        # clean = conversational, no idle gaps, no cut turns, no post-error
+        # re-prompts (8-turn bar mirrors tips.js TURNS_MANY)
+        "clean": sum(1 for q in qall if 1 <= q["turns"] < 8
+                     and not q["gaps"] and not q["interrupted"]
+                     and not q["after_err"]),
+    }
 
     # --- effort-level (variant) mix ---
     cur.execute("""SELECT json_extract(data,'$.variant'), count(*),
@@ -688,7 +821,7 @@ def main():
     variants = [(r[0] or "unset", r[1], r[2], r[3]) for r in cur.fetchall()]
 
     # --- hour-of-day activity (UTC, from session tokens) ---
-    cur.execute("""SELECT CAST(strftime('%H', time_created/1000, 'unixepoch') AS INTEGER),
+    cur.execute("""SELECT CAST(strftime('%H', time_created/1000, 'unixepoch', 'localtime') AS INTEGER),
         count(*), coalesce(sum(tokens_input),0), coalesce(sum(tokens_cache_read),0),
         coalesce(sum(tokens_output),0), coalesce(sum(tokens_reasoning),0)
         FROM session GROUP BY 1""")
@@ -728,10 +861,43 @@ def main():
         return any(0 <= c - last_s <= 86400 for c in stamps)
 
     for sd in session_rows_data:
-        sd["landed"] = landed(sd["directory"], sd.get("last"))
+        if sd["id"] not in code_intent:
+            sd["landed"] = None
+            sd["intent"] = False
+        else:
+            sd["intent"] = True
+            sd["landed"] = landed(sd["directory"], sd.get("last"))
 
     n_landed = sum(1 for s in session_rows_data if s["landed"])
     n_checkable = sum(1 for s in session_rows_data if s["landed"] is not None)
+    n_no_intent = sum(1 for s in session_rows_data if not s["intent"])
+
+    # Sessions ended <24h ago haven't had their landing window yet: they are
+    # pending, not failures. (The in-flight work from the last day, including
+    # today's sessions, would otherwise read as 0% landed.)
+    now_ms = datetime.datetime.now().astimezone().timestamp() * 1000.0
+    for sd in session_rows_data:
+        if (sd["intent"] and sd.get("last")
+                and now_ms - sd["last"] < 86400000):
+            sd["landed"] = None
+            sd["pending"] = True
+    n_pending = sum(1 for s in session_rows_data if s.get("pending"))
+    n_landed = sum(1 for s in session_rows_data if s["landed"])
+    n_checkable = sum(1 for s in session_rows_data if s["landed"] is not None)
+
+    # --- landed rate by session model + dominant effort (intent sessions) ---
+    def landed_table(keyfn):
+        rows = {}
+        for s in session_rows_data:
+            if s["landed"] is None:
+                continue
+            k = keyfn(s)
+            r = rows.setdefault(k, [0, 0])
+            r[1] += 1
+            r[0] += 1 if s["landed"] else 0
+        return [{"name": k, "landed": v[0], "n": v[1],
+                 "rate": round(100.0 * v[0] / v[1]) if v[1] else None}
+                for k, v in sorted(rows.items(), key=lambda kv: -kv[1][1])]
 
     # --- bash command intents ---
     con = sqlite3.connect("file:" + str(DB) + "?mode=ro", uri=True)
@@ -764,13 +930,85 @@ def main():
 
     now = datetime.datetime.now().astimezone()
     total_cost = cost(total)
+
+    # --- rate-limit incidents in the last 24h (opencode.log, same scan as
+    # the benchmarks weekly job: stream-error lines mentioning 429s) ---
+    rate429 = {"count": 0, "by_model": []}
+    try:
+        log_lines = LOG_FILE.read_text(errors="replace").splitlines()
+    except OSError:
+        log_lines = []
+    cutoff = now - datetime.timedelta(hours=24)
+    by_mod429 = {}
+    for line in log_lines:
+        if "stream error" not in line:
+            continue
+        if not re.search(r"Too Many Requests| 429 ", line):
+            continue
+        m = re.search(r"timestamp=([0-9T:.\-]+Z)", line)
+        if not m:
+            continue
+        try:
+            ts = datetime.datetime.fromisoformat(
+                m.group(1).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if ts < cutoff:
+            continue
+        mod = (re.search(r"modelID=([^\s]+)", line) or [None, "?"])[1]
+        rate429["count"] += 1
+        by_mod429[mod] = by_mod429.get(mod, 0) + 1
+    rate429["by_model"] = sorted(by_mod429.items(), key=lambda kv: -kv[1])
+
+    # --- Go quota snapshot (manual fetch; absent file = unknown) ---
+    quota = None
+    try:
+        qj = json.loads(QUOTA_FILE.read_text())
+        quota = {"fetched_at": qj.get("fetched_at"),
+                 "rolling": qj.get("rolling"),
+                 "weekly": qj.get("weekly"),
+                 "monthly": qj.get("monthly")}
+    except (OSError, ValueError):
+        quota = None
+
+    # --- provider credit snapshot (manual fetch; absent file = unknown) ---
+    credits = None
+    try:
+        cj = json.loads(CREDITS_FILE.read_text())
+        credits = {"fetched_at": cj.get("fetched_at"),
+                   "providers": cj.get("providers")}
+    except (OSError, ValueError):
+        credits = None
     primary = models[0] if models else {"model": "?", "provider": "?",
                                         "messages": 0, "actual": 0.0, "cost": 0.0}
     equiv = []
     for m in TOP_MODELS + IN_USE_EQUIV:
         c = price_cost(total, m["pin"], m["pout"], m["pcr"], m["pcw"])
         equiv.append({"model": m, "cost": c})
-    equiv.sort(key=lambda e: -e["model"]["aa"])
+    equiv.sort(key=lambda e: -(e["model"]["aa"] or 0))
+
+    # --- usage-derived "in use" families (free/Go/API variants unified) ---
+    def fam_key(s):
+        s = (s or "").lower().split("/")[-1]
+        s = re.sub(r":.*$", "", s)
+        s = s.split(" (")[0]
+        s = s.replace(".", "-").replace(" ", "-")
+        s = re.sub(r"-(free|contributor)$", "", s)
+        s = re.sub(r"-(free|contributor)$", "", s)
+        return s
+
+    fam_msgs = {}
+    for m in models:
+        k = fam_key(m["model"])
+        fam_msgs[k] = fam_msgs.get(k, 0) + m["messages"]
+    used_fams = set()
+    for e in equiv:
+        rk = fam_key(e["model"]["name"])
+        for fk, n in fam_msgs.items():
+            if n >= IN_USE_MIN_MSGS and (fk == rk or rk.startswith(fk + "-")
+                                         or fk.startswith(rk + "-")):
+                used_fams.add(rk)
+                break
 
     # --- history (one snapshot per day = that day's usage; frozen at day end) ---
     today = now.strftime("%Y-%m-%d")
@@ -782,12 +1020,13 @@ def main():
                "input": d["input"], "output": d["output"],
                "reasoning": d["reasoning"], "cache_read": d["cache_read"],
                "cache_write": d["cache_write"],
-               "opus5_total": round(d["cost"], 2)}
+               "opus55_total": round(d["cost"], 2)}
         if backfilled:
             rec["backfilled"] = True
         return rec
 
     hist = []
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     if HISTORY.exists():
         for line in HISTORY.read_text().splitlines():
             line = line.strip()
@@ -856,27 +1095,61 @@ def main():
             "%m-%d %H:%M")
 
     err_rate = (100.0 * calls_err / calls_total) if calls_total else 0.0
-    max_hist = max([h["opus5_total"] for h in hist] + [1])
+    max_hist = max([h["opus55_total"] for h in hist] + [1])
     peak = max(days, key=lambda d: d["cost"]) if days else None
+
+    # --- flat subscriptions: recorded `actual` is metered value only ---
+    cur_ym = now.strftime("%Y-%m")
+    subs = []
+    for s in SUBSCRIPTIONS:
+        y1, m1 = [int(x) for x in s["since"].split("-")]
+        y2, m2 = [int(x) for x in cur_ym.split("-")]
+        n = (y2 - y1) * 12 + (m2 - m1) + 1
+        if n > 0:
+            subs.append({"label": s["label"], "months": n,
+                         "amount": round(n * s["monthly"], 2)})
+    covered = set(p for s in SUBSCRIPTIONS for p in s.get("covers", []))
+    metered_covered = round(sum(m["actual"] for m in models
+                                if m["provider"] in covered), 4)
+    metered_other = round(sum(m["actual"] for m in models
+                              if m["provider"] not in covered), 4)
+    sub_total = round(sum(s["amount"] for s in subs), 2)
+    paid = round(sub_total + metered_other, 2)
+    paid_bits = ["%s $%g x %d mo" % (s["label"], s["amount"] / s["months"]
+                                     if s["months"] else 0, s["months"])
+                 for s in subs]
+    if metered_other:
+        paid_bits.append("metered overage $%.4f" % metered_other)
+    paid_note = (" · ".join(paid_bits) +
+                 (" · $%.2f metered value covered by plan" % metered_covered
+                  if metered_covered else ""))
+
+    mix_total = sum(m["messages"] for m in models) or 1
+    mix = [{"name": m["provider"] + " / " + short_model(m["model"]),
+            "msgs": m["messages"],
+            "pct": round(100.0 * m["messages"] / mix_total, 1)}
+           for m in sorted(models, key=lambda m: -m["messages"])[:3]]
 
     payload = {
         "generated": now.strftime("%Y-%m-%d %H:%M %Z"),
         "hero": {
-            "opus5": total_cost["total"], "sessions": total["sessions"],
-            "messages": total["messages"], "actual": actual,
+            "opus55": total_cost["total"], "sessions": total["sessions"],
+            "messages": total["messages"], "actual": paid,
+            "metered_covered": metered_covered, "subs": subs,
+            "paid_note": paid_note, "mix": mix, "quota": quota,
             "prov": primary["provider"],
             "model": short_model(primary["model"]),
-            "avoided": total_cost["total"] - actual,
+            "avoided": total_cost["total"] - paid,
             "cache_hit": cache_hit, "cache_read": total["cache_read"],
             "cache_in": total["input"] + total["cache_read"],
             "err_rate": err_rate, "calls_err": calls_err,
             "calls_total": calls_total, "overall_min": overall_min,
-            "sum_min": sum_min,
+            "sum_min": sum_min, "active_min": total_active,
         },
         "compare_opts": [{
             "name": short_model_name(e["model"]["name"]),
             "aa": e["model"]["aa"], "cpt": e["model"]["cpt"],
-            "in_use": bool(e["model"].get("in_use")),
+            "in_use": fam_key(e["model"]["name"]) in used_fams,
             "pin": e["model"]["pin"], "pout": e["model"]["pout"],
             "pcr": e["model"]["pcr"], "pcw": e["model"]["pcw"],
             "cost": round(e["cost"]["total"], 2)} for e in fams],
@@ -886,8 +1159,8 @@ def main():
             "pin": e["model"]["pin"], "pout": e["model"]["pout"],
             "pcr": e["model"]["pcr"], "pcw": e["model"]["pcw"],
             "cost": round(e["cost"]["total"], 2),
-            "in_use": bool(e["model"].get("in_use"))} for e in equiv],
-        "hist": [{"date": h["date"], "opus5": h["opus5_total"]}
+            "in_use": fam_key(e["model"]["name"]) in used_fams} for e in equiv],
+        "hist": [{"date": h["date"], "opus55": h["opus55_total"]}
                  for h in hist],
         "max_hist": max_hist,
         "peak": ({"day": peak["day"], "cost": peak["cost"]}
@@ -896,7 +1169,7 @@ def main():
             "day": d["day"], "sessions": d["sessions"],
             "tokens": d["input"] + d["output"] + d["reasoning"]
                       + d["cache_read"] + d["cache_write"],
-            "cost": d["cost"]} for d in days],
+            "cost": d["cost"], "active": d["active"]} for d in days],
         "cats": [{"cat": c, "n": n} for c, n in cat_counts.items() if n],
         "mapping": [{"tool": t, "cat": c, "n": n}
                     for t, c, n in mapping],
@@ -904,6 +1177,7 @@ def main():
         "projects": [{
             "dir": p["directory"], "sessions": p["sessions"],
             "mins": dir_time.get(p["directory"], 0.0),
+            "active_min": active_by_dir.get(p["directory"], 0.0),
             "input": p["input"], "out_r": p["output"] + p["reasoning"],
             "cache_read": p["cache_read"], "cost": p["cost"]}
             for p in projects],
@@ -919,6 +1193,9 @@ def main():
             "out_r": p["output"] + p["reasoning"],
             "cache_read": p["cache_read"], "cost": p["cost"],
             "actual": p["actual"]} for p in provider_list],
+        "billing_flags": billing_flags,
+        "rate429": rate429,
+        "credits": credits,
         "prov_rel": [{
             "provider": e["provider"], "msgs": e["msgs"],
             "calls": e.get("calls", 0), "errors": e.get("errors", 0),
@@ -935,13 +1212,15 @@ def main():
             "id8": s["id"][-8:], "title": s["title"],
             "project": s["directory"].rstrip("/").split("/")[-1],
             "start": fmt_dt(s.get("first")), "end": fmt_dt(s.get("last")),
-            "dur_min": s["dur_min"], "msgs": s["msgs"],
+            "dur_min": s["dur_min"], "active_min": s["active_min"],
+            "msgs": s["msgs"],
             "in_cache": s["input"] + s["cache_read"],
             "out_r": s["output"] + s["reasoning"], "cost": s["cost"],
             "calls": s["calls"],
             "errors": s["errors"] if s["calls"] else None,
-            "landed": s["landed"]}
-            for s in session_rows_data[:SESS_TOP_N]],
+            "landed": s["landed"], "intent": s["intent"]}
+            for s in featured],
+        "habits": habits,
         "variants": [{
             "name": name, "msgs": n, "out": out_tok + reas_tok}
             for name, n, out_tok, reas_tok in variants],
@@ -951,14 +1230,17 @@ def main():
                       + hours[hh]["output"] + hours[hh]["reasoning"]}
             for hh in range(24)],
         "landing": ({"landed": n_landed, "checkable": n_checkable,
-                     "total": len(session_rows_data)}
+                     "no_intent": n_no_intent, "pending": n_pending,
+                     "total": len(session_rows_data),
+                     "by_model": landed_table(lambda s: s["model_label"]),
+                     "by_variant": landed_table(lambda s: s["dom_var"])}
                     if n_checkable else None),
     }
     DATA_JS.write_text("window.__OCUD__ = " + json.dumps(payload) + ";\n")
 
-    SESS_DIR.mkdir(exist_ok=True)
+    SESS_DIR.mkdir(parents=True, exist_ok=True)
     keep = set()
-    for s in session_rows_data[:SESS_TOP_N]:
+    for s in featured:
         if not s.get("q"):
             continue
         name = s["id"][-8:] + ".js"
@@ -971,10 +1253,20 @@ def main():
             old.unlink()
 
     size_kb = DATA_JS.stat().st_size / 1024
+    try:
+        db_kb = DB.stat().st_size / 1024
+    except OSError:
+        db_kb = 0
+    try:
+        log_kb = LOG_FILE.stat().st_size / 1024
+    except OSError:
+        log_kb = 0
     print("wrote " + str(DATA_JS) + " (%.1f KB) + %d session files, "
-          "sessions=%d opus5=$%.2f actual=$%.4f"
+          "sessions=%d opus55=$%.2f paid=$%.2f (subs=$%.2f metered-covered=$%.4f) "
+          "db=%.0fKB log=%.0fKB flags=%d 429_24h=%d"
           % (size_kb, len(keep), total["sessions"], total_cost["total"],
-             actual))
+             paid, sub_total, metered_covered, db_kb, log_kb,
+             len(billing_flags), rate429["count"]))
 
 
 def short_model(model_id):
