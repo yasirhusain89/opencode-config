@@ -89,7 +89,25 @@
       "curl *|*sh*": "deny",
       "wget *|*sh*": "deny",
       "curl *": "ask",
-      "wget *": "ask"
+      "wget *": "ask",
+      // exec-guard backup (plugins/exec-guard.ts is the real guard — it parses
+      // durations, waits, backgrounding, and tiered timeouts, which globs
+      // can't). These stay last so they win over "*" allow above. Coarse
+      // on purpose: the plugin enforces the fine thresholds (sleep ≤120s,
+      // wait-class timeout ≤5min); these only catch the extremes if it is off.
+      "*sleep [1][8-9][0-9]*": "deny",
+      "*sleep [2-9][0-9][0-9]*": "deny",
+      "*sleep [1-9][0-9][0-9][0-9]*": "deny",
+      "*nohup*": "deny",
+      "*setsid*": "deny",
+      "*disown*": "deny",
+      "*caffeinate*": "deny",
+      "*pkill*-9*": "deny",
+      "killall *": "deny",
+      // GUI/app/URL launches only — plain `open <file>` previews stay allowed.
+      "*open*://*": "deny",
+      "*open*.app*": "deny",
+      "*open -a*": "deny"
     },
     "external_directory": {
       "~/PycharmProjects/monartha/**": "allow",
@@ -122,16 +140,6 @@
         "mcp"
       ],
       "timeout": 600000
-    },
-    "zvec_grep": {
-      "type": "local",
-      "command": [
-        "/opt/homebrew/bin/zg",
-        "server",
-        "--stdio"
-      ],
-      "enabled": true,
-      "timeout": 60000
     }
   }
 }

@@ -17,7 +17,16 @@ import { isAbsolute, join, resolve } from "node:path"
 //   OPENCODE_PATH_GUARD=off          disable the guard entirely
 //   OPENCODE_PATH_GUARD_BLOCK=a:b    override the protected roots (colon-separated)
 
-const DEFAULT_BLOCKED_ROOTS = ["~/Documents", "~/Downloads"]
+const DEFAULT_BLOCKED_ROOTS = [
+	"~/Documents",
+	"~/Downloads",
+	// Proven-bad extents: Oct 2026 testing showed reads on files in this
+	// folder wedge forever at the OS level (stat fine, reads hang — videos +
+	// JPGs, all Apr-2026 mtimes, SMART Verified, metadata healthy: localized
+	// media defect). Agents must never touch it; copy test media to internal
+	// SSD first. Override per-session via OPENCODE_PATH_GUARD_BLOCK.
+	"/Volumes/YH-SanP2TB/Photos/Moab 2026",
+];
 
 // Tools whose args carry a filesystem path, and the arg keys that hold it.
 const PATH_TOOLS = new Set(["read", "edit", "write", "multiedit", "patch", "list", "glob", "grep"])
@@ -81,11 +90,31 @@ export function pathBlocked(target: string, cwd: string): boolean {
 // project-local dir that happens to share the name.
 export function blockedByCommand(command: string, cwd: string): string | undefined {
 	const names = blockedRoots().map((root) => root.split("/").pop() ?? "")
-	const tokens = command.split(/[\s'"();|&<>,]+/).filter(Boolean)
+	// Backslash-escaped spaces (`Moab\ 2026`) would be shredded by the split
+	// below the same way quoted spaces were — fold them to NUL first and
+	// restore per-candidate before testing.
+	const flat = command.replace(/\\ /g, "\u0000")
+	const restore = (s: string) => s.replace(/\u0000/g, " ")
+	// Quoted spans may contain spaces (e.g. "Moab 2026") — test them whole
+	// before tokenizing below, or the split would shred them into fragments
+	// that never match a blocked root.
+	const quotedSpans = flat.match(/"[^"]*"|'[^']*'/g) ?? []
+	for (const span of quotedSpans) {
+		const inner = restore(span.slice(1, -1))
+		if (inner.length < 2) continue
+		const cleaned = inner.replace(/^[a-z]+:/i, "")
+		if (/^(\/|~|\$)/.test(cleaned)) {
+			if (pathBlocked(cleaned, cwd)) return cleaned
+			continue
+		}
+		const first = cleaned.split("/")[0]
+		if (names.includes(first) && pathBlocked(join(cwd, cleaned), cwd)) return cleaned
+	}
+	const tokens = flat.split(/[\s'"();|&<>,]+/).filter(Boolean)
 
 	for (const token of tokens) {
 		if (token.length < 2) continue
-		const quoted = token.replace(/^[a-z]+:/i, "")
+		const quoted = restore(token).replace(/^[a-z]+:/i, "")
 		if (/^(\/|~|\$)/.test(quoted)) {
 			if (pathBlocked(quoted, cwd)) return quoted
 			continue

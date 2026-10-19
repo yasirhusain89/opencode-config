@@ -101,6 +101,9 @@ function targetPath(chain: string): string {
 	const tokens = chain.split(/\s+/).map((t) => t.replace(/^[(&|;'"]+|[-&|;'")]+$/g, ""))
 	for (const raw of tokens) {
 		if (!/^(\/|~|\$HOME)/.test(raw)) continue
+		// Device nodes (smartctl /dev/disk4, hdiutil, dd) live on devfs with
+		// ~0 available — probing them false-blocks the whole command.
+		if (/^\/dev(\/|$)/.test(raw)) continue
 		let p = raw.replace(/^\$HOME/, process.env.HOME ?? "").replace(/^~/, process.env.HOME ?? "")
 		if (p.length < 2) continue
 		for (let i = 0; i < 6; i++) {
