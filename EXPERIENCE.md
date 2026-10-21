@@ -171,7 +171,30 @@ distilled, still-true conclusions.
   exec — exec would replace the image with the interpreter and the old name
   would come back. Evidence: `tools/helpers/build.sh`,
   `~/Applications/OpenCode DB Check.app`, repointed
-  `~/Library/LaunchAgents/{com.opencode.db-*,ai.opencode.*}.plist`.
+   `~/Library/LaunchAgents/{com.opencode.db-*,ai.opencode.*}.plist`.
+- **2026-10-21 — sr-live staleness was invisible by design: judge freshness
+  from `fullRecomputeAt`, never mtime.** Recomputes failed silently for hours
+  (bare `node`/`sqlite3` missing from the host PATH, error swallowed), so
+  incremental-only patches held h5 at 83% vs 1% DB truth; every patch rewrote
+  the file so mtime looked fresh and /quota never self-corrected. Fix:
+  `plugins/cost-tracker.js` recomputes in-process (`import { calcSR }`),
+  hardens PATH, logs failures to `sr-debug.log`, stamps `fullRecomputeAt`,
+  keeps `generated_at` at recompute time (`patched_at` for touches), and
+  skips the increment when a recompute just ran (DB may already include the
+  turn); `quota-status.mjs` measures staleness from that stamp with a STALE
+  banner past 10min. Evidence: `plugins/cost-tracker.js:fullRecompute`,
+  `skills/usage-dashboard/scripts/quota-status.mjs:48-70`.
+
+- **2026-10-21 — quota % must include every Go model, and runway belongs on
+  the monthly basis.** Window totals sum ALL `opencode-go` spend (the old
+  `cap != null` filter silently dropped unmapped/new models); per-model
+  `remainingMsgs` compares 30d spend to the monthly cap instead of pairing a
+  7d rate with a monthly cap. `sr-live.json` is stamped `schema: 2` and readers
+  ignore other schemas, so a long-running pre-v2 process cannot poison
+  freshness (observed: `generated_at` newer than `fullRecomputeAt`). Idle is
+  not stale: STALE requires activity after the last full recompute.
+  Evidence: `sr-calc.mjs` (`goRows`, `remainingMsgs`), `cost-tracker.js`
+  `readLive`, `quota-status.mjs`, `tools/cost-bar/main.swift` `isStale`.
 
 ## 5. How to add a lesson
 Append under the right section (or add one): `**YYYY-MM-DD — one-line

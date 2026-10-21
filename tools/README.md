@@ -5,20 +5,24 @@ each directory's `build.sh`. Installed outputs live OUTSIDE the repo
 (`~/Applications/*.app`, `~/Library/LaunchAgents/*.plist`) — this folder
 holds source only.
 
-## cost-bar/ — OpenCode Cost Bar (menu-bar SR pill)
+## cost-bar/ — OpenCode Cost Bar (menu-bar Go-quota pill)
 
 Single-file Swift `NSStatusItem` app (`main.swift`, `Info.plist`,
 `build.sh`). Reads `~/.local/share/opencode/sr-live.json` (written by
 `plugins/cost-tracker.js`, computed by
 `skills/model-benchmarks/scripts/sr-calc.mjs`) via event-driven file watch +
-5s mtime backup. Pill shows Go 5h-window SR + % (amber ≥70, red ≥90);
-dropdown has 5h/7d/30d windows, per-model 7d $/msg + message runway, official
-quota (when `go_quota.mjs` has run), and links to the dashboard + guide.
+5s mtime backup. Pill shows the binding window's percentage plus time until
+headroom returns (e.g. `⚡ 4.1d 61%`; amber ≥70, red ≥90) or `—` when the
+shared state is untrusted; in that case
+the app recomputes from the DB itself instead of showing a stale number.
+Dropdown has used/left/next-drop per window (7d/30d/5h), pace and weekly
+headroom, per-model 30d spend vs cap with remaining messages, and links to
+the dashboard + guide. No API key needed.
 `build.sh` assembles `~/Applications/OpenCode Cost Bar.app` and runs
 `--self-test` (parses state, prints pill + menu, exits — no GUI needed).
 LaunchAgent `~/Library/LaunchAgents/ai.opencode.costbar.plist` (RunAtLoad +
 KeepAlive). Start manually once with `open ~/Applications/OpenCode\ Cost\
-Bar.app`; needs no API key (local math only) — official-quota refresh does.
+Bar.app`.
 
 ## helpers/ — branded wrappers for scheduled agents
 
