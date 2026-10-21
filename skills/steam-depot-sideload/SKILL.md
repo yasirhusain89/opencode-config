@@ -31,10 +31,12 @@ download Windows depots once forced — that is the whole trick.
    orphaned cache ended up there once). Symlink that path to
    `<external>/SteamDepotCache` — `preflight.sh` does this and refuses to
    clobber a real directory.
-5. **Console "N files" ≠ manifest file count.** The `Downloading depot 784081
-   (961 files …)` line counted 961; the depot's real content list
-   (`Manifest_NonUFSFiles_Win64.txt`) had 874. Verify against the manifest
-   file, never the console number.
+5. **Console "N files" counts entries, not files.** The `Downloading depot
+    292033 (57 files …)` line counted 57; the depot held 48 files + 9
+    directories. Same for the shortfalls that look like incomplete downloads
+    (154→121, 3→1): re-downloads, manifest parses, and merges all agreed the
+    files were complete — directories explain the gap. Verify against the
+    manifest file or depotcache parse, never the console number.
 6. **Paid campaign DLC often has NO depot of its own.** `licenses_print` shows
    `(0 in total)` depots for such packages and the DLC's `app_info_print` has
    no `"depots"` section. The content ships inside the base depot
@@ -52,12 +54,15 @@ download Windows depots once forced — that is the whole trick.
     bar trick after enabling it in Settings → Interface). The log always shows
     the URL doubled (`ExecuteSteamURL: "steam://open/steam://open/console"`) —
     harmless, the tab still opens.
-10. **Register EVERY depot that has a public manifest — even "0.0GB" ones.**
-    MW5 got away with skipping shared/no-manifest depots, but KH3's two 0.0GB
-    depots (which DO have manifest GIDs) made Windows Steam demand an "update"
-    it could never fetch. Rule of thumb: skip only `depotfromapp` (shared) and
-    no-public-manifest depots; download + register everything else, no matter
-    how small.
+10. **Register what Steam's own manifest lists — not what licenses suggest.**
+    `licenses_print` over-includes (language packs, un-deployed depots); the
+    `config changed : updated depots` lines list update-touched depots, a
+    different thing again. Procedure: write your best manifest, launch the
+    Windows client once, quit it, and read back `InstalledDepots` — Steam
+    reconciles the set from its own config every launch and reverts anything
+    else. Feed it the *files* for ITS set; hand-editing the set is futile.
+    (KH3 needed its two 0.0GB depots registered; Witcher needed three depots
+    licenses didn't obviously flag — the read-back is what settled both.)
 11. **Corrupted resume: `Assertion Failed ... same chunk requested twice`.**
     The depot's `state_<appid>_<depotid>.patch` + partial dir are wedged.
     Fix: quit Steam fully, then `steamdepot.py reset --appid N --depotid N`
@@ -66,6 +71,71 @@ download Windows depots once forced — that is the whole trick.
     is *supposed* to be atomic, but an unexplained loss once ate 64GB of a
     fresh depot mid-assemble. `cp -R` the target aside; delete the backup only
     after the Windows client verifies clean.
+13. **A pinned old Windows client can NEVER download — plan around it, don't
+    fight it.** Client `1726604483` (Sept 2024, last build compatible with this
+    Heroic/Wine setup) fails 100% of chunk unpacks:
+    `Failed unpacking chunk "<sha>" from ".../depot/<id>/chunk/..." (Unpack
+    failed (c:<compressed>,u:0,...))` across all depots and CDN edges, zero
+    successes ever in `content_log.txt` — while logins, prefetches, and
+    metadata all work. Check the client version in the log's `Client version:`
+    line before blaming the network. Consequence: the Windows client is a
+    player/verifier only; every byte must arrive via the macOS console.
+14. **Never let the old client run an update on an incomplete install.**
+    Staging deletes/truncates files it intends to replace, then the unpack
+    failure means replacements never arrive — one attempt ate 136 files
+    (1.3GB), including the launch exe. Quarantine the install (keep Heroic
+    quit / client offline) until macOS-side assembly + manifest diff show zero
+    missing. **Both clients reconcile the shared library**: if the macOS
+    client's `libraryfolders.vdf` also registers the external drive, it
+    rewrites hand-patched manifests too (observed: depot set + counters
+    reverted with only the mac client running). Do manifest surgery with all
+    Steam clients quit, and re-read the manifest afterward to confirm.
+15. **`BytesStaged`/`BytesToDownload` accounting names the gap exactly.**
+    The staged byte count equals the uncompressed sizes of the missing depots
+    summed to the byte (Witcher: `5357421741` =
+    `4439952978+262696726+654772037`). Match it against per-depot sizes from
+    `app_info_print` or the steamcmd.net API to identify which depots to fetch.
+16. **`api.steamcmd.net/v1/info/<appid>` replaces most console reads.**
+    Returns buildid per branch, every depot's manifest GIDs + sizes, the
+    launch `"executable"`, `dlcappid` mapping, and language tags — no console
+    paste needed, no log rotation risk (SteamDB 403s; this doesn't). Use the
+    console only for `download_depot` itself.
+17. **Exact missing-file list beats all guessing: parse `depotcache`.**
+    The Windows prefix keeps `Steam/depotcache/<depot>_<gid>.manifest` for
+    every configured depot. Format: 8-byte header, then protobuf FileMappings
+    — the filename is the field-1 length-delimited string (`\n<len><path>`).
+    Walk the messages generically, collect path-like strings (drop fragments
+    whose first segment is <2 chars), diff against the tree: that number
+    should match the client's `Validation: read N files missing` line. This
+    is also how you learn a depots' true file count (rule 5's console numbers
+    and even materialized counts can both be short).
+18. **A shadow install in the prefix library overrides the real one — check
+    before fetching a single byte.** If the client's Properties → Updates
+    shows a Build ID / size / date that disagrees with your library manifest
+    (Witcher: UI said 14504303 + 57GB + Jul 2025, manifest said 25773555),
+    the client is reading a STALE `appmanifest_<appid>.acf` + empty dir
+    skeleton in its OWN prefix library (`.../Steam/steamapps/`, the C: side)
+    — failed updates leave these 0-byte husks behind — and validating the
+    empty husk produces thousands of phantom "missing" files while the real
+    install sits ignored. Fix with everything quit: move the stale manifest
+    and husk aside (back up, don't delete), relaunch — the client discovers
+    the real library manifest. Also glance at the prefix `common/` for other
+    0-byte husks shadowing real installs.
+19. **New game binaries may need newer Wine — test in a copied prefix.**
+    Witcher 5.01 (Oct 2026 exes) page-faulted at one fixed address under GPT
+    7.7-era AND GPT 3.0-3, with or without Steam running; Wine Staging 11.18
+    booted the same binary to GPU init. When the binary is newer than the
+    runner, climb the Wine ladder. Test in a `cp -R`'d prefix copy in /tmp
+    (never the live prefix), and kill stray wineservers first:
+    running two Wine versions against one prefix gives `version mismatch`
+    plus misleading fallout (phantom "dll not found"). `wineserver -k` with
+    that `WINEPREFIX` before switching.
+    Notes: Gcenx macOS builds ship as `Wine Staging.app`, loader is
+    `bin/wine` (no `wine64`); dxvk-macOS ships no `dxgi.dll` (its d3d11 warns
+    `Adapter is not a DXVK adapter` but initializes anyway); the REDlauncher
+    self-updater can eat its own exe (BackgroundPrefetch) leaving only
+    config+logs — the prelauncher reinstalls it from the shipped `.msi` on
+    next launch.
 
 ## Key paths
 
@@ -95,16 +165,18 @@ preflight.sh --kill-heroic          # or --check-only to just report
 Kills Heroic/Wine, warns if the session was kicked, creates the redirect
 symlink, reports disk space.
 
-### 2. Discover the depot layout (human pastes into console)
+### 2. Discover the depot layout (usually no console needed)
 
-```
-licenses_print          → what the account owns, and which depots each package grants
-app_info_print <appid>  → name, oslist, public buildid, depots + manifest GIDs + sizes, listofdlc
+```bash
+curl -s https://api.steamcmd.net/v1/info/<appid>   # buildid, depots+GIDs+sizes, launch exe, dlcappid (rule 16)
+steamdepot.py licenses                  # package → apps → depots ('(0 in total)' = content rides in base depot)
 ```
 
-Then read it back without copy-pasting — **promptly**: `console_log.txt`
-rotates on client restart, taking the `app_info_print`/`licenses_print`
-output with it. Parse (or save the relevant lines) before quitting Steam.
+Only fall back to console `licenses_print` / `app_info_print <appid>` when the
+API is missing something (e.g. per-language `listofdlc` nuances). If you do:
+read it back **promptly** — `console_log.txt` rotates on client restart,
+taking the output with it. Parse (or save the relevant lines) before quitting
+Steam.
 
 ```bash
 steamdepot.py appinfo --appid <appid>   # depots, buildid, installdir, DLC list
@@ -139,6 +211,8 @@ cp -R "common/<installdir>" "<external>/<game>-backup-$(date +%Y%m%d)"  # rule 1
 assemble_install.sh --appid <appid> --depotid <depotid> \
   --installdir "<dir from appmanifest or steamdepot.py appinfo>" \
   [--no-manifest]   # only if the depot ships no Manifest_*.txt (else hard-fails)
+  [--tolerant]      # flaky-disk mode: skip same-size files, log I/O failures
+                    # and continue (exit 1 with failed list) instead of aborting
 ```
 
 Verifies every manifest-listed file exists (or does a structural sanity check
@@ -168,7 +242,37 @@ steamdepot.py manifest --appid <appid> --library <external>/SteamLibrary \
 Patches in place (backs up `.bak`, preserves `UserConfig`/`LastOwner`),
 setting `StateFlags 4`, zeroing download counters, recording `InstalledDepots`.
 Fresh installs also need `--lastowner <steamid64>` (copy from any existing
-manifest, or the Windows Steam prefix's manifests).
+manifest, or the Windows Steam prefix's manifests). Expect Steam to reconcile
+the depot *set* on next launch (rule 10) — the patch is a bootstrap, not a
+contract.
+
+## Worked example — The Witcher 3 (2026-10-19, salvage + pinned client)
+
+- Starting point: 62GB partial tree in `downloading/292030`, mid-update to
+  build `25773555` (Patch 5.01, confirmed current via steamcmd.net — no new
+  build underneath), Windows client pinned at Sept-2024 (rule 13) with 100%
+  chunk-unpack failure.
+- Wrote manifest from licenses (26 depots). Windows Steam rewrote the set on
+  launch to its own 8 (`292031/292033/292034/292036/292044/310611/310613/
+  310619` + DLC placeholders) — the read-back settled it (rule 10); the
+  `config changed` lines had listed a different (update-touched) set.
+- Its `BytesStaged 5357421741` equaled `292033+310611+310619` sizes to the
+  byte (rule 15) — three depots never fetched. Downloaded all three plus
+  re-downloads of three more via macOS (~6GB), merged, re-verified.
+- One online update attempt by the old client deleted 136 files/1.3GB from
+  the tree (rule 14) — restored from cache leftovers + re-downloads, then
+  kept Heroic offline for all further verifies.
+- `depotcache` manifest diff (rule 17) gave the exact per-depot missing list
+  and confirmed each depot's true file count against console announces.
+- **The actual root cause was a shadow install (rule 18).** The client's
+  Properties → Updates showed Build `14504303` + 57GB + Jul 2025 while the
+  library manifest said `25773555` — a stale `appmanifest_292030.acf` plus a
+  0-byte dir skeleton in the prefix's own C: library was what the client
+  validated (hence thousands of phantom "missing"), shadowing the complete
+  111GB Z: install. Moving the stale manifest + husk aside with everything
+  quit made the client discover the real install → **PLAY appeared, game
+  launches**. All the byte-level work above was necessary but insufficient
+  until the shadow was cleared — check for it FIRST next time (rule 18).
 
 **Verify the assembled tree BEFORE writing the manifest** — `.exe` present,
 sane file count and size vs the download. The manifest is trivially rewritable;
@@ -185,6 +289,17 @@ Size + file count matching the expected download is the ground truth (rule 5).
 In the **Windows** Steam client: Properties → Installed Files → **Verify
 integrity of game files**. Nothing (or a few KB) downloading = manifest is
 correct. Then launch via Heroic. DLC ownership shows in-game.
+
+With a pinned old client (rule 13): verify in **Offline Mode** and read the
+result from `content_log.txt` (`Validation: read N files missing and M files
+corrupt`) — never let it attempt the download. If N > 0, diff the
+`depotcache` manifests against the tree (rule 17) to name the missing files,
+fetch them via macOS, merge, and verify again. Each verify–diff–fetch cycle
+converges; the client's count is the scoreboard. **A full pass over a
+~100GB tree is silent for a long time**: missing files fail fast (seconds),
+but present files must all be read + hashed over USB — 0% with no log output
+for up to ~45 minutes is normal. Don't cancel (it restarts the pass); the
+`Validation: read ...` line is the finish marker.
 
 If a stale update stays queued after the files are fixed (client holds it in
 `StateFlags` — e.g. `38` = installed + update-paused — plus scheduler state):
@@ -258,10 +373,14 @@ appears. Check `content_log.txt` afterward to confirm no new prefetch.
 | Fewer files than console claimed | Normal → rule 5, verify against manifest |
 | DLC missing in-game | Check licenses + base-depot content first → rule 6 |
 | Steam UI shows Install instead of Play | appmanifest missing/wrong in the *shared* library, or the Windows client's `libraryfolders.vdf` lacks that library → check both clients' `steamapps/` |
-| Steam shows Update for a sideloaded game (CONTENT SERVER UNREACHABLE) | A depot you own isn't registered in `InstalledDepots` (rule 10) — or files are missing from `common/<installdir>/` (compare against backup). Add the depot(s), verify the tree, re-patch manifest. Read the Windows `content_log.txt` first: its prefetch line names the exact missing bytes |
+| Steam shows Update for a sideloaded game (CONTENT SERVER UNREACHABLE) | FIRST check for a shadow install: compare Properties → Updates (Build ID/size/date) against your library manifest — mismatch means the client is reading a stale prefix-library manifest + empty husk, not your install (rule 18). Only then: unregistered depot (rule 10) or missing files (compare against backup). Read the Windows `content_log.txt` first: its prefetch line names the exact missing bytes |
 | Verify says "All 0 files successfully validated" | Ambiguous — may mean it counted nothing (hand-written manifests lack per-file tracking). Treat as "no failures reported", not proof of a deep check |
 | `Assertion Failed ... same chunk requested twice` | Wedged resume state → rule 11: quit Steam, `steamdepot.py reset`, relaunch, re-download |
 | Log shows doubled `steam://open/steam://open/...` URL | Normal logging quirk — the console tab still opens |
 | No Play in menu / "Missing game executable" on launch | Exe path in the install dir doesn't match the launch config — check `app_info_print`'s `"executable"` or the dialog's exact expected path, restructure to match. Distinguish from a mere queued update (MW5 played fine with one queued) |
 | Direct exe launch via Wine shows nothing | Attempted as a gate bypass: no DRM markers found, but no window and no error either — cause unresolved. Treat as unproven last resort, not part of the pipeline. If tried: user-side step, exe's own dir as cwd, one attempt at a time, kill after; never background-spam Wine processes |
 | Client in Offline Mode | Play works offline for satisfied installs; queued updates are irrelevant until back online. Go Online only when ready to let queued updates attempt (they'll fail here — that's expected, not a regression) |
+| `Failed unpacking chunk ... (Unpack failed (c:…,u:0,…))` on EVERY chunk, all depots/edges | Old client can't unpack current CDN chunks → rule 13. Don't retry, don't blame the network: quarantine the install, deliver all bytes via macOS. Confirm via the log's `Client version:` line |
+| Tree lost files after a Windows update attempt | Expected with rule 13/14: staging deletes before failed replaces. Restore from cache leftovers (`assemble_install.sh` re-merge moves newly-missing files) or re-download; then keep Heroic offline until verified |
+| Manifest edits keep getting reverted (depots re-added/removed, counters back) | Normal: Steam reconciles `InstalledDepots` from its own config each launch → rule 10. Stop editing the set; supply the files for its set instead |
+| Verify count won't drop to zero and depots all check out | The staged-update plan may reference depots outside the deployed set — match `BytesStaged` against depot sizes (rule 15) to find them, and diff `depotcache` manifests vs the tree (rule 17) for the exact list |
