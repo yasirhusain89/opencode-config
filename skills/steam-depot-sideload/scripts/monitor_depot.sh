@@ -40,6 +40,17 @@ report() {
       fi
       echo "  depot $D — on disk: $ON_DISK"
       echo "$LATEST"
+      # FALSE COMPLETE: Steam printed "complete" but the cache is empty —
+      # stale resume-state survived an assemble (state file lists files that
+      # were moved into the tree). Next download_depot would fetch 0 bytes.
+      if echo "$LATEST" | grep -q "Depot download complete"; then
+        BYTES=$(du -sk "$DIR" 2>/dev/null | cut -f1 || echo 0)
+        if [[ "$BYTES" -eq 0 ]]; then
+          APP=$(basename "$(dirname "$DIR")" | sed 's/^app_//')
+          echo "  !! FALSE COMPLETE: cache empty despite 'complete' — stale state file."
+          echo "     fix: quit Steam, then: steamdepot.py reset --appid $APP --depotid $D"
+        fi
+      fi
     done
   fi
 }

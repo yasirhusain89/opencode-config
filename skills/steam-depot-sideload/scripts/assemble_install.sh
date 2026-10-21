@@ -155,6 +155,10 @@ merge_tree() { # $1 = src dir, $2 = dst dir
 
 merge_tree "$DEPOT" "$TARGET"
 echo
+# The depot content now lives in the tree — but the resume-state file stays
+# behind, and a later `download_depot` reads it and prints a FALSE COMPLETE
+# (0 bytes fetched, cache empty). Remove it so the next fetch starts clean.
+STATE="$(dirname "$DEPOT")/state_${APPID}_${DEPOTID}.patch"
 if [[ $DRY -eq 1 ]]; then
   echo "dry run: $MOVED item(s) would move, $SKIPPED skipped. Nothing changed."
 else
@@ -163,7 +167,13 @@ else
     echo "WARNING: some moves FAILED with I/O errors (listed above as FAILED)." >&2
     echo "Those files were left in the depot. Steam verify arbitrates what's" >&2
     echo "actually needed; re-run to retry, or fetch individually." >&2
+    echo "(resume state kept, so a re-run download_depot resumes)" >&2
     exit 1
+  fi
+  if [[ -e "$STATE" ]]; then
+    rm -f "$STATE"
+    echo "cleared stale resume state: $STATE"
+    echo "(re-running download_depot for this depot now starts a clean fetch)"
   fi
   echo "next: write the appmanifest:"
   echo "  steamdepot.py manifest --appid $APPID --library $LIBRARY \\"

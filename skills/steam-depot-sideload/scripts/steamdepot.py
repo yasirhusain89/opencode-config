@@ -7,6 +7,8 @@ writes/patches appmanifest_<appid>.acf so the Windows Steam client (Wine/Heroic)
 registers a sideloaded install.
 
 Subcommands: appinfo, licenses, verify, manifest, reset
+verify gains: --depotcache (hash manifest from the Windows client's depotcache)
+appinfo gains: --api (fetch layout from api.steamcmd.net, no console needed)
 """
 import argparse, json, os, re, shutil, sys, time
 
@@ -80,6 +82,8 @@ def extract_appinfo_blocks(text):
 
 
 def cmd_appinfo(args):
+    if args.api:
+        return cmd_appinfo_api(args)
     text = open(args.log, encoding='utf-8', errors='replace').read()
     found = 0
     for appid, d in extract_appinfo_blocks(text):
@@ -151,6 +155,63 @@ def cmd_appinfo(args):
     return 0
 
 
+# ---------- api.steamcmd.net layout (rule 16) ----------
+
+def cmd_appinfo_api(args):
+    """Fetch depot layout from api.steamcmd.net — no console paste needed."""
+    import urllib.request
+    if not args.appid or len(args.appid) != 1:
+        sys.stderr.write("--api needs exactly one --appid\n")
+        return 2
+    url = f'https://api.steamcmd.net/v1/info/{args.appid[0]}'
+    try:
+        with urllib.request.urlopen(url, timeout=30) as r:
+            payload = json.load(r)
+    except Exception as e:
+        sys.stderr.write(f"API fetch failed: {e}\n(url: {url})\n")
+        return 2
+    appid = str(args.appid[0])
+    app = payload.get('data', payload).get(appid, payload.get(appid, payload))
+    if isinstance(app, dict) and 'data' in app and isinstance(app['data'], dict):
+        app = app['data']
+    common = app.get('common', {})
+    config = app.get('config', {})
+    depots = app.get('depots', {})
+    branches = depots.get('branches', {})
+    public_bid = branches.get('public', {}).get('buildid')
+    print(f"=== AppID {appid}: {common.get('name')} ===")
+    print(f"  public buildid : {public_bid}")
+    print(f"  installdir     : {config.get('installdir')}")
+    print(f"  launch exe     : {(config.get('launch') or {}).get('0', {}).get('executable')}")
+    print("  depots (public manifests):")
+    paste, manargs = [], []
+    for k in sorted(depots, key=lambda x: (not str(x).isdigit(), x)):
+        if not str(k).isdigit():
+            continue
+        v = depots[k] or {}
+        if 'depotfromapp' in v:
+            print(f"  depot {k:>8}: shared from app {v['depotfromapp']} (nothing to download)")
+            continue
+        pub = ((v.get('manifests') or {}).get('public')) or {}
+        gid, size = pub.get('gid'), pub.get('size')
+        extra = f" dlcappid={v['dlcappid']}" if 'dlcappid' in v else ''
+        sz = f"{int(size) / 1e9:.1f}GB" if size else '(no public manifest)'
+        print(f"  depot {k:>8}: {gid}  {sz}{extra}")
+        if gid and size:
+            paste.append(f'download_depot {appid} {k}')
+            if 'dlcappid' in v:
+                manargs.append(f'--dlc-depot {k}:{gid}:{size}:{v["dlcappid"]}')
+            else:
+                manargs.append(f'--depot {k}:{gid}:{size}')
+    print("\n--- paste into the Steam console (after @sSteamCmdForcePlatformType windows) ---")
+    print('\n'.join(paste) or '(no downloadable depots)')
+    print("\n--- manifest args ---")
+    print(f"--appid {appid} --installdir \"{config.get('installdir')}\" "
+          f"--name \"{common.get('name')}\" --buildid {public_bid} \\\n  " +
+          ' \\\n  '.join(manargs))
+    return 0
+
+
 # ---------- licenses_print parser ----------
 
 def cmd_licenses(args):
@@ -195,6 +256,11 @@ def cmd_licenses(args):
 # ---------- depot verification ----------
 
 def cmd_verify(args):
+    if args.depotcache:
+        return cmd_verify_dc(args)
+    if not args.depot:
+        sys.stderr.write("verify needs --depot DIR or --depotcache FILE --root DIR\n")
+        return 2
     depot = os.path.expanduser(args.depot)
     manifest = None
     for name in sorted(os.listdir(depot)):
@@ -226,6 +292,162 @@ def cmd_verify(args):
             print(f"  ... and {len(missing) - args.list} more")
         return 1
     print("OK — all manifest files present")
+    return 0
+
+
+# ---------- depotcache verification (rule 17/21) ----------
+#
+# The Windows client keeps <depot>_<gid>.manifest files (protobuf FileMappings)
+# for every configured depot. Layout (decoded empirically 2026-10-21):
+#   8-byte header, then top-level repeated field-1 length-delimited FileMappings.
+#   FileMapping: f1 = backslash-separated path, f2 = size (varint, 0 for dirs),
+#   f3 = flags (64 = directory), f4/f5 = 20-byte hashes, f6* = chunk messages.
+# Trailing bytes after the last clean field are left unparsed (observed 64B
+# trailer on small manifests) — entries before it are unaffected.
+# This checks existence + SIZE against any tree (fresh depot dir or assembled
+# common/<installdir>/), catching 0-byte husks, truncation, and bitrot that
+# changes size. Same-size bitrot needs Steam's own hash verify (rule 21).
+
+def _pb_varint(buf, pos):
+    shift, val = 0, 0
+    while True:
+        b = buf[pos]
+        pos += 1
+        val |= (b & 0x7F) << shift
+        if not (b & 0x80):
+            return val, pos
+        shift += 7
+        if shift > 70:
+            raise ValueError('varint overflow')
+
+
+def _pb_fields(buf, pos, end):
+    """Walk protobuf fields; length-delimited kept as raw bytes."""
+    out = []
+    while pos < end:
+        key, pos = _pb_varint(buf, pos)
+        field, wtype = key >> 3, key & 7
+        if wtype == 0:
+            v, pos = _pb_varint(buf, pos)
+            out.append((field, v))
+        elif wtype == 1:
+            out.append((field, int.from_bytes(buf[pos:pos + 8], 'little')))
+            pos += 8
+        elif wtype == 2:
+            ln, pos = _pb_varint(buf, pos)
+            if pos + ln > end:
+                raise ValueError('length-delimited overrun')
+            out.append((field, bytes(buf[pos:pos + ln])))
+            pos += ln
+        elif wtype == 5:
+            out.append((field, int.from_bytes(buf[pos:pos + 4], 'little')))
+            pos += 4
+        else:
+            raise ValueError(f'unsupported wire type {wtype}')
+    return out
+
+
+def _pb_str(raw):
+    try:
+        t = raw.decode('utf-8')
+    except UnicodeDecodeError:
+        return None
+    if all(32 <= ord(c) < 127 or c in '\t\n' for c in t):
+        return t
+    return None
+
+
+def depotcache_files(manifest_path):
+    """Return [(relpath_parts, size)] for file entries (dirs skipped)."""
+    data = open(manifest_path, 'rb').read()
+    entries, pos = [], 8
+    while pos < len(data):
+        try:
+            key, pos = _pb_varint(data, pos)
+        except (IndexError, ValueError):
+            break
+        field, wtype = key >> 3, key & 7
+        if field != 1 or wtype != 2:
+            # not a FileMapping: skip one field generically, keep walking
+            try:
+                if wtype == 0:
+                    _, pos = _pb_varint(data, pos)
+                elif wtype == 1:
+                    pos += 8
+                elif wtype == 2:
+                    ln, pos = _pb_varint(data, pos)
+                    pos += ln
+                elif wtype == 5:
+                    pos += 4
+                else:
+                    break
+            except (IndexError, ValueError):
+                break
+            continue
+        try:
+            ln, pos = _pb_varint(data, pos)
+            blob = data[pos:pos + ln]
+            pos += ln
+            flds = _pb_fields(blob, 0, len(blob))
+        except (IndexError, ValueError):
+            break
+        path = size = flags = None
+        for f, v in flds:
+            if f == 1 and isinstance(v, bytes) and path is None:
+                path = _pb_str(v)
+            elif f == 2 and isinstance(v, int) and size is None:
+                size = v
+            elif f == 3 and isinstance(v, int) and flags is None:
+                flags = v
+        if path is None:
+            continue
+        if flags == 64:
+            continue  # directory entry
+        parts = [p for p in path.replace('\\', '/').split('/') if p not in ('', '.')]
+        entries.append((parts, size if size is not None else -1))
+    return entries
+
+
+def cmd_verify_dc(args):
+    root = os.path.expanduser(args.root)
+    try:
+        entries = depotcache_files(os.path.expanduser(args.depotcache))
+    except OSError as e:
+        print(f"cannot read depotcache manifest: {e}", file=sys.stderr)
+        return 2
+    if not entries:
+        print("no file entries parsed from depotcache manifest", file=sys.stderr)
+        return 2
+    missing, wrongsize, ok = [], [], 0
+    for parts, size in entries:
+        full = os.path.join(root, *parts)
+        if not os.path.isfile(full):
+            missing.append('/'.join(parts))
+            continue
+        if size is not None and size >= 0:
+            try:
+                actual = os.path.getsize(full)
+            except OSError:
+                missing.append('/'.join(parts) + ' (unreadable)')
+                continue
+            if actual != size:
+                wrongsize.append((('/'.join(parts)), size, actual))
+                continue
+        ok += 1
+    total = len(entries)
+    print(f"depotcache: {os.path.basename(os.path.expanduser(args.depotcache))}")
+    print(f"root     : {root}")
+    print(f"files    : {ok}/{total} present with matching size")
+    for m in missing[:args.list]:
+        print(f"  MISSING: {m}")
+    for p, want, got in wrongsize[:args.list]:
+        print(f"  SIZE-MISMATCH: {p} (manifest {want}B, disk {got}B)")
+    shown = len(missing[:args.list]) + len(wrongsize[:args.list])
+    if len(missing) + len(wrongsize) > shown:
+        print(f"  ... and {len(missing) + len(wrongsize) - shown} more")
+    if missing or wrongsize:
+        return 1
+    print("OK — all depotcache files present with matching sizes")
     return 0
 
 
@@ -270,9 +492,20 @@ def set_scalar(text, key, value):
 
 
 def cmd_manifest(args):
+    import subprocess
     steamapps = os.path.join(os.path.expanduser(args.library),
                              'steamapps')
     path = os.path.join(steamapps, f'appmanifest_{args.appid}.acf')
+    if not args.force:
+        procs = subprocess.run(['pgrep', '-fl', 'steam_osx|steam.exe|SteamHeroic'],
+                               capture_output=True, text=True).stdout.strip()
+        if procs:
+            sys.stderr.write(
+                f"a Steam client appears to be running:\n  {procs}\n"
+                "manifest surgery with a client open gets reconciled/reverted\n"
+                "(rules 14/20) — quit ALL Steam clients first, then re-run.\n"
+                "Override with --force if you are sure they are quit.\n")
+            return 2
     total = sum(int(d.split(':')[2]) for d in args.depot)
     total += sum(int(d.split(':')[2]) for d in args.dlc_depot)
     depots_block = build_installed_depots(args.depot, args.dlc_depot)
@@ -328,11 +561,24 @@ def cmd_manifest(args):
     text = replace_installed_depots(text, depots_block)
 
     os.makedirs(steamapps, exist_ok=True)
-    if os.path.exists(path):
+    if os.path.exists(path) and not args.dry_run:
         bak = path + '.bak'
         with open(bak, 'w', encoding='utf-8') as f:
             f.write(open(path, encoding='utf-8', errors='replace').read())
         print(f"backup  : {bak}")
+        # timestamped history (single .bak gets clobbered; /tmp gets wiped)
+        histdir = os.path.join(steamapps, 'backups')
+        try:
+            os.makedirs(histdir, exist_ok=True)
+            import time as _t
+            hist = os.path.join(
+                histdir,
+                f"appmanifest_{args.appid}.acf.{_t.strftime('%Y%m%d-%H%M%S')}")
+            with open(hist, 'w', encoding='utf-8') as f:
+                f.write(open(bak, encoding='utf-8', errors='replace').read())
+            print(f"history : {hist}")
+        except OSError as e:
+            print(f"history : skipped ({e})")
     if args.dry_run:
         print(f"DRY RUN — would {action}: {path}\n")
         print(text)
@@ -349,19 +595,21 @@ def cmd_manifest(args):
 
 def cmd_reset(args):
     """Delete a depot's download dir + resume-state file after a corrupted
-    resume ("same chunk requested twice" assertion or wedged progress).
+    resume ("same chunk requested twice" assertion or wedged progress), or a
+    FALSE COMPLETE (stale state + empty cache after the files were assembled
+    away — Steam prints "Depot download complete" while fetching 0 bytes).
     QUIT the Steam client first — it holds the state file open in memory."""
     import subprocess
-    running = subprocess.run(
-        ['pgrep', '-x', 'steam'], capture_output=True).returncode == 0
+    procs = subprocess.run(['pgrep', '-fl', 'steam_osx|steam.exe|SteamHeroic'],
+                           capture_output=True, text=True).stdout.strip()
     cache = os.path.join(os.path.expanduser(args.cache), 'content',
                          f'app_{args.appid}')
     depot = os.path.join(cache, f'depot_{args.depotid}')
     state = os.path.join(cache, f'state_{args.appid}_{args.depotid}.patch')
-    if running and not args.force:
+    if procs and not args.force:
         sys.stderr.write(
-            "Steam client appears to be running — quit it first "
-            "(it holds the state file open), then re-run.\n"
+            f"a Steam client appears to be running:\n  {procs}\n"
+            "quit it first (it holds the state file in memory), then re-run.\n"
             "Override with --force if you are sure it is quit.\n")
         return 2
     for p in (depot, state):
@@ -383,9 +631,11 @@ def main():
         description='Parse Steam console logs, verify depots, write appmanifests.')
     sub = ap.add_subparsers(dest='cmd', required=True)
 
-    p = sub.add_parser('appinfo', help='parse app_info_print output')
+    p = sub.add_parser('appinfo', help='parse app_info_print output (or --api)')
     p.add_argument('--log', default=DEFAULT_LOG)
     p.add_argument('--appid', type=int, action='append')
+    p.add_argument('--api', action='store_true',
+                   help='fetch depot layout from api.steamcmd.net (needs one --appid, no console)')
     p.add_argument('--json', action='store_true')
     p.set_defaults(fn=cmd_appinfo)
 
@@ -394,9 +644,13 @@ def main():
     p.add_argument('--json', action='store_true')
     p.set_defaults(fn=cmd_licenses)
 
-    p = sub.add_parser('verify', help='verify depot files against its manifest')
-    p.add_argument('--depot', required=True,
-                   help='path to depot dir (contains Manifest_*Files_*.txt)')
+    p = sub.add_parser('verify', help='verify files against a manifest')
+    p.add_argument('--depot', help='path to depot dir (contains Manifest_*Files_*.txt)')
+    p.add_argument('--depotcache',
+                   help='Windows depotcache .manifest (protobuf FileMappings) — '
+                        'checks existence + SIZE against --root (any tree)')
+    p.add_argument('--root', default='.',
+                   help='tree to verify with --depotcache (depot dir or common/<installdir>/)')
     p.add_argument('--list', type=int, default=20, help='max missing to list')
     p.set_defaults(fn=cmd_verify)
 
@@ -414,6 +668,8 @@ def main():
     p.add_argument('--lastowner', help='SteamID64, needed for fresh manifests')
     p.add_argument('--fresh', action='store_true',
                    help='create new manifest even if one exists')
+    p.add_argument('--force', action='store_true',
+                   help='allow manifest surgery while a Steam client is running')
     p.add_argument('--dry-run', action='store_true')
     p.set_defaults(fn=cmd_manifest)
 
