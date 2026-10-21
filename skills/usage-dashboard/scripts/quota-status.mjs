@@ -42,6 +42,37 @@ const resetIn = (s) => {
 };
 
 const lines = [];
+// Live SR burn (Layer 1): sr-live.json maintained by plugins/cost-tracker.js.
+// Recompute inline when stale (>90s) so /quota is never older than a minute.
+const SR_CALC = path.join(os.homedir(), ".config/opencode/skills/model-benchmarks/scripts/sr-calc.mjs");
+const SR_LIVE = path.join(os.homedir(), ".local/share/opencode/sr-live.json");
+let sr = null;
+try {
+  const st = fs.statSync(SR_LIVE);
+  sr = JSON.parse(fs.readFileSync(SR_LIVE, "utf8"));
+  sr._ageMs = Date.now() - st.mtimeMs;
+} catch { sr = null; }
+if (!sr || !(sr._ageMs < 90000)) {
+  try {
+    const { execFileSync } = await import("node:child_process");
+    const fresh = execFileSync("node", [SR_CALC], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+    sr = JSON.parse(fresh);
+    sr._ageMs = 0;
+  } catch { /* keep stale sr (may be null) */ }
+}
+if (sr?.windows) {
+  const bar = (p) => (p == null ? "n/a" : `${Math.round(p)}%`);
+  const w = sr.windows;
+  lines.push(`SR burn (1 SR = $0.01): 5h ${w.h5.usedSR}/${w.h5.allowedSR} SR ${bar(w.h5.pct)} of $12 · 7d ${w.d7.usedSR}/${w.d7.allowedSR} SR ${bar(w.d7.pct)} of $30 · 30d ${w.d30.usedSR}/${w.d30.allowedSR} SR ${bar(w.d30.pct)} of $60 — live as of ${sr._ageMs < 2000 ? "now" : ago(new Date(Date.now() - sr._ageMs).toISOString())}`);
+  const gos = (sr.perModel || []).filter((m) => m.provider === "opencode-go" && (m.msgs.d7 > 0 || m.msgs.day > 0));
+  for (const m of gos.sort((a, b) => b.usd.d7 - a.usd.d7)) {
+    lines.push(`  ${m.model.split("/").pop()}: 7d ${m.msgs.d7} msgs $${m.usd.d7.toFixed(2)} ($${m.costPerMsg}/msg) · runway ~${m.allowedMsgs == null ? "n/a" : m.allowedMsgs.toLocaleString("en-US")} msgs on $${m.cap} cap`);
+  }
+  if (sr.alerts?.length) lines.push(`⚠ SR alerts: ${sr.alerts.join(", ")}`);
+  if (sr.lastTurn && sr.lastTurn.sr >= 10) lines.push(`  last heavy turn: ${sr.lastTurn.model} $${sr.lastTurn.usd} (${sr.lastTurn.sr} SR)`);
+} else {
+  lines.push("SR burn: unknown — no sr-live.json yet (send one Go turn, the cost-tracker plugin seeds it).");
+}
 const raw = readGlobal("data.js", "window.__OCUD__ = ");
 const hero = raw?.hero;
 if (!hero) {

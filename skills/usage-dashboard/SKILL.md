@@ -82,10 +82,14 @@ Keys are only sent as Bearer headers — never printed or stored.
 ## TUI quota readout (`/quota` command)
 
 `~/.config/opencode/command/quota.md` defines a `/quota` slash command backed by
-`scripts/quota-status.mjs` (local snapshot files only, no network, always exit 0).
-It prints Go plan windows (when `go_quota.mjs` has run), the OpenRouter key
-budget, recorded paid/metered, 24h 429s, and billing flags — then the agent
-flags anything needing attention. A persistent quota widget in the TUI header is
+`scripts/quota-status.mjs` (local snapshot files + live DB, no network, always exit 0).
+It leads with the live SR burn (5h/7d/30d windows + per-model 7d $/msg and
+message runway, recomputed from `opencode.db` via
+`skills/model-benchmarks/scripts/sr-calc.mjs` when `sr-live.json` is older
+than 90s — that file is kept fresh by `plugins/cost-tracker.js`), then prints
+Go plan windows (when `go_quota.mjs` has run), the OpenRouter key budget,
+recorded paid/metered, 24h 429s, and billing flags — then the agent flags
+anything needing attention. A persistent quota widget in the TUI header is
 not possible (1.x TUI config covers theme/keybinds/cursor/attention only), so an
 on-demand command is the lever. The script honors `$OCUD_OUT` for tests.
 
