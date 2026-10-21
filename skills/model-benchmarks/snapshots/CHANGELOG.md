@@ -63,6 +63,158 @@
 - Removed in-page run-log (parser notes, launchd gaps, pin-application
   status) — that history lives here from now on.
 
+## 2026-10-20 — space-bunny reveal, Go dashboard refresh with plan limits
+
+- **Space Bunny = MiniMax M3.1 Flash confirmed** (MiniMax blog 10-19:
+  early build, 200T+ tokens). `space-bunny-free` gone from both CLI
+  catalogs 10-20, replaced by `minimax-m3.1-flash-free` (opencode +
+  opencode-go, $0, 1M/512K ctx, release 2026-10-19, canonical
+  `minimax/MiniMax-M3.1-Flash`).
+- **Fresh AA pull** (`check minimax-m3-1-flash`, `check-2026-10-20.json`,
+  19 models): M3.1 Flash Intel 43, **Eng 43 (rank 18)**, $0.15/$0.60,
+  90% cache discount ($0.015), $0.22/task, 105 tps, 180M eval tokens.
+  Bonus: DS V4.1 Flash 1017 build now Eng 45 (old build 38).
+  18 older model rows carried from 10-18 (noted in snapshot `_note`).
+- **Go plan limits wired in** (Zen `/docs/zen/` pricing 10-20 +
+  per-model caps; `*` caps assumed from $15 tier — verify in Go
+  console): `dashboard.mjs` GO map gained minimax-m3.1-flash
+  (0.15/0.60/0.015, $30), space-bunny cache corrected 0.03 → 0.015,
+  gemini-4-argon-contributor (2.00/10.00/0.10, $60, 50%-off thru Nov 30),
+  gpt-5.6-luna, kimi-k2.7-code, qwen3.8-flash, qwen3.7-plus, minimax-m3.
+  Still no Go prices: hy3/hy4-preview, longcat-2.0, mimo-v2.5/pro,
+  glm-5.2. Guide §5/§6 carry per-model Go + Go Plus caps; §6 ranks M3.1
+  Flash at Value 195 (#2, ~$4.8/loop-day, 6 days on $30 cap).
+- **Privacy upgrades (Zen docs):** M3.1 Flash Free, GLM-5.3-Flash Free,
+  DS V4.1 Flash Free, LongCat 2.5 Preview Free are zero-retention
+  (moved to grade B); Beam Free no-train/30-day safety; Big Pickle +
+  MiMo frees may train (grade D). New free shelf faces: LL Alpha Free,
+  Exo Free, MiMo-V2.5 Free (docs-only, not in CLI 10-20).
+- **Missing data / action needed:** reviewer + security-reviewer agent
+  files still pin dead `opencode/space-bunny-free` (dashboard §1 flags
+  ×2, plus ×5 dead spark-frees); re-pin to
+  `opencode/minimax-m3.1-flash-free` + restart opencode (routing.json +
+  guide §9 already flipped). `dashboard.test.mjs` fallback fixture
+  updated to the rename; both suites green.
+- First `access-2026-10-20.json` WITH opencode-go (29 models);
+  `dashboard-2026-10-20.json`: 1,635 msgs, all
+  opencode-go/muse-spark-1.3-contributor, 99% cache-read, no 429s.
+- **§5 full sweep (13 slugs, `check` into `check-2026-10-20.json`,
+  now 23 models):** Haiku 5.5 HAS a full AA page — Intel 43, Eng 44,
+  234 tps (fastest in §5), 440M eval tokens (most verbose yet);
+  Qwen3.8 Max gains Intel 45 (40 tps); Spark 1.2 page exists (Intel 40,
+  355 tps). Step 5 Preview has Eng 45 ONLY — its AA model page carries
+  no pricing/Intel/speed rows (partial:true on that pull). Speed
+  refreshes: glm-flash 78, glm-5.3 86, spark-1.3 133, ds-flash 241,
+  ds-pro 107, mimo-pro 50, kimi-k3 42. Watch: DS V4.1 Flash **1017
+  build** scores separately (Intel 45 / Eng 45 / $0.26 / 207 tps) —
+  our Go route's build is unconfirmed.
+- **Argon contributor usage limits (§5 row added):** no published
+  msg/req caps — derived equivalents at promo prices: ~2,520 req/5h
+  (2× promo; ~1,260 base), ~3,150/wk, ~6,300/mo on console mix;
+  ~1 loop-day per $60 cap (~$58/day) at our mix, ~120 msgs per 5h
+  window. 1M ctx / 64K out, low/med/high effort. Zero Argon msgs in
+  our DB (training-flagged, avoided).
+- **Console ground truth 10-20 (user screenshot): 23 Argon reqs
+  (192K in / 2.9M cached / 12K out) billed $1.60 = full-rate
+  equivalent — the 2× counting cancels the 50% off.** Per-req mix is
+  light (8K in / 126K cached / 0.5K out); burn ≈ $6.40/hr, so the $60
+  cap ≈ 9 hrs of Argon, weekly $30 ≈ under 5 hrs. The +6pp weekly /
+  +3pp monthly jumps confirm the $60 monthly cap (verify flag
+  removed).   Guide §5/§6 + GO map reverted to full-rate economics
+  ($4/$20/$0.20, ~$118/loop-day, ~630 req/5h).
+- **SR cost visibility ships (2 layers, 10-21).** Shared formula module
+  `scripts/sr-calc.mjs` (importable `calcSR` + CLI; single GROUP BY over
+  30d, seconds on ~1GB DB). L1: `plugins/cost-tracker.js` (`.js` so
+  `node --check` verifies it; event hook, 60s throttle, never throws,
+  rising-edge toasts) → `~/.local/share/opencode/sr-live.json`;
+  `/quota` leads with live SR + per-model runway (≤90s staleness).
+  L2: `tools/cost-bar/` Swift NSStatusItem pill (`--self-test` green).
+  `tools/helpers/` re-wraps the 4 bash/python LaunchAgents as branded owl
+  .app bundles (spawn-and-wait launcher); Login Items names fixed.
+  Skill docs: `usage-dashboard/SKILL.md` /quota section, new
+  `tools/README.md`, `EXPERIENCE.md` §7.
+- **Pareto + personality charts absorbed (10-21).** AA Intel-vs-$/task:
+  Haiku-max (43/@$0.13) and DS-V4.1-Flash-1017-max (45/@$0.26) ON frontier,
+  GLM-flash (42/@$0.27) near, Spark-max (48/@$1.6) dominated off-frontier,
+  Argon-high holds the top end (~52/@$1.8), Sol-max (51/@$0.7) value king
+  but NOT on Go catalog. Personality radar (eyeball, SUPERSEDED — see
+  personality-tables entry below): GLM tops
+  Expressiveness/Imagination/Warmth/Informativeness. Routing deltas:
+  brainstorm primary flipped minimax → GLM-flash-free (personality fit);
+  DS-V4.1-Flash-Go recorded as reviewer challenger pending §16 mini-eval
+  (never pin unevaluated); security fallback corrected to
+  spark-1.3-contributor Go (paid `muse-spark-1.3` not in catalog).
+  Recorded in guide §9/§9b; `dashboard.mjs` ROUTES updated (tests green).
+- **Correction (10-21): AA $/task positions are at STANDARD rates — our
+  Spark loop pays CONTRIBUTOR rates.** Spark-max's "$1.6/task, dominated"
+  reading was wrong for us: at $0.10/$0.20/$0.002 (≈5–8% of the
+  $1.25/$4.25 standard card) the same task volume costs ~$0.10–0.15 —
+  Intel 48 at Haiku money, i.e. ON our-plan frontier, best Intel-per-dollar
+  available. Guide §9b corrected with the contributor-adjusted row + a
+  reference-rates caveat (all other Go rates ≈ AA reference, so only Spark
+  needed adjusting). Net effect: benchmark value now AGREES with observed
+  $/msg runway — the training terms are the sole remaining cost of the
+  Spark loop, which sharpens the main-model decision to a pure
+  privacy-vs-everything tradeoff.
+- **§9b charts rendered as real SVG + ladder added (10-21).**
+  `scripts/charts_9b.py` was the source of truth (coordinates = eyeball
+  transcription, marked ~approximate): Pareto scatter (log $/task, dotted
+  frontier, blue = our routes, separate Spark-std vs Spark-contrib markers)
+  and GLM-vs-Spark personality radar. §9c escalation ladder table: Spark
+  default, six leave-triggers (Argon/GML-reviewer/Haiku/Nemotron/GLM-free/
+  DS-watchlist/GLM-fallback). Guide tests green (--write-guide anchors
+  unaffected: no tbody inside the SVGs).
+- **§9b visuals reverted to tables (10-21, user call).** Both SVGs removed;
+  `charts_9b.py` deleted; personality data kept as an 8-axis GLM-vs-Spark
+  table with per-axis reads. Pareto table unchanged (already tabular).
+- **Personality done properly (10-21): `personality` mode + full trait tables.**
+  New `aa_bench.mjs personality` scrapes all 8 AA-PersonalityBench index
+  leaderboards (values-then-names positional parser, top 10 per index,
+  focus-model fuzzy match; fixtures + validation tests green).
+  `personality-2026-10-21.json` saved; weekly pull gains a non-fatal
+  personality step. AA's own trait heatmaps transcribed in full to guide
+  §9b (14 models × 30 traits — the ONLY source covering our exact variants
+  like GLM-5.3-Flash and Spark 1.3 max). Corrections vs the earlier eyeball
+  reads: GLM-Flash Informativeness is mid (not top), Spark Transparency is
+  NOT ~100, and GLM Slop is low (30/33, not ~65). New operational findings:
+  Spark Slop 79 + Sycophantic 87 + Admits-Uncertainty 28; Argon Slop 68 +
+  Sycophantic 81 + Admits-Uncertainty 4; Haiku Slop 9 (lowest) +
+  Evidence-Based 87 (security-pin vindicated); DS Sycophantic 9
+  (challenger strengthened); Nemotron Structured/Scannable 95 (researcher
+  vindicated); MiniMax Imagination 17/14 (fallback-only confirmed).
+  Conflict note: trait snapshots disagree with index top-10s on some Spark
+  cells (likely AA snapshot timing) — nothing routed rests on disputed cells.
+  Follow-up: combined Index column added to all 8 trait tables (— = outside
+  top 10, sorter ranks it lowest) and every column made sortable via the
+  guide's existing data-sort handler (one-off transform script, diff-reviewed,
+  deleted; tests green).
+  Follow-up 2: transparent Score column (mean of shown traits, Sycophantic/
+  Slop inverted) so every model sorts with no gaps — e.g. Expressiveness
+  GLM-Flash 86.2 vs Spark 63.6, Slop Haiku 91.0 vs Argon 32.0. Same one-off
+  script pattern (diff-reviewed, deleted; tests green).
+- **Full re-pin applied (10-21, user-approved).** reviewer →
+  `opencode-go/glm-5.3-flash`, security-reviewer →
+  `opencode-go/claude-haiku-5.5`, brainstorm/docs-writer/domain-companion →
+  `opencode/glm-5.3-flash-free`, main+small →
+  `opencode-go/muse-spark-1.3-contributor`; researcher unchanged.
+  Fallbacks in agent bodies. `dashboard-2026-10-21.json`: `deadPins: []`,
+  all six routes `primaryLive`. Restart opencode to load.
+- **SR formula confirmed against console ground truth 10-20.**
+  Overview "Today": $2.83 / 719 reqs / 171.1M tokens → 283 SR.
+  Request-log CSV per-req means: spark ~$0.00070 (formula input
+  $0.00069 DB / $0.00087 range), argon ~$0.08 (formula $0.0837 DB /
+  $0.0696 range) — all within noise. Caveats: DB msgs ≠ console
+  requests (turns vs API calls: 1,784 vs 719), windows differ, and
+  argon $/req is heavy-tailed ($0.045–$0.37 over 27 rows), so the 716
+  runway is a mean estimate — worst-case requests cost ~5× mean.
+- **Standardized requests (`standardReq` in dashboard.mjs + snapshot):
+  1 SR ≡ $0.01 model spend.** Per Go route: costPerMsg, allowedMsgs
+  = cap/costPerMsg (runway in own-mix msgs), usedSR/allowedSR.
+  Console range: 21,000 SR allowed (caps $210) / 678 used (3.2%) —
+  runways: spark ~68.7k, argon ~862, glm-flash ~13.2k, bunny ~2.1k
+  own-mix reqs. Note: console's 12% monthly uses the plan pool as
+  denominator, not Σ sub-caps — different number, both true.
+
 ## 2026-10-18 — pulls, parser fix, throttle incident
 - Fresh snapshots: `check` (18 slugs + sonnet-5-5), `coding` (CAI top-8 +
   full DeepSWE/T-Bench/QnA charts), `access`, weekly OR catalog + report.

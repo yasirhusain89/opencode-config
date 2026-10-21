@@ -23,6 +23,20 @@ distilled, still-true conclusions.
   settings** (paid-training exclusion blocks the route), regardless of
   quality. Do not re-pin agents to it without re-running the eval.
   Evidence: scorecard §Decision; `agent-setup-review.md` pointer in `docs/`.
+- **2026-10-21 — full re-pin: zero dead agent/config IDs.** reviewer →
+  `opencode-go/glm-5.3-flash` (§16-evaluated, net +30), security-reviewer →
+  `opencode-go/claude-haiku-5.5` (frontier cheapest-quality), researcher
+  unchanged (nemotron free, 10/10 delivery), brainstorm/docs-writer/
+  domain-companion → `opencode/glm-5.3-flash-free` (brainstorm on
+  personality fit: top Imagination/Expressiveness/Warmth), main+small →
+  `opencode-go/muse-spark-1.3-contributor` (training terms accepted;
+  contributor-adjusted Pareto: Intel 48 @ ~$0.10–0.15/task, on-frontier).
+  Fallbacks live in each agent body; paid `muse-spark-1.3` (non-contributor)
+  is NOT in the catalog — never pin it. Verified via
+  `dashboard-2026-10-21.json` (`deadPins: []`, all routes `primaryLive`).
+  Researcher stays the only §16-frozen pin; brainstorm's GLM pick is
+  personality-data-backed but not task-evaluated — re-evaluate if its
+  decision pages degrade.
 - **No automatic failover exists.** A dead quota surfaces as a session error;
   switch via `/models` or `OPENCODE_CONFIG_CONTENT` override — and the
   override MUST include `small_model` (title/summary calls hit the same
@@ -126,8 +140,58 @@ distilled, still-true conclusions.
   direct entries for our finalists. Family signal favored GLM/Kimi,
   consistent with §16. Evidence: CHANGELOG 2026-10-19 entries.
 
-## 5. How to add a lesson
+## 7. Cost visibility (SR layers)
 
+- **2026-10-21 — SR cost visibility ships in two layers, both local-only.**
+  L1 (in-app): `skills/model-benchmarks/scripts/sr-calc.mjs` is the single
+  shared formula (1 SR = $0.01; caps 5h $12 / 7d $30 / 30d $60 verified vs
+  console 2026-10-20); `plugins/cost-tracker.js` keeps
+  `~/.local/share/opencode/sr-live.json` fresh via the `event` hook (60s
+  full-recompute throttle, incremental patches between, never throws);
+  `/quota` (`command/quota.md` + `quota-status.mjs`) prints live SR windows
+  + per-model runway. L2 (macOS): `tools/cost-bar/` single-file Swift
+  `NSStatusItem` pill (`~/Applications/OpenCodeCostBar.app`,
+  `ai.opencode.costbar.plist`) — event-driven file watch, `--self-test`
+  verifies parsing without launching GUI. Plugin is `.js` (not `.ts`) so
+  `node --check` can verify it without a TS toolchain.
+- **2026-10-21 — no Go API key on file** (`~/.local/share/opencode/.go-api-key`
+  absent): official-quota refresh and the menu-bar "Refresh official Go quota"
+  action report "no key" until one is created at opencode.ai dashboard →
+  API keys. Local SR math is unaffected.
+- **2026-10-21 — full-recompute cost is bounded:** sr-calc scans only the
+  last 30d of assistant rows (single GROUP BY query); on a ~1GB DB it runs
+  in seconds — cheap enough for /quota on demand and 60s plugin throttle,
+  no background daemon needed.
+- **2026-10-21 — Login Items names come from the executable, not the plist.**
+  LaunchAgents that exec `/bin/bash` or `/usr/bin/python3` show up as
+  "bash"/"python (unidentified developer)". Fix: `tools/helpers/` builds one
+  shared Swift launcher into branded `~/Applications/OpenCode <Job>.app`
+  bundles (owl icon copied from OpenCode.app, command in each bundle's
+  `OPCommand` Info.plist key); plists exec the wrapper. Spawn-and-wait, NOT
+  exec — exec would replace the image with the interpreter and the old name
+  would come back. Evidence: `tools/helpers/build.sh`,
+  `~/Applications/OpenCode DB Check.app`, repointed
+  `~/Library/LaunchAgents/{com.opencode.db-*,ai.opencode.*}.plist`.
+
+## 5. How to add a lesson
 Append under the right section (or add one): `**YYYY-MM-DD — one-line
 claim.**` 1–2 lines of context, then `Evidence: <file:line / snapshot /
 commit>`. Claims without evidence go in the session chat, not here.
+
+## 6. Session-DB housekeeping
+
+- **2026-10-20 — OpenCode Desktop renderer stutter was session-DB bloat
+  (938MB opencode.db), not system load.** Two mega-sessions (2710 + 1352
+  msgs, ~2MB file-part events) spiked the Electron renderer to ~85% and
+  WindowServer to ~40% on session switch; the Mac itself had 93% memory
+  free, 0 swap, no thermal throttle. Fix: `scripts/opencode_db_housekeeping.sh`
+  (report/maintain/vacuum/prune/costs/--check) + weekly-maintain and
+  daily-check launchd agents. Prune only via `opencode export` archive +
+  `opencode session delete` — never raw SQL (part.session_id and event rows
+  have no FK cascade from session, so raw deletes orphan rows). VACUUM
+  reclaims nothing while freelist is 0; space comes back only via prune.
+  Export JSON keeps full review data (session info with model/agent/cost/
+  tokens + all message parts), so pruned sessions stay reviewable for
+  cost/effectiveness. Evidence: `scripts/opencode_db_housekeeping.sh:1-22`,
+  `~/Library/LaunchAgents/com.opencode.db-maintain.plist`,
+  `~/Library/LaunchAgents/com.opencode.db-check.plist`.
