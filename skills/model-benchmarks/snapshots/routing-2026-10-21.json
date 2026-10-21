@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-10-21T02:59:05.857Z",
+  "source_snapshot": "dashboard-2026-10-21.json",
+  "agents": {
+    "reviewer": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode/minimax-m3.1-flash-free",
+      "why": "zero-retention Go loop; free §16 winner (ex-space-bunny) as fallback",
+      "primaryLive": true
+    },
+    "researcher": {
+      "primary": "opencode/nemotron-3.5-super-vl-free",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "why": "no Go T-Bench fit except training-flagged Argon",
+      "primaryLive": true
+    },
+    "security-reviewer": {
+      "primary": "opencode-go/claude-haiku-5.5",
+      "fallback": "opencode-go/muse-spark-1.3-contributor",
+      "why": "cheapest scored quality; spark-contrib is break-glass only (trains Meta, non-proprietary code only)",
+      "primaryLive": true
+    },
+    "brainstorm": {
+      "primary": "opencode/glm-5.3-flash-free",
+      "fallback": "opencode/minimax-m3.1-flash-free",
+      "why": "personality fit: top imagination/expressiveness/warmth; minimax fallback for Intel 43",
+      "primaryLive": true
+    },
+    "docs-writer": {
+      "primary": "opencode/glm-5.3-flash-free",
+      "fallback": "opencode/nemotron-3.5-super-vl-free",
+      "why": "free tier is enough for latency/price roles",
+      "primaryLive": true
+    },
+    "domain-companion": {
+      "primary": "opencode/glm-5.3-flash-free",
+      "fallback": "opencode/nemotron-3.5-super-vl-free",
+      "why": "free tier is enough for latency/price roles",
+      "primaryLive": true
+    }
+  }
+}

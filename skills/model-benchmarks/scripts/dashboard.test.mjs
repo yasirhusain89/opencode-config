@@ -81,6 +81,10 @@ if (j) {
   eq(j.goHeadroom.family, 'glm-5.3-flash', 'go headroom family');
   eq(j.goHeadroom.msgs, 4, 'go headroom msgs (family incl. -free + Go route)');
   ok(j.goHeadroom.costPerDay > 0 && j.goHeadroom.cap === 60, 'go $/day + cap');
+  eq(j.standardReq.routes.length, 1, 'standardReq covers the Go route');
+  eq(j.standardReq.routes[0].usedSR, 35, 'standardReq usedSR = $0.35/$0.01');
+  eq(j.standardReq.routes[0].allowedSR, 6000, 'standardReq allowedSR = $60/$0.01');
+  eq(j.standardReq.routes[0].allowedMsgs, 171, 'standardReq runway = floor(60/0.35) own-mix msgs');
   eq(j.freeShelf.lastActivity.slice(0, 16), '2026-10-18 09:30', 'free shelf halt detected (failed 09:30 row included)');
   eq(j.peakHour, '2026-10-18 08', 'peak hour');
   ok(j.perRoute[0].model === 'opencode/space-bunny-free' && j.perRoute[0].msgs === 4, 'top route row');
@@ -99,7 +103,7 @@ ok(frag.includes('dead-model-free'), 'fragment names dead pin');
 const usagePart = frag.split('USAGE-TBODY')[1] || '';
 eq((usagePart.match(/<td/g) || []).length, 4 * 8, 'usage rows carry 8 cells (route/msgs/in/cached/equiv/fail/p50/role)');
 const rjson = JSON.parse(fs.readFileSync(path.join(tmp, 'routing-2026-10-18.json'), 'utf8'));
-eq(rjson.agents.reviewer.fallback, 'opencode/space-bunny-free', 'routing.json fallback');
+eq(rjson.agents.reviewer.fallback, 'opencode/minimax-m3.1-flash-free', 'routing.json fallback (renamed from space-bunny-free 2026-10-20)');
 
 // --write-guide on a minimal fixture (same anchor shape as the real guide)
 const guidePath = path.join(tmp, 'guide.html');

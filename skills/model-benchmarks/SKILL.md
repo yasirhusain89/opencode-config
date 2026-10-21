@@ -40,8 +40,15 @@ session pulls everything, so a refresh is a single command.
   Go pacing (days to weekly sub-cap), metered-vs-projected Go spend,
   and `snapshots/routing-YYYY-MM-DD.json` (machine-readable
   primary/fallback pins per agent for wrappers to consume).
-  Run it on every refresh — never hand-edit those two tables (they carry
-  a `generated` marker comment).
+   Run it on every refresh — never hand-edit those two tables (they carry
+   a `generated` marker comment).
+- `<skill dir>/scripts/sr-calc.mjs` — the SINGLE shared standardized-request
+  formula (1 SR = $0.01; Go windows 5h $12 / 7d $30 / 30d $60): import
+  `calcSR(dbPath)` or run `node scripts/sr-calc.mjs [--db PATH]
+  [--json OUT]`. Consumed by `plugins/cost-tracker.js` (live
+  `sr-live.json`), `/quota`, and the menu-bar app. When caps or Go rates
+  change, update `WINDOWS` + `FAMILY_CAP` here AND the `GO` map in
+  `dashboard.mjs` together — they are mirrors.
 - `<skill dir>/snapshots/` — dated ground truth: `access-YYYY-MM-DD.json`
   (full provider catalogs), `coding-index-YYYY-MM-DD.json` (raw agentic
   scrape), `agentic-table-YYYY-MM-DD.md` (curated table + footnotes),
@@ -64,6 +71,7 @@ S=~/.config/opencode/skills/model-benchmarks/snapshots
 T=$(date +%F)
 node $D/aa_bench.mjs inventory --out $S/access-$T.json
 node $D/aa_bench.mjs coding --out $S/coding-index-$T.json
+node $D/aa_bench.mjs personality --out $S/personality-$T.json
 ```
 
 Notes:
@@ -74,7 +82,9 @@ Notes:
   `~/.config/opencode`); reads `agent/*.md` (`agents/` too) `^model:` lines
   plus `"model"` / `"small_model"` from opencode.json(c).
 - `check` is ~1 + N page loads, ~2-6 min depending on slug count;
-  `coding` is 1 page + 3 tab clicks, ~2-3 min. No `--out` prints JSON to
+  `coding` is 1 page + 3 tab clicks, ~2-3 min; `personality` is 8 index
+  pages, ~3 min (top 10 per index only — absentees are outside the top 10,
+  recorded under `unmatched`, not as errors). No `--out` prints JSON to
   stdout. Sites occasionally block scrapers; on failure, retry once,
   then fall back to websearch excerpts.
 - After any pull, update the dated snapshots, the guide's tables, and log
@@ -139,18 +149,32 @@ resolve — report per-type wins, not just the net score.
   documented in the guide (§11) for hand cross-checks; only the Aider YAML
   (`aider/website/_data/polyglot_leaderboard.yml`) is pull-friendly today.
 
-## Access snapshot (2026-10-18)
+## Access snapshot (2026-10-20)
 
-From `snapshots/access-2026-10-18.json`: opencode 10 free, nvidia ~56,
-ollama 1. Agent-relevant subset (full lists in the snapshot):
+From `snapshots/access-2026-10-20.json`: opencode 16, opencode-go 29
+(first capture), nvidia 58, ollama 1. Agent-relevant subset (full lists
+in the snapshot):
 
 - **opencode** (free shelf, limited-time + data-use terms):
-  `beam-free`, `big-pickle`, `deepseek-v4.1-flash-free`,
-  `glm-5.3-flash-free`, `longcat-2.5-preview-free`,
-  `mimo-v2.6-flash-free`, `nemotron-3-ultra-free`,
-  `nemotron-3.5-lightning-free`, `nemotron-3.5-super-vl-free`,
-  `space-bunny-free` (muse-spark contributor + ling-fin REMOVED 10-18 —
-  pins to those IDs are dead)
+  `beam-free`, `big-pickle`, `claude-haiku-5-5`, `claude-opus-5-5`,
+  `deepseek-v4.1-flash`, `deepseek-v4.1-flash-free`, `gemini-4-argon`,
+  `glm-5.3-flash`, `glm-5.3-flash-free`, `gpt-5.6-terra`, `gpt-6-luna`,
+  `gpt-6.1-sol`, `longcat-2.5-preview-free`, `mimo-v2.6-flash-free`,
+  `minimax-m3.1-flash-free` (ex-`space-bunny-free`, renamed 10-19),
+  `nemotron-3.5-super-vl-free` (muse-spark contributor-frees,
+  `nemotron-3-ultra-free`, `nemotron-3.5-lightning-free`,
+  `space-bunny-free` REMOVED 10-20 — pins to those IDs are dead;
+  reviewer/security-reviewer still pin `space-bunny-free`)
+- **opencode-go** (29, $10/mo plan caps): `beam-free`,
+  `claude-haiku-5-5`, `deepseek-v4-pro`, `deepseek-v4.1-flash`,
+  `gemini-4-argon-contributor`, `glm-5.2`, `glm-5.3`, `glm-5.3-flash`,
+  `gpt-5.6-luna`, `gpt-6-luna`, `grok-4.7`, `hy3`, `hy4-preview`,
+  `kimi-k2.7-code`, `kimi-k3`, `longcat-2.0`,
+  `longcat-2.5-preview-free`, `mimo-v2.5`, `mimo-v2.5-pro`,
+  `mimo-v2.6-flash`, `mimo-v2.6-pro`, `minimax-m3`,
+  `minimax-m3.1-flash-free`, `muse-spark-1.2-contributor`,
+  `muse-spark-1.3-contributor`, `qwen3.7-plus`, `qwen3.8-flash`,
+  `qwen3.8-max`, `step-5-preview` (Go paid `space-bunny` gone 10-20)
 - **nvidia** (~56, trial credits; catalog shrank from 102 — DS V4 Pro/Flash,
   Qwen coder/3.5, MiniMax, StepFun, Inkling, GPT-OSS-120B removed):
   `deepseek-ai/deepseek-v4.1-flash`; `google/gemma-4-31b-it`;
@@ -184,6 +208,11 @@ DeepSWE + Terminal-Bench 4.0 + SWE-Atlas-QnA. Scores are **model×harness**.
 Below the top-8 cutoff (fresh 10-18 component charts): Opencode GLM-5.3
 (61/40/59), Kimi Code CLI Kimi K3 (68/21/66), Muse Code Muse Spark Open
 (60/6/58), Claude Code Haiku 5.5 (46/30/34), Mirror Beam 1.0 (40/4/40).
+Fresh 10-20: MiniMax-M3.1-Flash is Eng 43 (rank 18, tied GLM-5.3-Flash /
+Kimi K3), Intel 43, $0.15/$0.60 in/out, 90% cache discount, $0.22/task,
+105 tps, 180M eval tokens (very verbose) — see `check-2026-10-20.json`.
+Also new on the 10-20 Eng table: DeepSeek V4.1 Flash 1017 build at Eng 45
+(old build was 38).
 Stale 09-16 composites (off current charts, not re-measured): Spark 1.3 54,
 Gemini 3.8F 42, DS Pro 0813 43, DS Flash ~39*. Role map: DeepSWE ≈
 reviewer, T-Bench ≈ researcher, QnA ≈ technical QA. Missing agentic data:
@@ -195,7 +224,9 @@ Qwen3.5 Plus, MiniMax M3, GPT-6 Luna, Step 5, Qwen3.8 family.
 From `snapshots/reports/2026-10-18-value.md`. Free tiers change fastest of
 all — re-verify no-card/no-expiry claims every sweep.
 
-Free: opencode `space-bunny-free` (§17 winner), `glm-5.3-flash-free`
+Free: opencode `minimax-m3.1-flash-free` (ex-`space-bunny-free`, §16
+winner; Intel 43/Eng 43, $0.22/task; zero-retention per Zen docs 10-20),
+`glm-5.3-flash-free`
 (Intel 42/Eng 43), `nemotron-3.5-super-vl-free` (Eng 28),
 `nemotron-3-ultra-free` (Intel ~48), `deepseek-v4.1-flash-free`,
 `beam-free`, `mimo-v2.6-flash-free`; NVIDIA trial (`deepseek-v4.1-flash`,

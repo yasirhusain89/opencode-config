@@ -60,6 +60,15 @@ if [ "$FAIL" -eq 0 ]; then
   echo "dashboard FAILED" >> "$REPORTS/weekly.log"; FAIL=1; }
 fi
 
+# --- 4b. personality indexes (supplementary; never fails the run) ---
+if [ "$FAIL" -eq 0 ]; then
+if [ -f "$SNAP/personality-$T.json" ]; then
+  echo "personality fresh ($T) — skipping" >> "$REPORTS/weekly.log"
+else
+  "$NODE" "$SCRIPTS/aa_bench.mjs" personality --out "$SNAP/personality-$T.json" >> "$REPORTS/weekly.log" 2>&1 || echo "personality FAILED (supplementary; continuing)" >> "$REPORTS/weekly.log"
+fi
+fi
+
 # --- 5. AA index version check (alert only, never fails the run) ---
 if [ -f "$SNAP/aa-index-version.txt" ] && [ "$FAIL" -eq 0 ]; then
   EXPECTED=$(cat "$SNAP/aa-index-version.txt")

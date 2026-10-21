@@ -11,6 +11,8 @@
 //     DIR defaults to ~/.config/opencode (reads agent(s)/*.md, opencode.json(c))
 //   node aa_bench.mjs coding [--out FILE]
 //   node aa_bench.mjs inventory [provider...] [--out FILE]
+//   node aa_bench.mjs personality [--out FILE]
+//     8 AA-PersonalityBench index leaderboards (percentile 1-100 per model)
 // Requires playwright-core for check/coding: run from a dir that has it,
 // or set PW_CORE=/path/to/playwright-core/index.mjs.
 // inventory shells out to the opencode binary: $OPENCODE_BIN, `which opencode`,
@@ -156,7 +158,116 @@ async function runCoding(page) {
   return result;
 }
 
-// --- parsing ---------------------------------------------------------------
+// --- personality indexes -----------------------------------------------------
+// AA-PersonalityBench: 8 indexes, each a 1-100 percentile leaderboard page.
+const PERSONALITY_INDEXES = ['expressiveness', 'organization', 'informativeness', 'transparency', 'warmth', 'conviction', 'imagination', 'slop'];
+const PERSONALITY_FOCUS = [
+  ['GLM-5.3-Flash', ['GLM-5.3-Flash', 'GLM-5.3 (max)']],
+  ['Muse Spark 1.3 (max)', ['Muse Spark 1.3 (max)', 'Muse Spark 1.3']],
+  ['Claude Haiku 5.5 (max)', ['Claude Haiku 5.5 (max)', 'Claude Haiku 5.5']],
+  ['MiniMax-M3.1-Flash', ['MiniMax-M3.1-Flash', 'MiniMax M3.1 Flash']],
+  ['DeepSeek V4.1 Flash 1017 (max)', ['DeepSeek V4.1 Flash 1017 (max)', 'DeepSeek V4.1 Flash']],
+  ['Gemini 4 Argon (high)', ['Gemini 4 Argon (high)', 'Gemini 4 Argon']],
+  ['GPT-6.1 Sol (max)', ['GPT-6.1 Sol (max)', 'GPT-6.1 Sol']],
+  ['MiMo-V2.6-Pro', ['MiMo-V2.6-Pro', 'MiMo-V2.6 Pro']],
+  ['GPT-6 Luna (max)', ['GPT-6 Luna (max)', 'GPT-6 Luna']],
+  ['Nemotron 3.5 Super VL', ['Nemotron 3.5 Super VL', 'Nemotron-3.5-Super-VL']],
+  ['Claude Sonnet 5.5 (max with fallback)', ['Claude Sonnet 5.5 (max with fallback)', 'Claude Sonnet 5.5']],
+];
+
+// Leaderboard layout (verified against live text 2026-10-21): the section
+// "<Title> Leaderboard" is followed by a "<N> of <M> models" count line,
+// then a VALUES block (pure ints), then a NAMES block (display names) in
+// the same order — pair positionally, require equal lengths. Only the top
+// 10 render; models outside the top 10 are simply absent (recorded under
+// `unmatched`, not as errors).
+function parsePersonality(text, slug) {
+  const L = linesOf(text);
+  const title = slug[0].toUpperCase() + slug.slice(1) + ' Leaderboard';
+  let h = -1;
+  for (let i = 0; i < L.length; i++) {
+    if (L[i] !== title) continue;
+    for (let j = i + 1; j < Math.min(L.length, i + 12); j++) {
+      if (/^\d+ of \d+ models$/.test(L[j])) { h = j; break; }
+    }
+    if (h !== -1) break;
+  }
+  if (h === -1) return null;
+  const vals = [];
+  let i = h + 1;
+  while (i < L.length && /^\d{1,3}$/.test(L[i])) {
+    const v = parseInt(L[i], 10);
+    if (v >= 1 && v <= 100) vals.push(v);
+    i++;
+  }
+  const names = [];
+  while (i < L.length && names.length < vals.length) {
+    const l = L[i];
+    if (!l) { i++; continue; }
+    if (/^(Component Traits|Trait Leaderboards|Other Indexes|Compare Model|AA-PersonalityBench:)/.test(l)) break;
+    if (!/[a-zA-Z]/.test(l)) break;
+    names.push(l);
+    i++;
+  }
+  if (!vals.length || vals.length !== names.length) return null;
+  return vals.map((value, k) => ({ name: names[k], value }));
+}
+
+async function runPersonality(page) {
+  const result = { source: 'artificialanalysis.ai/evaluations/aa-personalitybench', scraped_at: new Date().toISOString().slice(0, 10), errors: [], indexes: {}, focus: {}, unmatched: [], debug: {} };
+  for (const slug of PERSONALITY_INDEXES) {
+    if (process.env.AA_RAW && process.env.AA_RAW !== slug) continue;
+    try {
+      const text = await getText(`https://artificialanalysis.ai/evaluations/aa-personalitybench/indexes/${slug}`, 6, 5000);
+      if (process.env.AA_RAW === slug) {
+        const L = linesOf(text);
+        const h = L.findIndex(l => /^\d+ of \d+ models$/.test(l));
+        console.error(L.slice(Math.max(0, h - 4), h + 30).map((l, k) => `${h - 4 + k}: ${l}`).join('\n'));
+        continue;
+      }
+      const rows = parsePersonality(text, slug);
+      if (!rows) {
+        result.errors.push(`${slug}: leaderboard parse empty (AA UI changed?)`);
+        const L = linesOf(text);
+        const h = L.findIndex(l => l === slug[0].toUpperCase() + slug.slice(1) + ' Leaderboard');
+        result.debug[slug] = L.slice(Math.max(0, h - 2), h + 62);
+        console.error(`${slug}: PARSE EMPTY — debug dumped`);
+        continue;
+      }
+      result.indexes[slug] = Object.fromEntries(rows.map(r => [r.name, r.value]));
+      console.error(`${slug}: ${rows.length} models`);
+    } catch (e) {
+      const msg = `${slug} failed: ${e.message.split('\n')[0]}`;
+      result.errors.push(msg); console.error(msg);
+    }
+  }
+  // focus models: exact norm match, then longest prefix match across a
+  // digit boundary (same rule as matchEng, but self-contained — matchEng
+  // closes over the `norm` const defined later in main flow)
+  const pnorm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const pmatch = (table, needle) => {
+    const n = pnorm(needle);
+    if (table[n]) return table[n];
+    const cands = Object.entries(table).filter(([k]) =>
+      (k.startsWith(n) && (k.length === n.length || /\d/.test(k[n.length]))) ||
+      (n.startsWith(k) && (n.length === k.length || /\d/.test(n[k.length]))));
+    cands.sort((a, b) => b[0].length - a[0].length);
+    return cands.length ? cands[0][1] : null;
+  };
+  for (const slug of PERSONALITY_INDEXES) {
+    const table = {};
+    for (const [name, value] of Object.entries(result.indexes[slug] || {})) table[pnorm(name)] = { name, value };
+    for (const [label, aliases] of PERSONALITY_FOCUS) {
+      let hit = null;
+      for (const a of aliases) { hit = pmatch(table, a); if (hit) break; }
+      if (hit) (result.focus[label] = result.focus[label] || {})[slug] = hit.value;
+      else result.unmatched.push(`${label} not in ${slug} top 10`);
+    }
+  }
+  result.coverage_note = 'AA renders only the top 10 of ~38 models per index; absentees are outside the top 10, not unevaluated.';
+  result.partial = result.errors.length > 0;
+  return result;
+}
 
 function linesOf(text) {
   return text.split('\n').map(l => l.trim());
@@ -303,14 +414,15 @@ function usage() {
   console.error('usage: node aa_bench.mjs check <slug>... [--out FILE] [--config DIR]');
   console.error('       node aa_bench.mjs coding [--out FILE]');
   console.error('       node aa_bench.mjs inventory [provider...] [--out FILE]');
+  console.error('       node aa_bench.mjs personality [--out FILE]');
 }
 
 function validateArgs(a) {
   const errs = [...a.errors];
-  if (!['check', 'coding', 'inventory'].includes(a.cmd)) errs.push(`unknown command '${a.cmd}'`);
+  if (!['check', 'coding', 'inventory', 'personality'].includes(a.cmd)) errs.push(`unknown command '${a.cmd}'`);
   if (a.cmd === 'check' && !a.slugs.length) errs.push('check needs at least one slug');
-  if (a.cmd === 'coding' && a.slugs.length) errs.push('coding takes no slugs');
-  if ((a.cmd === 'coding' || a.cmd === 'inventory') && a.configSet) errs.push(`${a.cmd} does not use --config`);
+  if ((a.cmd === 'coding' || a.cmd === 'personality') && a.slugs.length) errs.push(`${a.cmd} takes no slugs`);
+  if ((a.cmd === 'coding' || a.cmd === 'inventory' || a.cmd === 'personality') && a.configSet) errs.push(`${a.cmd} does not use --config`);
   return errs;
 }
 
@@ -345,6 +457,17 @@ if (args.cmd === 'coding') {
   let result;
   try {
     result = await runCoding(page);
+  } finally {
+    await browser.close();
+  }
+  emit(result);
+  process.exit(0);
+}
+
+if (args.cmd === 'personality') {
+  let result;
+  try {
+    result = await runPersonality(page);
   } finally {
     await browser.close();
   }

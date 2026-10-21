@@ -49,6 +49,7 @@ const WANT = [
   /^function parseModelPage/m,
   /^function slugCandidates/m,
   /^function parseAgentChart/m,
+  /^function parsePersonality/m,
   /^function parseArgs/m,
   /^function validateArgs/m,
   /^const norm =/m,
@@ -168,6 +169,16 @@ eq(matchEng(engByNorm, 'no-such-model-xyz'), null, 'matchEng miss');
   ], 'parseAgentChart 2026-10 layout (N-of-M anchor, Mirror, Devin two-model)');
 }
 
+// parsePersonality: values-then-names positional pairing (live layout 2026-10-21)
+{
+  const head = ['Slop Leaderboard', 'x', '2 of 38 models'];
+  const t = [...head, '66', '60', 'Model A (max)', 'Model B', 'Component Traits'].join('\\n');
+  eq(parsePersonality(t, 'slop'), [{ name: 'Model A (max)', value: 66 }, { name: 'Model B', value: 60 }], 'parsePersonality pairs');
+  eq(parsePersonality('nothing here', 'slop'), null, 'parsePersonality anchor miss');
+  eq(parsePersonality(['Slop Leaderboard', '1 of 38 models', '66', '60', 'Only One', 'Component Traits'].join('\\n'), 'slop'), null, 'parsePersonality length mismatch');
+  eq(parsePersonality(['Slop Leaderboard', 'x', '1 of 38 models', 'Ninety-nine', 'Model A'].join('\\n'), 'slop'), null, 'parsePersonality needs ints');
+}
+
 if (__failures) { console.error(__failures + ' assertion(s) failed'); process.exitCode = 1; }
 `;
 
@@ -198,6 +209,10 @@ function cli(args, env) {
 {
   const r = cli(['check', 'x', '--out']);
   eq(r.status, 2, 'cli trailing --out exits 2');
+}
+{
+  const r = cli(['personality', 'extra-slug']);
+  eq(r.status, 2, 'cli personality with slugs exits 2');
 }
 {
   const r = cli(['coding', 'extra-slug']);

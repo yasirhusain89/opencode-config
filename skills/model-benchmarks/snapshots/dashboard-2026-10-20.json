@@ -1,0 +1,204 @@
+{
+  "generated_at": "2026-10-20T19:20:38.233Z",
+  "date": "2026-10-20",
+  "totals": {
+    "msgs": 1784,
+    "inM": 3.7,
+    "outM": 0.48,
+    "cacheM": 343.4,
+    "cacheShare": 0.99
+  },
+  "perRoute": [
+    {
+      "model": "muse-spark-1.3-contributor",
+      "provider": "opencode-go",
+      "msgs": 1757,
+      "inM": 3.507778,
+      "outM": 0.45943,
+      "reasM": 0.461407,
+      "cacheM": 339.726664,
+      "last": "2026-10-20 19:20:35",
+      "usd": 1.214,
+      "failN": 7,
+      "failPct": 0.4,
+      "p50s": 4.6
+    },
+    {
+      "model": "gemini-4-argon-contributor",
+      "provider": "opencode-go",
+      "msgs": 27,
+      "inM": 0.216667,
+      "outM": 0.023871,
+      "reasM": 0.009004,
+      "cacheM": 3.678064,
+      "last": "2026-10-20 19:03:27",
+      "usd": 2.26,
+      "failN": 0,
+      "failPct": 0,
+      "p50s": 14.5
+    }
+  ],
+  "peakHour": "2026-10-20 06",
+  "peakMsgs": 400,
+  "pins": [
+    "opencode/muse-spark-1.3-contributor-free",
+    "opencode/muse-spark-1.3-contributor-free",
+    "opencode/muse-spark-1.3-contributor-free",
+    "opencode/nemotron-3.5-super-vl-free",
+    "opencode/space-bunny-free",
+    "opencode/space-bunny-free",
+    "opencode/muse-spark-1.3-contributor-free",
+    "opencode/muse-spark-1.3-contributor-free"
+  ],
+  "deadPins": [
+    {
+      "where": "agent/brainstorm.md",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    },
+    {
+      "where": "agent/docs-writer.md",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    },
+    {
+      "where": "agent/domain-companion.md",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    },
+    {
+      "where": "agent/reviewer.md",
+      "model": "opencode/space-bunny-free"
+    },
+    {
+      "where": "agent/security-reviewer.md",
+      "model": "opencode/space-bunny-free"
+    },
+    {
+      "where": "opencode.jsonc model",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    },
+    {
+      "where": "opencode.jsonc small_model",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    }
+  ],
+  "errors429": {
+    "count": 0,
+    "first": null,
+    "last": null,
+    "models": []
+  },
+  "freeShelf": {
+    "routes": [],
+    "lastActivity": null,
+    "paidContinuesAfter": "2026-10-20 19:20:35"
+  },
+  "goHeadroom": null,
+  "unmatchedCheckPins": [
+    {
+      "where": "brainstorm",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    },
+    {
+      "where": "docs-writer",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    },
+    {
+      "where": "domain-companion",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    },
+    {
+      "where": "researcher",
+      "model": "opencode/nemotron-3.5-super-vl-free"
+    },
+    {
+      "where": "reviewer",
+      "model": "opencode/space-bunny-free"
+    },
+    {
+      "where": "security-reviewer",
+      "model": "opencode/space-bunny-free"
+    },
+    {
+      "where": "(config model)",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    },
+    {
+      "where": "(config small_model)",
+      "model": "opencode/muse-spark-1.3-contributor-free"
+    }
+  ],
+  "snapshotAges": {
+    "check": "2026-10-20",
+    "access": "2026-10-20",
+    "coding": "2026-10-18"
+  },
+  "pacing": {
+    "family": "glm-5.3-flash",
+    "perDay": 0,
+    "weeklyCap": 30,
+    "daysToWeeklyCap": null
+  },
+  "metered": {
+    "goUsd": 3.47,
+    "projectedGoLoopUsd": 0
+  },
+  "standardReq": {
+    "unit": "$0.01 of model spend (~1 GLM-5.3-flash console-mix request)",
+    "routes": [
+      {
+        "model": "muse-spark-1.3-contributor",
+        "msgs": 1757,
+        "usd": 1.214,
+        "cap": 60,
+        "costPerMsg": 0.00069,
+        "allowedMsgs": 86836,
+        "usedSR": 121,
+        "allowedSR": 6000
+      },
+      {
+        "model": "gemini-4-argon-contributor",
+        "msgs": 27,
+        "usd": 2.26,
+        "cap": 60,
+        "costPerMsg": 0.0837,
+        "allowedMsgs": 716,
+        "usedSR": 226,
+        "allowedSR": 6000
+      }
+    ],
+    "allowedSR": 12000,
+    "usedSR": 347,
+    "pct": 2.9
+  },
+  "routing": {
+    "reviewer": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode/minimax-m3.1-flash-free",
+      "why": "zero-retention Go loop; free §16 winner (ex-space-bunny) as fallback",
+      "primaryLive": true
+    },
+    "researcher": {
+      "primary": "opencode/nemotron-3.5-super-vl-free",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "why": "no Go T-Bench fit except training-flagged Argon",
+      "primaryLive": true
+    },
+    "security-reviewer": {
+      "primary": "opencode-go/claude-haiku-5.5",
+      "fallback": "opencode/muse-spark-1.3",
+      "why": "cheapest scored quality; paid spark if proprietary",
+      "primaryLive": true
+    },
+    "docs-writer": {
+      "primary": "opencode/glm-5.3-flash-free",
+      "fallback": "opencode/nemotron-3.5-super-vl-free",
+      "why": "free tier is enough for latency/price roles",
+      "primaryLive": true
+    },
+    "domain-companion": {
+      "primary": "opencode/glm-5.3-flash-free",
+      "fallback": "opencode/nemotron-3.5-super-vl-free",
+      "why": "free tier is enough for latency/price roles",
+      "primaryLive": true
+    }
+  }
+}

@@ -56,7 +56,14 @@ const GO = {
   'mimo-v2.6-pro':            { p: [0.435, 0.87, 0.0036], cap: 15 },
   'mimo-v2.6-flash':          { p: [0.14, 0.28, 0.0028], cap: 60 },
   'step-5-preview':           { p: [1.00, 2.70, 0.10], cap: 60 },
-  'space-bunny':              { p: [0.15, 0.60, 0.03], cap: 30 },
+  'space-bunny':              { p: [0.15, 0.60, 0.015], cap: 30 }, // historic ID; AA 10-20 confirms = M3.1 Flash early build, 90% cache discount
+  'minimax-m3.1-flash':       { p: [0.15, 0.60, 0.015], cap: 30 }, // ex-space-bunny (live 10-20); cap inherits $30 — verify in Go console
+  'gemini-4-argon-contributor': { p: [4.00, 20.00, 0.20], cap: 60 }, // console 10-20 bills at full-rate equivalent (2x counting cancels the 50% off): 23 reqs = $1.60
+  'gpt-5.6-luna':             { p: [0.20, 1.20, 0.02], cap: 15 }, // Zen docs 10-20 (≤272K); cap = $15-tier default — verify
+  'kimi-k2.7-code':           { p: [0.95, 4.00, 0.19], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
+  'qwen3.8-flash':            { p: [0.15, 0.47, 0.016], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
+  'qwen3.7-plus':             { p: [0.40, 1.60, 0.04], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
+  'minimax-m3':               { p: [0.30, 1.20, 0.06], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
   'qwen3.8-max':              { p: [2.00, 6.00, 0.25], cap: 15 },
   'kimi-k3':                  { p: [3.00, 15.00, 0.30], cap: 15 },
 };
@@ -163,13 +170,36 @@ const pacing = flashGo ? { family: 'glm-5.3-flash', perDay: +flashGo.cost.toFixe
 const metered = { goUsd: meteredGoUsd, projectedGoLoopUsd: flashGo ? +flashGo.cost.toFixed(2) : null };
 // routing artifact: machine-readable pins+fallbacks (mirror of guide §9)
 const ROUTES = {
-  reviewer: { primary: 'opencode-go/glm-5.3-flash', fallback: 'opencode/space-bunny-free', why: 'zero-retention Go loop; free §16 winner as fallback' },
+  reviewer: { primary: 'opencode-go/glm-5.3-flash', fallback: 'opencode/minimax-m3.1-flash-free', why: 'zero-retention Go loop; free §16 winner (ex-space-bunny) as fallback' },
   researcher: { primary: 'opencode/nemotron-3.5-super-vl-free', fallback: 'opencode-go/glm-5.3-flash', why: 'no Go T-Bench fit except training-flagged Argon' },
-  'security-reviewer': { primary: 'opencode-go/claude-haiku-5.5', fallback: 'opencode/muse-spark-1.3', why: 'cheapest scored quality; paid spark if proprietary' },
+  'security-reviewer': { primary: 'opencode-go/claude-haiku-5.5', fallback: 'opencode-go/muse-spark-1.3-contributor', why: 'cheapest scored quality; spark-contrib is break-glass only (trains Meta, non-proprietary code only)' },
+  brainstorm: { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode/minimax-m3.1-flash-free', why: 'personality fit: top imagination/expressiveness/warmth; minimax fallback for Intel 43' },
   'docs-writer': { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode/nemotron-3.5-super-vl-free', why: 'free tier is enough for latency/price roles' },
   'domain-companion': { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode/nemotron-3.5-super-vl-free', why: 'free tier is enough for latency/price roles' },
 };
 
+// --- standardized requests: 1 SR ≡ $0.01 of model spend (≈ 1 GLM-5.3-flash
+// console-mix request). Converts per-model caps + burn into one currency:
+// allowedMsgs = cap / observed $/msg (runway in own-mix requests),
+// usedSR/allowedSR = spend/cap in SR. Day-window only, like perRoute.
+const SR = 0.01;
+const srRoutes = perRoute.filter(r => r.provider === 'opencode-go' && GO[fam(r.model)]).map(r => {
+  const g = GO[fam(r.model)];
+  const costPerMsg = r.msgs ? r.usd / r.msgs : 0;
+  return {
+    model: r.model, msgs: r.msgs, usd: r.usd, cap: g.cap,
+    costPerMsg: +costPerMsg.toFixed(5),
+    allowedMsgs: costPerMsg > 0 ? Math.floor(g.cap / costPerMsg) : null,
+    usedSR: Math.round(r.usd / SR), allowedSR: Math.round(g.cap / SR),
+  };
+});
+const standardReq = {
+  unit: '$0.01 of model spend (~1 GLM-5.3-flash console-mix request)',
+  routes: srRoutes,
+  allowedSR: srRoutes.reduce((a, r) => a + r.allowedSR, 0),
+  usedSR: srRoutes.reduce((a, r) => a + r.usedSR, 0),
+};
+standardReq.pct = standardReq.allowedSR ? +(100 * standardReq.usedSR / standardReq.allowedSR).toFixed(1) : 0;
 // --- free-shelf halt detection ---
 const freeToday = perRoute.filter(r => /-free$/.test(r.model.split('/').pop()));
 const freeLast = freeToday.length ? freeToday.map(r => r.last).sort().pop() : null;
@@ -188,6 +218,7 @@ const result = {
   snapshotAges: snapAges,
   pacing,
   metered,
+  standardReq,
   routing: Object.fromEntries(Object.entries(ROUTES).map(([a, r]) => [a, { ...r, primaryLive: !deadPins.some(d => d.model === r.primary || d.model === r.primary.split('/').pop()) }])),
 };
 
@@ -217,7 +248,7 @@ const dashTbody = `<tbody>
 <tr><td><b>Go headroom</b> ($10/mo)</td><td>${goCell}</td><td>Reviewer → <code>opencode-go/glm-5.3-flash</code>, keep free fallback</td></tr>
 </tbody>`;
 // §8 usage tbody (top routes by msgs)
-const roleOf = (m) => /glm-5.3-flash-free/.test(m) ? 'capped free route' : /space-bunny|glm-5.3-flash/.test(m) ? 'reviewer' : /nemotron-3.5-super/.test(m) ? 'researcher fallback' : 'mixed';
+const roleOf = (m) => /glm-5.3-flash-free/.test(m) ? 'capped free route' : /space-bunny|minimax-m3.1-flash|glm-5.3-flash/.test(m) ? 'reviewer' : /nemotron-3.5-super/.test(m) ? 'researcher fallback' : 'mixed';
 const usageRows = [...perRoute].sort((a, b) => b.msgs - a.msgs).slice(0, 6).map(r => {
   const g = GO[fam(r.model)];
   const equiv = g ? `~$${(r.inM * g.p[0] + (r.outM + r.reasM) * g.p[1] + r.cacheM * g.p[2]).toFixed(1)} on Go` : '$0';
