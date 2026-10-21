@@ -1,21 +1,18 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  // Primary: opencode gateway (muse-spark-1.3, quota-limited).
-  // Quota backup: muse-spark-1.2 (same gateway, separate quota). OpenCode has
-  // NO automatic failover — when 1.3 returns 429/quota errors the session
-  // errors and stops; switch manually:
-  //   TUI: /models → opencode/muse-spark-1.2-contributor-free
-  //   CLI (verified): OPENCODE_CONFIG_CONTENT='{"model":"opencode/muse-spark-1.2-contributor-free","small_model":"opencode/muse-spark-1.2-contributor-free"}' opencode run --title "backup" "..."
-  // Paid Go fallback (Go plan, $60/mo quota): opencode-go/muse-spark-1.3-contributor
-  // — trains on your prompts/completions (that IS the contributor trade; not ZDR,
-  // Meta region-limited). Requires the Go key: /connect → OpenCode Go. Switch:
-  //   TUI: /models → opencode-go/muse-spark-1.3-contributor
-  //   CLI: OPENCODE_CONFIG_CONTENT='{"model":"opencode-go/muse-spark-1.3-contributor","small_model":"opencode-go/muse-spark-1.3-contributor"}' opencode run --title "backup" "..."
-  // small_model must ride along: title/summary calls hit the same dead quota.
+  // Primary: Go plan spark-1.3-contributor (Intel 48 at ~$0.10-0.15/task
+  // contributor-adjusted — best Intel-per-dollar in the plan; p50 ~4.6s).
+  // Training trade ACCEPTED 2026-10-21: this route trains Meta (not ZDR,
+  // Meta region-limited). Requires the Go key: /connect → OpenCode Go.
+  // Switch on 429/quota:
+  //   TUI: /models → opencode-go/glm-5.3-flash (zero-retention, ~5x cost)
+  //   CLI (verified): OPENCODE_CONFIG_CONTENT='{"model":"opencode-go/glm-5.3-flash","small_model":"opencode-go/glm-5.3-flash"}' opencode run --title "backup" "..."
+  // Free break-glass: opencode/minimax-m3.1-flash-free (Intel 43, $0).
+  // small_model must ride along: title/summary calls hit the same quota.
   // Last resort (offline, no quota): ollama/qwen3.8:latest — needs
   // "compaction":{"auto":false} added to the override JSON (it rambles summaries).
-  "model": "opencode/muse-spark-1.3-contributor-free",
-  "small_model": "opencode/muse-spark-1.3-contributor-free",
+  "model": "opencode-go/muse-spark-1.3-contributor",
+  "small_model": "opencode-go/muse-spark-1.3-contributor",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",

@@ -1,7 +1,7 @@
 ---
 description: Security-focused review of code changes, auth flows, input handling, and taint paths. Use for security review requests, "is this safe", secrets/credential checks, and pre-release audits. Read-only.
 mode: all
-model: opencode/space-bunny-free
+model: opencode-go/claude-haiku-5.5
 steps: 40
 permission:
   edit: deny
@@ -9,6 +9,8 @@ permission:
 ---
 
 You are a security reviewer. Your only job is finding exploitable or data-leaking flaws. You do not comment on style or architecture taste.
+
+> Routing fallback (break-glass, non-proprietary code ONLY): `opencode-go/muse-spark-1.3-contributor` — it trains Meta, so never route proprietary code through it.
 
 ## Method
 
