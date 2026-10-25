@@ -3,8 +3,8 @@
 // Reads: opencode.db (usage), opencode.log (429s/timeouts), agent pins +
 // opencode.jsonc, newest access snapshot (dead-pin check).
 // Writes: snapshots/dashboard-YYYY-MM-DD.json (+ --html fragment with the
-// §1 dashboard and §8 usage tbodys), optionally splices them into the guide
-// with --write-guide (strict anchor assertions, aborts on ambiguity).
+// §1 dashboard and §8 usage tbodys; --write-guide splices into a legacy
+// monolith fixture only — the live guide reads data.js from guide_data.mjs).
 //
 // Usage:
 //   node dashboard.mjs [--date YYYY-MM-DD] [--db PATH] [--log PATH]
@@ -44,7 +44,7 @@ function newestSnap(prefix) {
 const CHECK = has('--check') ? arg('--check') : newestSnap('check-');
 const OUT = arg('--out', path.join(SNAP, `dashboard-${DATE}.json`));
 
-// Go plan prices ($/1M in/out/cached) + monthly caps — mirror of guide §5, update together.
+// Go plan prices ($/1M in/out/cached) + monthly caps — mirror of guide §6 catalog, update together.
 const GO = {
   'glm-5.3-flash':            { p: [0.15, 0.50, 0.03], cap: 60 },
   'glm-5.3':                  { p: [1.40, 4.40, 0.26], cap: 15 },
@@ -58,7 +58,7 @@ const GO = {
   'step-5-preview':           { p: [1.00, 2.70, 0.10], cap: 60 },
   'space-bunny':              { p: [0.15, 0.60, 0.015], cap: 30 }, // historic ID; AA 10-20 confirms = M3.1 Flash early build, 90% cache discount
   'minimax-m3.1-flash':       { p: [0.15, 0.60, 0.015], cap: 30 }, // ex-space-bunny (live 10-20); cap inherits $30 — verify in Go console
-  'gemini-4-argon-contributor': { p: [4.00, 20.00, 0.20], cap: 60 }, // console 10-20 bills at full-rate equivalent (2x counting cancels the 50% off): 23 reqs = $1.60
+  'gemini-4-argon-contributor': { p: [2.00, 10.00, 0.10], cap: 60 }, // CLI cost metadata 10-24; DB spend confirms list price
   'gpt-5.6-luna':             { p: [0.20, 1.20, 0.02], cap: 15 }, // Zen docs 10-20 (≤272K); cap = $15-tier default — verify
   'kimi-k2.7-code':           { p: [0.95, 4.00, 0.19], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
   'qwen3.8-flash':            { p: [0.15, 0.47, 0.016], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
@@ -66,7 +66,13 @@ const GO = {
   'minimax-m3':               { p: [0.30, 1.20, 0.06], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
   'qwen3.8-max':              { p: [2.00, 6.00, 0.25], cap: 15 },
   'kimi-k3':                  { p: [3.00, 15.00, 0.30], cap: 15 },
+  'kimi-k3-1-pro':            { p: [2.00, 10.00, 0.20], cap: 15 }, // CLI 10-24 confirms Go price = AA first-party ($2/$10, 90% cache); cap $15-tier default — verify in Go console
+  'gemini-4-argon':           { p: [2.00, 10.00, 0.10], cap: 60 }, // renamed route live 10-24 (was gemini-4-argon-contributor); list price
 };
+// Live model IDs that differ from the AA slug (dots vs hyphens in version
+// numbers). Keep the family maps keyed by the ID the DB actually stores.
+GO['claude-haiku-5-5'] = GO['claude-haiku-5.5'];
+GO['kimi-k3.1-pro'] = GO['kimi-k3-1-pro'];
 // family key: strip provider + date pins + free suffixes
 function fam(modelId) {
   let s = String(modelId || '').split('/').pop().toLowerCase();
@@ -120,9 +126,21 @@ for (const cfg of ['opencode.json', 'opencode.jsonc']) {
     if (mm) pins.push({ where: `${cfg} ${key.replace(/"/g, '')}`, model: mm[1] });
   }
 }
-let shelf = [];
-try { shelf = JSON.parse(fs.readFileSync(ACCESS, 'utf8')).providers.opencode.map(s => String(s).split('/').pop()); } catch { /* access unreadable: skip dead-pin check */ }
-const deadPins = shelf.length ? pins.filter(a => /-free$/.test(a.model.split('/').pop()) && !shelf.includes(a.model.split('/').pop())) : [];
+// Full catalogs, not just the free shelf: renames/removals hit paid and Go
+// pins too (gemini-4-argon-contributor, minimax-m3.1-flash-free, …).
+let catalogs = {};
+try {
+  const access = JSON.parse(fs.readFileSync(ACCESS, 'utf8'));
+  for (const [prov, list] of Object.entries(access.providers || {})) {
+    if (Array.isArray(list)) catalogs[prov] = new Set(list.map(s => String(s).split('/').slice(1).join('/')));
+  }
+} catch { /* access unreadable: skip dead-pin check */ }
+function isLive(model) {
+  const i = String(model || '').indexOf('/');
+  if (i < 0) return false;
+  return !!catalogs[model.slice(0, i)]?.has(model.slice(i + 1));
+}
+const deadPins = pins.filter(a => catalogs[a.model.split('/')[0]] && !isLive(a.model));
 
 // --- log incidents (429s) in window ---
 let errors429 = [];
@@ -150,6 +168,15 @@ const flash = perRoute.filter(r => fam(r.model) === 'glm-5.3-flash');
 const flashIn = flash.reduce((a, r) => a + r.inM, 0), flashOut = flash.reduce((a, r) => a + r.outM + r.reasM, 0), flashCache = flash.reduce((a, r) => a + r.cacheM, 0);
 const flashMsgs = flash.reduce((a, r) => a + r.msgs, 0);
 const flashGo = goCost('glm-5.3-flash', flashIn, flashOut, flashCache);
+// Top Go consumer by cap burn — the reviewer loop is no longer the only Go
+// route (Spark is the global main model), so GLM-only headroom under-reports.
+const goTop = perRoute
+  .filter(r => r.provider === 'opencode-go' && GO[fam(r.model)])
+  .map(r => {
+    const g = goCost(fam(r.model), r.inM, r.outM + r.reasM, r.cacheM);
+    return { family: fam(r.model), model: r.model, msgs: r.msgs, costPerDay: +g.cost.toFixed(2), cap: g.cap, capPct: +(g.pct * 100).toFixed(2) };
+  })
+  .sort((a, b) => b.capPct - a.capPct)[0] || null;
 // drift: agent pins with no AA match in the newest check snapshot + snapshot ages
 let unmatched = [], snapAges = {};
 if (CHECK && fs.existsSync(CHECK)) {
@@ -170,10 +197,10 @@ const pacing = flashGo ? { family: 'glm-5.3-flash', perDay: +flashGo.cost.toFixe
 const metered = { goUsd: meteredGoUsd, projectedGoLoopUsd: flashGo ? +flashGo.cost.toFixed(2) : null };
 // routing artifact: machine-readable pins+fallbacks (mirror of guide §9)
 const ROUTES = {
-  reviewer: { primary: 'opencode-go/glm-5.3-flash', fallback: 'opencode/minimax-m3.1-flash-free', why: 'zero-retention Go loop; free §16 winner (ex-space-bunny) as fallback' },
-  researcher: { primary: 'opencode/nemotron-3.5-super-vl-free', fallback: 'opencode-go/glm-5.3-flash', why: 'no Go T-Bench fit except training-flagged Argon' },
-  'security-reviewer': { primary: 'opencode-go/claude-haiku-5.5', fallback: 'opencode-go/muse-spark-1.3-contributor', why: 'cheapest scored quality; spark-contrib is break-glass only (trains Meta, non-proprietary code only)' },
-  brainstorm: { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode/minimax-m3.1-flash-free', why: 'personality fit: top imagination/expressiveness/warmth; minimax fallback for Intel 43' },
+  reviewer: { primary: 'opencode-go/glm-5.3-flash', fallback: 'opencode-go/minimax-m3.1-flash', why: 'zero-retention Go loop; §16 winner (ex-space-bunny) fallback, now paid Go' },
+  researcher: { primary: 'opencode/nemotron-3.5-super-vl-free', fallback: 'opencode-go/glm-5.3-flash', why: 'T-Bench is the axis: K3.1 scores 67 but its $15 cap is ~0.2 loop-days; fallback is availability-only' },
+  'security-reviewer': { primary: 'opencode-go/claude-haiku-5-5', fallback: 'opencode-go/muse-spark-1.3-contributor', why: 'cheapest scored quality; spark-contrib is break-glass only (trains Meta, non-proprietary code only)' },
+  brainstorm: { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode-go/minimax-m3.1-flash', why: 'personality fit: top imagination/expressiveness/warmth; MiniMax fallback (Intel 43) is now paid Go' },
   'docs-writer': { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode/nemotron-3.5-super-vl-free', why: 'free tier is enough for latency/price roles' },
   'domain-companion': { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode/nemotron-3.5-super-vl-free', why: 'free tier is enough for latency/price roles' },
 };
@@ -209,17 +236,19 @@ const result = {
   generated_at: new Date().toISOString(), date: DATE,
   totals: { msgs: tot.msgs, inM: +tot.inM.toFixed(1), outM: +tot.outM.toFixed(2), cacheM: +tot.cacheM.toFixed(1), cacheShare: tot.inM + tot.cacheM ? +(tot.cacheM / (tot.inM + tot.cacheM)).toFixed(2) : 0 },
   perRoute,
+  goPrices: GO,
   peakHour: peak[0] || null, peakMsgs: peak[1] ? +peak[1] : 0,
   pins: pins.map(a => a.model), deadPins,
   errors429: { count: errors429.length, first: errors429[0]?.ts || null, last: errors429[errors429.length - 1]?.ts || null, models: errModels },
   freeShelf: { routes: freeToday.map(r => ({ model: r.model, msgs: r.msgs, last: r.last })), lastActivity: freeLast, paidContinuesAfter: paidLast },
   goHeadroom: flashMsgs ? { family: 'glm-5.3-flash', msgs: flashMsgs, costPerDay: flashGo ? +flashGo.cost.toFixed(2) : null, cap: flashGo?.cap || null, capPct: flashGo ? +(flashGo.pct * 100).toFixed(1) : null } : null,
+  goTop,
   unmatchedCheckPins: unmatched,
   snapshotAges: snapAges,
   pacing,
   metered,
   standardReq,
-  routing: Object.fromEntries(Object.entries(ROUTES).map(([a, r]) => [a, { ...r, primaryLive: !deadPins.some(d => d.model === r.primary || d.model === r.primary.split('/').pop()) }])),
+  routing: Object.fromEntries(Object.entries(ROUTES).map(([a, r]) => [a, { ...r, primaryLive: isLive(r.primary), fallbackLive: r.fallback ? isLive(r.fallback) : null }])),
 };
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -229,7 +258,7 @@ const deadByModel = {};
 for (const d of result.deadPins) (deadByModel[d.model] = deadByModel[d.model] || []).push(d.where);
 // §1 dashboard tbody
 const deadCell = result.deadPins.length
-  ? Object.entries(deadByModel).map(([m, w]) => `<code>${esc(m)}</code> ×${w.length} (${esc(w.join(', '))})`).join('; ') + ` — <span class="warn"><b>DEAD</b> (not on free shelf ${esc(DATE)})</span>`
+  ? Object.entries(deadByModel).map(([m, w]) => `<code>${esc(m)}</code> ×${w.length} (${esc(w.join(', '))})`).join('; ') + ` — <span class="warn"><b>DEAD</b> (not in the ${esc(DATE)} catalog)</span>`
   : 'all pins resolve';
 const burnCell = result.totals.msgs
   ? `${result.totals.msgs.toLocaleString('en-US')} msgs · ${(result.totals.inM / Math.max(1, result.totals.msgs) * 1000).toFixed(0)}K in + ${(result.totals.cacheM / Math.max(1, result.totals.msgs) * 1000).toFixed(0)}K cached + ${(result.totals.outM / Math.max(1, result.totals.msgs) * 1000).toFixed(1)}K out per msg (${Math.round(result.totals.cacheShare * 100)}% cache-read) · peak ${result.peakMsgs}/hr ${esc((result.peakHour || '').slice(11))} UTC`
@@ -238,9 +267,10 @@ const limCell = [
   result.freeShelf.lastActivity ? `free shelf quiet since ${esc(result.freeShelf.lastActivity.slice(11, 16))} UTC` : null,
   result.errors429.count ? `NVIDIA/API 429s ${result.errors429.count}× ${esc((result.errors429.first || '').slice(11, 19))}→${esc((result.errors429.last || '').slice(11, 19))} UTC (${esc(result.errors429.models.join(', '))})` : 'no 429s in log window',
 ].filter(Boolean).join('; ');
-const goCell = result.goHeadroom
-  ? `glm-5.3-flash loop ${result.goHeadroom.msgs} msgs ≈ $${result.goHeadroom.costPerDay} of $${result.goHeadroom.cap} cap (~${result.goHeadroom.capPct}%)`
-  : 'no glm-5.3-flash traffic today';
+const goTopCell = result.goTop || result.goHeadroom;
+const goCell = goTopCell
+  ? `${goTopCell.family} loop ${goTopCell.msgs} msgs ≈ $${goTopCell.costPerDay} of $${goTopCell.cap} cap (~${goTopCell.capPct}%)`
+  : 'no Go traffic today';
 const dashTbody = `<tbody>
 <tr><td><b>Pins</b></td><td>${deadCell}</td><td>Re-pin dead IDs (§9), restart opencode</td></tr>
 <tr><td><b>Today's burn</b> (${esc(DATE)})</td><td>${burnCell}</td><td>Pace loops &lt;2 req/min</td></tr>

@@ -36,8 +36,10 @@ export const FAMILY_CAP = {
   'step-5-preview': 60, 'space-bunny': 30, 'minimax-m3.1-flash': 30,
   'gemini-4-argon-contributor': 60, 'gpt-5.6-luna': 15, 'kimi-k2.7-code': 15,
   'qwen3.8-flash': 15, 'qwen3.7-plus': 15, 'minimax-m3': 15,
-  'qwen3.8-max': 15, 'kimi-k3': 15,
+  'qwen3.8-max': 15, 'kimi-k3': 15, 'kimi-k3-1-pro': 15, 'gemini-4-argon': 60,
 };
+FAMILY_CAP['claude-haiku-5-5'] = FAMILY_CAP['claude-haiku-5.5'];
+FAMILY_CAP['kimi-k3.1-pro'] = FAMILY_CAP['kimi-k3-1-pro'];
 export function fam(modelId) {
   let s = String(modelId || '').split('/').pop().toLowerCase();
   for (const suf of ['-contributor-free', '-free', '-nightly', '-exp']) {

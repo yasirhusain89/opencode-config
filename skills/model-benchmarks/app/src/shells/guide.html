@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model / Harness / Provider Selection Guide — AA benchmarks + terms + usage</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<div id="app"></div>
+<script>
+  (function () {
+    var root = document.documentElement;
+    try { root.dataset.theme = localStorage.getItem('msg-theme') ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+  })();
+</script>
+<script src="data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

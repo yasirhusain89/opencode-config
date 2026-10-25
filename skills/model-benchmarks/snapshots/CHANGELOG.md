@@ -1,5 +1,108 @@
 # model-benchmarks — changelog (run-log lives here, not in the guide)
 
+## 2026-10-24 — §10 caveats + vintage labels + table a11y
+- **§10 is now real:** six caveats (model×harness, per-section vintage,
+  unverified Go caps, free-route privacy, lossy usage metrics, benchmark
+  disagreement) and a copy-paste refresh runbook. Removed the empty list
+  and the lone `open` command.
+- **Vintage is labelled where it differs from the 10-24 snapshot:** §2
+  (AA 10-24 · OR 10-18 · ‡ 09-16), §4 (free 10-24 · OR 10-18), §9b
+  (AA 10-21), §11 (09-16), §12 (Oct-18 peak), §13 (BFCL 10-19 /
+  verbosity 10-18), §16 (result 10-18), §17 (CAI 10-18).
+- **Table UX/a11y:** sortable headers are keyboard-operable (Enter/Space)
+  and expose `aria-sort`; the filter input and theme button have labels /
+  `aria-pressed`; header tooltips open on focus, clamp to the first/last
+  column that actually has a tip (not the first/last `<th>`), and cap at
+  the viewport; ≤760px tables scroll inside their own box and disable
+  sticky headers.
+- Rebuilt `assets/app.js` + `app.css`, regenerated `data.js`; SSR check
+  23 tables / 307 rows, dashboard + aa_bench suites green.
+
+## 2026-10-24 — correctness refresh: live catalog, dead routes, prices
+
+- **Access/free sections rebuilt from the live catalog.** §3 now says
+  opencode is 16 = 7 free + 9 paid Zen (not a single "free shelf"), Go is
+  30 routes (snapshot 29 + `iceman-contributor-free`), and nvidia is 38
+  (58 → 38; `moonshotai/kimi-k3` gone). §4 pruned the four dead free
+  routes (`minimax-m3.1-flash-free`, `nemotron-3-ultra-free`,
+  `nemotron-3.5-lightning-free`, `longcat-2.5-preview-free`), added
+  `flint-40b-free`, and split `big-pickle` out of the dead LongCat row.
+  Fixed the MiMo **Flash** row (was carrying Pro's 46/46 + 48 tps) and
+  the Gemma 26B/31B conflation.
+- **Dead security pin found and fixed.** `agent/security-reviewer.md`
+  used `opencode-go/claude-haiku-5.5`; the live ID is
+  `claude-haiku-5-5`. The old dead-pin check only looked for `*-free`
+  agent pins on the opencode shelf, so it missed this. `dashboard.mjs`
+  now validates every pin against every provider catalog, reports
+  `fallbackLive`, and computes `goTop` across all Go routes (the main
+  model is Spark, not GLM-flash). GO/FAMILY_CAP gained aliases for the
+  live `claude-haiku-5-5` and `kimi-k3.1-pro` IDs.
+- **Numbers corrected against the 10-24 AA pull + CLI metadata.** DS V4.1
+  Flash is Eng 45 / $0.26/task (was 38/0.49); Gemini 4 Argon bills at
+  list $2/$10/$0.10 in Go (DB spend confirms it), so its loop cost is
+  ~$58/day, not ~$118; Grok's cached-read rate is $0.50; Kimi K3.1's Go
+  price is confirmed at $2/$10/$0.20. Removed the stale "2× counting
+  cancels the 50% off" Argon promo claim.
+- **Stale recommendations removed.** Reviewer/brainstorm fallbacks now
+  point at the live paid `opencode-go/minimax-m3.1-flash`; the
+  researcher "only Argon clears T-Bench" line is replaced with the
+  K3.1-67-but-$15-cap economics; §16's 10-18 result is marked historical
+  and no longer issues a current pin; §15's "cache-read 0" is replaced
+  with the measured 81–97%; §8 labels the 10-18 peak separately from the
+  10-24 table.
+- **Volume basis fixed.** §12 is explicitly the Oct-18 peak-day ceiling;
+  §7 self-host now compares 233M/day peak vs 7.3M/day on 10-24 and no
+  longer claims "2% of our volume" for the current day.
+- `weekly_report.mjs` gained `kimi-k3.1` before the `kimi-k3` substring
+  rule and DS V4.1 Eng 45. Rebuilt `data.js`; dashboard + aa_bench suites
+  green, SSR check 23 tables / 307 rows.
+
+## 2026-10-24 — §6 Go-workload UX overhaul (user-reported poor UX)
+- **Table 14 cols → 11, no horizontal scroll:** dropped Value (order still
+  Value-desc), merged `$/1M in/out` + `Cached` into `Go $/1M` and both caps
+  into `Cap (Go / Go+)`, replaced the 20–35-word Role prose with 1-line
+  Verdicts, Model moved to column 1 with live-pin badges (reviewer /
+  security / main). Removed the only `"scroll": 1` in the guide.
+- **Sorting fixed (`DataTable.svelte`):** unpublished cells (—, ?) now sink
+  to the bottom in both directions (were `-Infinity`, surfacing on first
+  click); `∞` parses as +Infinity; `<N` sorts at half N; higher-is-better
+  columns (Eng, Intel, tok/s, Days — new `dir: 'desc'` head field) sort
+  descending on first click; active column shows ↑/↓ instead of ⇅.
+- **CSS (`app.css`):** `table.scrollx` no longer `display:block` +
+  `overflow-x:auto` (broke sticky thead, clipped 340px header tooltips);
+  first/last-column tooltips clamp inside the viewport.
+- **Prose trimmed:** 140-word intro + 4 trailing notes → 1 legend + 1
+  footnote (stale free-shelf names and §9-duplicated pin advice removed).
+- Rebuilt app assets (`npm run build`), regenerated `data.js`; SSR check
+  (23 tables, 311 rows), both script suites green.
+
+## 2026-10-24 — Kimi K3.1 Pro lands on Go + AA
+- **`opencode-go/kimi-k3.1-pro` is live** (inventory 10-24; `access-2026-10-24.json`).
+  Same sweep: Go renames `gemini-4-argon-contributor` → `gemini-4-argon` and
+  `minimax-m3.1-flash-free` → `minimax-m3.1-flash`, `longcat-2.5-preview-free`
+  removed from both shelves; opencode shelf gains `flint-40b-free` +
+  `muse-wonder-1.0`; nvidia shrank 58 → 38 (`moonshotai/kimi-k3` gone,
+  `minimaxai/minimax-m3.1-flash` added).
+- **Fresh AA pull** (`check kimi-k3-1-pro`, `check-2026-10-24.json` = 23
+  carried 10-20 models + K3.1 Pro): Intel 55, **Eng 55 (rank 6)**,
+  $2/$10 in/out, 90% cache discount ($0.20), $2.11/task, 73 tps, 150M eval
+  tokens (very verbose), 1M ctx, 2.8T/104B active. Weights not yet published
+  (open-weights lead pending). Fresh Eng table drops Kimi K3 (43) and
+  MiMo-V2.6-Flash (37) vs 10-20 — their model-page numbers are retained.
+- **Go usage: 0 DB msgs ever for any kimi route** (7-day route mix is
+  spark-contributor + free shelf). Go price assumed = AA first-party
+  ($2/$10/$0.20, as kimi-k3) with the $15-tier default cap — **verify in the
+  Go console**; `dashboard.mjs` GO map + `sr-calc.mjs` FAMILY_CAP each gained
+  `kimi-k3-1-pro:15` and a `gemini-4-argon:60` alias for the renamed route.
+  At our Oct-18 reviewer mix K3.1 Pro burns ~$65/loop-day → ~0.2 days on a
+  $15 cap: single sessions only. Guide §2 + §6 carry the new rows
+  (Value 26, between Argon 27 and GLM-5.3 22); §3 still owes a full refresh.
+- **Coding pull degraded twice** (DeepSWE tab timeout, QnA 0 rows, empty
+  index — same on retry): `coding-index-2026-10-18.json` stands. No CAI
+  composite for K3.1 Pro yet; AA's 10-23 launch notes give GDPval-AA 1,846
+  (3rd), T-Bench 4.0 67% (highest AA-tested), AutomationBench 73%, HLE 52%,
+  CritPt 25%, SciCode 61%, Omniscience 30. Never pin unevaluated (§16).
+
 ## 2026-10-18 (evening) — scheduled updates hardened
 - `weekly_pull.sh` is now the full unattended refresh: OR catalog +
   value report, provider inventory, dashboard regen + guide splice, AA
@@ -238,3 +341,13 @@
   (glm-5.3-flash, spark-1.3-contributor, space-bunny).
 - Mini-eval run on monartha corpus (28/30): space-bunny > glm-5.3-flash >
   nemotron-super-vl. Scorecard: `snapshots/evals/2026-10-18/scorecard.md`.
+
+## 2026-10-21 — guide ported to Svelte shell + data.js
+- `model-selection-guide.html` is now a generated shell; all 17 sections
+  render from `data.js` (`window.__MB__`), composed by `scripts/guide_data.mjs`
+  from `content/guide.json` + the newest dashboard/routing snapshots.
+- §1/§8/§9 table rows are live; the other 14 sections are curated content.
+  A data refresh is `dashboard.mjs` + `guide_data.mjs` — no rebuild.
+- Svelte source lives in `app/` (deps vendored, gitignored): `npm run build`
+  emits shell + assets; `npm run check` SSR-asserts 17 sections / 23 tables.
+  `--write-guide` is kept only for the existing splice-safety tests.

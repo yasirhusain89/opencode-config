@@ -2,7 +2,7 @@
 # weekly_pull.sh — unattended refresh for the model-benchmarks skill:
 #   1. OpenRouter catalog snapshot + value report (with deltas vs previous)
 #   2. provider inventory snapshot (opencode/nvidia/ollama model lists)
-#   3. dashboard regen + guide splice (usage, reliability, drift, pacing)
+#   3. dashboard regen + guide data payload (usage, reliability, drift, pacing)
 #   4. AA Coding Agent Index version check (alerts on benchmark version bump)
 #   5. test suites (both must stay green)
 # Notable findings are appended to snapshots/CHANGELOG.md.
@@ -54,10 +54,14 @@ if [ "$FAIL" -eq 0 ]; then
   echo "inventory FAILED" >> "$REPORTS/weekly.log"; FAIL=1; }
 fi
 
-# --- 4. dashboard regen + guide splice ---
+# --- 4. dashboard regen + guide data payload ---
 if [ "$FAIL" -eq 0 ]; then
-"$NODE" "$SCRIPTS/dashboard.mjs" --date "$T" --out "$SNAP/dashboard-$T.json" --write-guide "$SKILL/model-selection-guide.html" >> "$REPORTS/weekly.log" 2>&1 || {
+"$NODE" "$SCRIPTS/dashboard.mjs" --date "$T" --out "$SNAP/dashboard-$T.json" >> "$REPORTS/weekly.log" 2>&1 || {
   echo "dashboard FAILED" >> "$REPORTS/weekly.log"; FAIL=1; }
+fi
+if [ "$FAIL" -eq 0 ]; then
+"$NODE" "$SCRIPTS/guide_data.mjs" >> "$REPORTS/weekly.log" 2>&1 || {
+  echo "guide_data FAILED" >> "$REPORTS/weekly.log"; FAIL=1; }
 fi
 
 # --- 4b. personality indexes (supplementary; never fails the run) ---
@@ -92,6 +96,10 @@ fi
   echo "aa_bench tests FAILED" >> "$REPORTS/weekly.log"; FAIL=1; }
 "$NODE" "$SCRIPTS/dashboard.test.mjs" >> "$REPORTS/weekly.log" 2>&1 || {
   echo "dashboard tests FAILED" >> "$REPORTS/weekly.log"; FAIL=1; }
+if [ "$FAIL" -eq 0 ]; then
+( cd "$SKILL/app" && "$NODE" check.mjs ) >> "$REPORTS/weekly.log" 2>&1 || {
+  echo "guide SSR check FAILED" >> "$REPORTS/weekly.log"; FAIL=1; }
+fi
 
 # --- 7. changelog notable findings from today's dashboard ---
 if [ "$FAIL" -eq 0 ] && [ -f "$SNAP/dashboard-$T.json" ]; then

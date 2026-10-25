@@ -30,7 +30,10 @@ fs.writeFileSync(path.join(cfgDir, 'agent', 'reviewer.md'), '# r\nmodel: opencod
 fs.writeFileSync(path.join(cfgDir, 'agent', 'docs.md'), '# d\nmodel: opencode/dead-model-free\n');
 fs.writeFileSync(path.join(cfgDir, 'opencode.jsonc'), '// e.g. OPENCODE_CONFIG_CONTENT=\'{"model":"opencode/decoy-model","small_model":"opencode/decoy-model"}\'\n{"model": "opencode/dead-model-free", "small_model": "opencode/beam-free"}');
 const accessPath = path.join(tmp, 'access.json');
-fs.writeFileSync(accessPath, JSON.stringify({ providers: { opencode: ['opencode/beam-free', 'opencode/space-bunny-free', 'opencode/glm-5.3-flash-free'] } }));
+fs.writeFileSync(accessPath, JSON.stringify({ providers: {
+  opencode: ['opencode/beam-free', 'opencode/space-bunny-free', 'opencode/glm-5.3-flash-free'],
+  'opencode-go': ['opencode-go/glm-5.3-flash', 'opencode-go/minimax-m3.1-flash'],
+} }));
 
 const dbPath = path.join(tmp, 'test.db');
 const T = (h, m) => Date.UTC(2026, 9, 18, h, m, 0);
@@ -94,6 +97,8 @@ if (j) {
   eq(j.unmatchedCheckPins, [{ where: 'reviewer', model: 'opencode/space-bunny-free' }], 'unmatched check pin flagged');
   eq(j.routing.reviewer.primary, 'opencode-go/glm-5.3-flash', 'routing artifact primary');
   eq(j.routing.reviewer.primaryLive, true, 'routing primary live');
+  eq(j.routing.reviewer.fallbackLive, true, 'routing fallback live');
+  ok(j.goTop && j.goTop.family === 'glm-5.3-flash', 'goTop computed from Go routes');
   ok(j.pacing && j.pacing.daysToWeeklyCap > 0, 'pacing computed');
   ok(j.snapshotAges.check === '2026-10-18', 'snapshot age recorded');
 }
@@ -103,7 +108,7 @@ ok(frag.includes('dead-model-free'), 'fragment names dead pin');
 const usagePart = frag.split('USAGE-TBODY')[1] || '';
 eq((usagePart.match(/<td/g) || []).length, 4 * 8, 'usage rows carry 8 cells (route/msgs/in/cached/equiv/fail/p50/role)');
 const rjson = JSON.parse(fs.readFileSync(path.join(tmp, 'routing-2026-10-18.json'), 'utf8'));
-eq(rjson.agents.reviewer.fallback, 'opencode/minimax-m3.1-flash-free', 'routing.json fallback (renamed from space-bunny-free 2026-10-20)');
+eq(rjson.agents.reviewer.fallback, 'opencode-go/minimax-m3.1-flash', 'routing.json fallback (live Go route)');
 
 // --write-guide on a minimal fixture (same anchor shape as the real guide)
 const guidePath = path.join(tmp, 'guide.html');
