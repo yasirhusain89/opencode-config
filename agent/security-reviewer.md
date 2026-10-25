@@ -1,7 +1,7 @@
 ---
 description: Security-focused review of code changes, auth flows, input handling, and taint paths. Use for security review requests, "is this safe", secrets/credential checks, and pre-release audits. Read-only.
 mode: all
-model: opencode-go/claude-haiku-5.5
+model: opencode-go/claude-haiku-5-5
 steps: 40
 permission:
   edit: deny
