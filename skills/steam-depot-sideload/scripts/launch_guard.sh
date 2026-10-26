@@ -10,14 +10,14 @@
 # command → paste the full path of this file. Leave "Run with wrapper"
 # semantics to Heroic: it calls `this-file <real launch command...>`.
 #
-# Scope: our three sideloaded apps on the Z: side (2552450 KH3, 292030 Witcher,
-# 784080 MW5) — other apps' queues there are normal Steam business and don't
+# Scope: our four sideloaded apps on the Z: side (2552450 KH3, 292030 Witcher,
+# 784080 MW5, 3359900 RB2) — other apps' queues there are normal Steam business and don't
 # block. A queued/shadowed manifest of ANY app in the C: prefix library still
 # blocks, since the client reads that side first (rule 18).
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-APPS="2552450 292030 784080"
+APPS="2552450 292030 784080 3359900"
 EXTERNAL="${STEAM_EXTERNAL:-/Volumes/YH-SanP2TB}"
 ZLIB="$EXTERNAL/SteamLibrary/steamapps"
 CPREFIX="$HOME/Games/Heroic/Prefixes/default/SteamHeroic/drive_c/Program Files (x86)/Steam"
@@ -38,7 +38,7 @@ relock() { # idempotent: idle flags + TargetBuildID=buildid, 228980 installed
 import os, re, shutil, sys, time
 
 zlib, cprefix = sys.argv[1], sys.argv[2]
-apps = ("2552450", "292030", "784080")
+apps = ("2552450", "292030", "784080", "3359900")
 bk = os.path.join(zlib, "backups")
 ts = time.strftime("%Y%m%d-%H%M%S")
 changed = []
@@ -158,17 +158,32 @@ def relock_app(path):
 
 def ensure_parent():
     p = os.path.join(cprefix, "steamapps", "appmanifest_228980.acf")
-    need = True
-    if os.path.isfile(p):
-        s = open(p, encoding="utf-8", errors="surrogateescape").read()
-        need = field(s, "buildid") in (None, "0") or field(s, "StateFlags") == "2" \
-               or s.count('"manifest"') == 0
-    if need:
-        if os.path.isfile(p):
-            backup(p, "pre-launch-stub")
+    if not os.path.isfile(p):
+        open(p, "w", encoding="utf-8", errors="surrogateescape").write(
+            PARENT % int(time.time()))
+        changed.append("appmanifest_228980.acf (created as installed)")
+        return
+    s = open(p, encoding="utf-8", errors="surrogateescape").read()
+    bid = field(s, "buildid")
+    if bid in (None, "0") or field(s, "StateFlags") == "2" \
+       or s.count('"manifest"') == 0:
+        backup(p, "pre-launch-stub")
         open(p, "w", encoding="utf-8", errors="surrogateescape").write(
             PARENT % int(time.time()))
         changed.append("appmanifest_228980.acf (restored as installed)")
+        return
+    # The client requeues the parent on EVERY launch (StateFlags 6,
+    # TargetBuildID 0, delayed update) — relock it alongside the children.
+    orig = s
+    for k, v in (("StateFlags", "4"), ("TargetBuildID", bid),
+                 ("BytesToDownload", "0"), ("BytesDownloaded", "0"),
+                 ("BytesToStage", "0"), ("BytesStaged", "0")):
+        if field(s, k) is not None:
+            s = setf(s, k, v)
+    if s != orig:
+        backup(p, "pre-launch")
+        open(p, "w", encoding="utf-8", errors="surrogateescape").write(s)
+        changed.append("appmanifest_228980.acf (relocked)")
 
 for app in apps:
     p = os.path.join(zlib, "appmanifest_%s.acf" % app)

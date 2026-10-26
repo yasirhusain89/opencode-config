@@ -122,6 +122,7 @@ if [[ -d "$CPREFIX/steamapps" ]]; then
     APP=$(basename "$M" | sed -E 's/appmanifest_([0-9]+).acf/\1/')
     SF=$(acf_field "$M" StateFlags); STAGE=$(acf_field "$M" BytesToStage)
     TO_DL=$(acf_field "$M" BytesToDownload); BID=$(acf_field "$M" buildid)
+    TBID=$(acf_field "$M" TargetBuildID)
     ZBID=""
     [[ -f "$ZLIB/appmanifest_$APP.acf" ]] && ZBID=$(acf_field "$ZLIB/appmanifest_$APP.acf" buildid)
     if [[ "$APP" == "228980" ]]; then
@@ -134,7 +135,15 @@ if [[ -d "$CPREFIX/steamapps" ]]; then
         RISKS=$((RISKS+1))
         continue
       fi
-      echo "  ok: shared-redist parent 228980 installed (build $BID, $IDEPS depots) — dependents can launch."
+      if [[ "$SF" != "4" && "$SF" != "518" ]] || [[ -n "$TO_DL" && "$TO_DL" != "0" ]] \
+         || [[ -n "$STAGE" && "$STAGE" != "0" ]] || [[ -n "$TBID" && "$TBID" != "$BID" ]]; then
+        echo "  BLOCK: shared-redist parent 228980 is queued/re-targeted (StateFlags=$SF target=$TBID build=$BID)."
+        echo "         The client requeues it on every launch; dependents can inherit Update Required."
+        echo "         Relock like the children (StateFlags 4, TargetBuildID=buildid, zero counters) — rule 26."
+        RISKS=$((RISKS+1))
+        continue
+      fi
+      echo "  ok: shared-redist parent 228980 installed and idle (build $BID, $IDEPS depots) — dependents can launch."
       continue
     fi
     if [[ -n "$ZBID" && "$BID" != "$ZBID" ]]; then

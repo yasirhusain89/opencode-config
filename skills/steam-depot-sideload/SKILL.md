@@ -212,8 +212,8 @@ download Windows depots once forced — that is the whole trick.
     problem: the live Steam entry stays on GPT 3.0-3 + Esync/Msync throughout.
 24. **Run `preflight.sh` (guard scan) before EVERY Windows Steam launch** —
     automatic once the Heroic wrapper is set: `launch_guard.sh` now
-    auto-relocks first (rule 26's parent + idle child flags, since Steam
-    requeues them on every launch) and refuses to run while any Steam client
+    auto-relocks first (the parent `228980` AND the children — Steam requeues
+    all of them on every launch) and refuses to run while any Steam client
     is alive. Its wrapper path lives in
     `~/Library/Application Support/heroic/GamesConfig/steam.json` →
     `steam.wrapperOptions`; verify a real launch wrote `CLEAR`/`BLOCKED` to
@@ -223,8 +223,9 @@ download Windows depots once forced — that is the whole trick.
     anything a launch would act on: C:-side shadow manifests disagreeing
     with the Z: library (rule 18), and queued manifests on either side
     (`StateFlags` not 4/518 or nonzero BytesToDownload/BytesToStage) that
-    would trigger staging deletes (rule 20), and now HARD-BLOCKS an absent or
-    stub `228980` (rule 26) instead of calling it inert. It also caught a ghost queue
+    would trigger staging deletes (rule 20), and now HARD-BLOCKS an absent,
+    stub, or queued/re-targeted `228980` (rule 26) instead of calling it inert.
+    It also caught a ghost queue
     this way (classic-Witcher parent app `228980`: queued 25MB on C: with no
     install dir anywhere). Do NOT park that one (rule 26) — an absent
     `228980` manifest is what the client replaced with a `StateFlags 2`
@@ -275,9 +276,14 @@ download Windows depots once forced — that is the whole trick.
     `vcredist/2022` files may be missing with no consequence. Never park
     this manifest (rule 24): absence is what produces the stub. After the
     fix, relock the children too (`StateFlags 4`/518, `TargetBuildID` =
-    their buildid) since the gate leaves them queued. `preflight.sh
-    --guard-only` (and the Heroic wrapper) now block BOTH the absent and the
-    stub case, so this can't silently regress.
+    their buildid) since the gate leaves them queued. **The client then
+    requeues `228980` itself on every launch** (`Update Required,Fully
+    Installed`, `TargetBuildID 0`, update delayed ~2.5 days — observed
+    2026-10-21, manifest rewritten 1s after launch), so treat it exactly like
+    a child: `launch_guard.sh` relocks it (StateFlags 4, TargetBuildID =
+    buildid, counters zero, `InstalledDepots` preserved) and `preflight.sh`
+    blocks it while queued/re-targeted. Absent, stub, and queued cases are
+    all blocked, so this can't silently regress.
 
 ## Key paths
 
@@ -494,14 +500,25 @@ integrity of game files**. Nothing (or a few KB) downloading = manifest is
 correct. Then launch via Heroic. DLC ownership shows in-game.
 
 **Launch guard (do this once):** the Steam (sideload) entry in Heroic →
-Settings → Advanced → Wrapper command → paste
-`<skill>/scripts/launch_guard.sh`. Every launch then: (1) refuses if any
+Settings → Advanced → Wrapper command → the Heroic UI writes
+`steam.wrapperOptions` as objects — `[{"exe": "<skill>/scripts/launch_guard.sh",
+"args": ""}]`. A plain string path is silently dropped (Heroic pushes
+`wrapperEntry.exe`, filters falsy — no error, no log line), so verify the
+shape in `~/Library/Application Support/heroic/GamesConfig/steam.json`.
+Hand-edit that file only with Heroic fully quit (it holds the config in
+memory and rewrites it on open/launch — backup with a timestamp first), and
+confirm the next real launch appends a `CLEAR`/`BLOCKED` line to
+`~/Library/Application Support/heroic/launch_guard.log` (no line = the
+wrapper did not fire). Every launch then: (1) refuses if any
 Steam client is already alive (rule 1); (2) **auto-relocks** — rewrites our
-three manifests to idle (`StateFlags 4`, or `518` preserved for MW5,
-`TargetBuildID = buildid`, counters zero) and restores `228980` as
-installed if it is missing or a stub (rules 20/26), backing each changed
+four manifests to idle (`StateFlags 4`; `518` is kept only if it is still
+518 — once Steam flips MW5 to 6 the relock lands on 4, equally idle;
+`TargetBuildID = buildid`, counters zero) and **also relocks `228980`**
+(StateFlags 4, TargetBuildID = buildid, depots preserved), restoring it from
+the embedded template only when missing or a stub (rules 20/26), backing each
+changed
 file up under `steamapps/backups/`; (3) runs `preflight.sh --guard-only`
-(scoped to our three appids on the Z: side — other games' queues there don't block; a queued/shadowed manifest of ANY app in the C: prefix library still blocks, since the client reads that side first — rule 18): CLEAR
+(scoped to our four appids on the Z: side — other games' queues there don't block; a queued/shadowed manifest of ANY app in the C: prefix library still blocks, since the client reads that side first — rule 18): CLEAR
 proceeds to the real launch, BLOCKED pops a Mac alert and aborts with exit 1
 before the client can stage anything. Self-test: `launch_guard.sh true`
 (exit 0 = would launch); `launch_guard.sh` with no args stops after the
@@ -610,3 +627,4 @@ appears. Check `content_log.txt` afterward to confirm no new prefetch.
 | Deterministic crash loading one file, hiding it reaches menu | Corrupt bytes, not engine (rule 21): hash tree file vs fresh download, reset + re-fetch the depot |
 | PLAY shown, click gives "An error occurred while launching this game: Downloads disabled" while offline | Shared-redist parent `228980` is a stub (`Update Required,Shared Only`) and every dependent blocks on it → rule 26 |
 | Game plays, but talking to an NPC / merchants / cutscenes show a loading screen every time | Mixed-branch tree: asset index and/or speech pack belong to the other build → per-depot verify + repair from `SteamDepotCache` (rule 25) |
+| Steam launches but `launch_guard.log` gets no new line, manifests aren't relocked | Wrapper didn't fire: check `wrapperOptions` is `[{"exe": ..., "args": ""}]` (plain strings are silently dropped), confirm the field is set on the entry actually launched, and verify a `CLEAR`/`BLOCKED` line appears in the log on the next launch |
