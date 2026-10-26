@@ -106,24 +106,40 @@ const peak = q(`SELECT substr(datetime(time_created/1000,'unixepoch'),1,13), COU
 
 // --- pins ---
 const pins = [];
+const agentModels = {};
 for (const d of ['agent', 'agents']) {
   const dir = path.join(CONFIG, d);
   if (!fs.existsSync(dir)) continue;
   for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.md'))) {
     const body = fs.readFileSync(path.join(dir, f), 'utf8');
     const mm = body.match(/^model:\s*(.+)$/m);
-    if (mm) pins.push({ where: `${d}/${f}`, model: mm[1].trim() });
+    if (mm) {
+      const model = mm[1].trim();
+      pins.push({ where: `${d}/${f}`, model });
+      agentModels[f.replace(/\.md$/, '')] = model;
+    }
   }
 }
 for (const cfg of ['opencode.json', 'opencode.jsonc']) {
   const pth = path.join(CONFIG, cfg);
   if (!fs.existsSync(pth)) continue;
   const body = fs.readFileSync(pth, 'utf8');
-  for (const key of ['"model"', '"small_model"']) {
-    // strip full-line // comments first: they may contain {"model": ...} examples
-    const code = body.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
-    const mm = code.match(new RegExp(key + '\\s*:\\s*"([^"]+)"'));
-    if (mm) pins.push({ where: `${cfg} ${key.replace(/"/g, '')}`, model: mm[1] });
+  // Preserve strings (URLs, escaped quotes, comment-like prompt text) while
+  // removing JSONC comments and trailing commas; parse keys by scope.
+  const code = body.replace(/"(?:\\.|[^"\\])*"|\/\/[^\r\n]*|\/\*[\s\S]*?\*\//g,
+    token => token.startsWith('"') ? token : '');
+  const config = JSON.parse(code.replace(/"(?:\\.|[^"\\])*"|,\s*(?=[}\]])/g,
+    token => token.startsWith('"') ? token : ''));
+  for (const key of ['model', 'small_model']) {
+    if (typeof config[key] !== 'string') continue;
+    pins.push({ where: `${cfg} ${key}`, model: config[key] });
+    agentModels[key === 'model' ? 'main' : key] = config[key];
+  }
+  for (const [agent, settings] of Object.entries(config.agent || {})) {
+    if (typeof settings?.model !== 'string') continue;
+    pins.push({ where: `${cfg} agent.${agent}`, model: settings.model });
+    // Markdown agent definitions are loaded after inline config overrides.
+    agentModels[agent] ??= settings.model;
   }
 }
 // Full catalogs, not just the free shelf: renames/removals hit paid and Go
@@ -195,15 +211,28 @@ if (codingSnap) { try { snapAges.coding = JSON.parse(fs.readFileSync(codingSnap,
 const pacing = flashGo ? { family: 'glm-5.3-flash', perDay: +flashGo.cost.toFixed(2), weeklyCap: flashGo.cap * 0.5, daysToWeeklyCap: +(flashGo.cap * 0.5 / flashGo.cost).toFixed(1) } : null;
 // metered vs projected (actuals reconciliation)
 const metered = { goUsd: meteredGoUsd, projectedGoLoopUsd: flashGo ? +flashGo.cost.toFixed(2) : null };
-// routing artifact: machine-readable pins+fallbacks (mirror of guide §9)
-const ROUTES = {
-  reviewer: { primary: 'opencode-go/glm-5.3-flash', fallback: 'opencode-go/minimax-m3.1-flash', why: 'zero-retention Go loop; §16 winner (ex-space-bunny) fallback, now paid Go' },
-  researcher: { primary: 'opencode/nemotron-3.5-super-vl-free', fallback: 'opencode-go/glm-5.3-flash', why: 'T-Bench is the axis: K3.1 scores 67 but its $15 cap is ~0.2 loop-days; fallback is availability-only' },
-  'security-reviewer': { primary: 'opencode-go/claude-haiku-5-5', fallback: 'opencode-go/muse-spark-1.3-contributor', why: 'cheapest scored quality; spark-contrib is break-glass only (trains Meta, non-proprietary code only)' },
-  brainstorm: { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode-go/minimax-m3.1-flash', why: 'personality fit: top imagination/expressiveness/warmth; MiniMax fallback (Intel 43) is now paid Go' },
-  'docs-writer': { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode/nemotron-3.5-super-vl-free', why: 'free tier is enough for latency/price roles' },
-  'domain-companion': { primary: 'opencode/glm-5.3-flash-free', fallback: 'opencode/nemotron-3.5-super-vl-free', why: 'free tier is enough for latency/price roles' },
+// Availability policy mirrors model-fallback; primaries always come from config.
+// Legacy runners cannot safely change the model of an in-flight retry.
+const GO_FALLBACK = {
+  'opencode-go/glm-5.3-flash': 'opencode-go/minimax-m3.1-flash',
+  'opencode-go/minimax-m3.1-flash': 'opencode-go/glm-5.3-flash',
+  'opencode-go/muse-spark-1.3-contributor': 'opencode-go/glm-5.3-flash',
+  'opencode-go/claude-haiku-5-5': 'opencode-go/glm-5.3-flash',
+  'opencode-go/claude-haiku-5.5': 'opencode-go/glm-5.3-flash',
 };
+const LOW_STAKES = new Set(['brainstorm', 'docs-writer', 'domain-companion']);
+const FREE_FALLBACK = 'nvidia/z-ai/glm-5.3-flash';
+const ROUTES = Object.fromEntries(Object.entries(agentModels).map(([agent, primary]) => {
+  const fallback = agent === 'small_model' || !GO_FALLBACK[primary] ? null
+    : LOW_STAKES.has(agent) ? FREE_FALLBACK : GO_FALLBACK[primary];
+  return [agent, {
+    primary, fallback,
+    fallbackMode: fallback ? 'next-prompt-handoff' : null,
+    why: fallback
+      ? 'availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape'
+      : 'configured primary; no mapped availability fallback',
+  }];
+}));
 
 // --- standardized requests: 1 SR ≡ $0.01 of model spend (≈ 1 GLM-5.3-flash
 // console-mix request). Converts per-model caps + burn into one currency:

@@ -4,15 +4,42 @@
   // contributor-adjusted — best Intel-per-dollar in the plan; p50 ~4.6s).
   // Training trade ACCEPTED 2026-10-21: this route trains Meta (not ZDR,
   // Meta region-limited). Requires the Go key: /connect → OpenCode Go.
-  // Switch on 429/quota:
+  // Availability-only switch on model-specific 429 (Go quota is account-wide):
   //   TUI: /models → opencode-go/glm-5.3-flash (zero-retention, ~5x cost)
   //   CLI (verified): OPENCODE_CONFIG_CONTENT='{"model":"opencode-go/glm-5.3-flash","small_model":"opencode-go/glm-5.3-flash"}' opencode run --title "backup" "..."
-  // Free break-glass: opencode/minimax-m3.1-flash-free (Intel 43, $0).
+  // Free approved low-stakes backup: nvidia/z-ai/glm-5.3-flash.
+  // model-fallback.js arms the next prompt; it cannot replace in-flight retries.
   // small_model must ride along: title/summary calls hit the same quota.
   // Last resort (offline, no quota): ollama/qwen3.8:latest — needs
   // "compaction":{"auto":false} added to the override JSON (it rambles summaries).
   "model": "opencode-go/muse-spark-1.3-contributor",
   "small_model": "opencode-go/muse-spark-1.3-contributor",
+  "agent": {
+    "general": {
+      "model": "opencode-go/muse-spark-1.3-contributor"
+    },
+    "explore": {
+      "model": "opencode-go/glm-5.3-flash",
+      "permission": { "edit": "deny", "task": "deny" }
+    },
+    "plan": {
+      "permission": {
+        // Agent overrides come after global allows. Restore the built-in
+        // plan-file exceptions for worktree-relative and absolute tool paths.
+        "edit": {
+          "*": "deny",
+          ".opencode/plans/*.md": "allow",
+          "**/.opencode/plans/*.md": "allow",
+          "**/.local/share/opencode/plans/*.md": "allow"
+        },
+        "task": { "general": "deny" },
+        "external_directory": {
+          "~/.local/share/opencode/plans": "allow",
+          "~/.local/share/opencode/plans/**": "allow"
+        }
+      }
+    }
+  },
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -39,7 +66,15 @@
     "edit": {
       "*": "allow",
       "**/.env*": "deny",
-      "**/*token*": "deny",
+      "**/access_token": "deny",
+      "**/token.json": "deny",
+      "**/credentials.json": "deny",
+      "**/auth.json": "deny",
+      "**/.go-api-key": "deny",
+      "**/.npmrc": "deny",
+      "**/.netrc": "deny",
+      "**/id_rsa": "deny",
+      "**/id_ed25519": "deny",
       "**/*.keystore": "deny",
       "**/*.jks": "deny",
       "**/*.mobileprovision": "deny",
@@ -50,32 +85,43 @@
       "*": "allow",
       "**/.env": "deny",
       "**/.env.*": "deny",
-      "**/*token*": "ask",
+      "**/access_token": "deny",
+      "**/token.json": "deny",
+      "**/credentials.json": "deny",
+      "**/auth.json": "deny",
+      "**/.go-api-key": "deny",
+      "**/.npmrc": "deny",
+      "**/.netrc": "deny",
+      "**/id_rsa": "deny",
+      "**/id_ed25519": "deny",
       "**/*.keystore": "deny",
       "**/*.jks": "deny",
-      "**/monartha.db*": "ask",
-      "**/myfinances.db*": "ask"
+      "**/monartha.db*": "allow",
+      "**/myfinances.db*": "allow"
     },
     "bash": {
       "*": "allow",
+      "rm -rf *": "allow",
+      "rm -r *": "allow",
+      // Last-match-wins: these must sit after the rm allows above to keep
+      // root/home wipes denied (exec-guard.ts is the precise guard).
       "rm -rf /*": "deny",
       "rm -rf ~*": "deny",
-      "rm -rf *": "ask",
-      "rm -r *": "ask",
       "sudo *": "deny",
       "su *": "deny",
       "chown *": "deny",
-      "chmod -R *": "ask",
+      "chmod -R *": "allow",
       "mkfs *": "deny",
       "dd *": "deny",
-      "git push --force*": "deny",
-      "git push * --force*": "deny",
-      "git reset --hard*": "ask",
-      "git clean -fd*": "ask",
-      "git push*": "ask",
-      "git commit*": "ask",
-      "git merge*": "ask",
-      "git rebase*": "ask",
+      "git reset --hard*": "allow",
+      "git clean -fd*": "allow",
+      "git push*": "allow",
+      "git commit*": "allow",
+      "git merge*": "allow",
+      "git rebase*": "allow",
+      // Last-match-wins: after "git push*" allow so force-push still asks.
+      "git push --force*": "ask",
+      "git push * --force*": "ask",
       "gh pr merge*": "ask",
       "gh release delete*": "ask",
       "gh api *DELETE*": "ask",
@@ -83,10 +129,12 @@
       "gh variable set*": "ask",
       "cargo publish*": "ask",
       "npm publish*": "ask",
+      "curl *": "allow",
+      "wget *": "allow",
+      // Last-match-wins: after the curl/wget allows so pipe-to-shell stays
+      // denied.
       "curl *|*sh*": "deny",
       "wget *|*sh*": "deny",
-      "curl *": "ask",
-      "wget *": "ask",
       // exec-guard backup (plugins/exec-guard.ts is the real guard — it parses
       // durations, waits, backgrounding, and tiered timeouts, which globs
       // can't). These stay last so they win over "*" allow above. Coarse
@@ -101,20 +149,66 @@
       "*caffeinate*": "deny",
       "*pkill*-9*": "deny",
       "killall *": "deny",
+      // Process-spawning runtimes (backup for plugins/exec-guard.ts WINE
+      // block — the plugin is the precise segment/executable guard; these
+      // use "ask" so OPENCODE_ALLOW_WINE=1 prompts for user confirmation in
+      // the TUI instead of being silently allowed or hard-denied, and are
+      // scoped to binary paths/verbs so read-only pgrep/ls/build commands on
+      // game-porting-toolkit or *.app/Contents/MacOS stay frictionless).
+      "wine *": "ask",
+      "wine32 *": "ask",
+      "wine64 *": "ask",
+      "wineserver *": "ask",
+      "wineboot *": "ask",
+      "winetricks *": "ask",
+      // Executable-leading paths only; wrappers/compound commands are parsed
+      // by exec-guard. Anchor known install roots: even /* can swallow an
+      // absolute inspection executable plus its arguments in native globs.
+      "/Applications/*/Contents/Resources/wine/bin/*": "ask",
+      "\"/Applications/*/Contents/Resources/wine/bin/*": "ask",
+      "'/Applications/*/Contents/Resources/wine/bin/*": "ask",
+      "/Applications/*/Contents/MacOS/wine*": "ask",
+      "\"/Applications/*/Contents/MacOS/wine*": "ask",
+      "'/Applications/*/Contents/MacOS/wine*": "ask",
+      "/opt/*/bin/wine*": "ask",
+      "\"/opt/*/bin/wine*": "ask",
+      "'/opt/*/bin/wine*": "ask",
+      "/usr/local/bin/wine*": "ask",
+      "*OPENCODE_ALLOW_WINE=1*": "ask",
       // GUI/app/URL launches only — plain `open <file>` previews stay allowed.
       "*open*://*": "deny",
       "*open*.app*": "deny",
       "*open -a*": "deny"
     },
     "external_directory": {
-      "~/PycharmProjects/monartha/**": "allow",
-      "~/PycharmProjects/opencode-config/**": "allow",
-      "~/.config/opencode/**": "allow",
-      "~/.ssh/**": "deny",
-      "~/.aws/**": "deny",
-      "~/.gnupg/**": "deny",
-      "~/Library/Keychains/**": "deny",
       "*": "ask",
+      "~/projects": "allow",
+      "~/projects/**": "allow",
+      "~/Projects": "allow",
+      "~/Projects/**": "allow",
+      "~/PycharmProjects/monartha": "allow",
+      "~/PycharmProjects/monartha/**": "allow",
+      "~/PycharmProjects/opencode-config": "allow",
+      "~/PycharmProjects/opencode-config/**": "allow",
+      "~/.config/opencode": "allow",
+      "~/.config/opencode/**": "allow",
+      "/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode": "allow",
+      "/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode/**": "allow",
+      "/private/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode": "allow",
+      "/private/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode/**": "allow",
+      "~/.local/share/opencode/tool-output": "allow",
+      "~/.local/share/opencode/tool-output/**": "allow",
+      "~/.local/share/opencode/log": "allow",
+      "~/.local/share/opencode/log/**": "allow",
+      // Sensitive exact roots and descendants must follow all allows.
+      "~/.ssh": "deny",
+      "~/.ssh/**": "deny",
+      "~/.aws": "deny",
+      "~/.aws/**": "deny",
+      "~/.gnupg": "deny",
+      "~/.gnupg/**": "deny",
+      "~/Library/Keychains": "deny",
+      "~/Library/Keychains/**": "deny",
       // Last-match-wins: these must sit after "*" to actually take effect.
       // Defense in depth for plugins/path-guard.ts — the plugin is the real
       // guard (it also covers in-project paths, symlinks and bash); this keeps

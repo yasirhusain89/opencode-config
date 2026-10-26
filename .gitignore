@@ -6,3 +6,4 @@ sync.sh.bak
 __pycache__/
 # Local semantic code index (ollama + sqlite-vec; rebuild with npm run index:semantic)
 .semindex/
+.check-tmp/

@@ -28,7 +28,16 @@ const cfgDir = path.join(tmp, 'config');
 fs.mkdirSync(path.join(cfgDir, 'agent'), { recursive: true });
 fs.writeFileSync(path.join(cfgDir, 'agent', 'reviewer.md'), '# r\nmodel: opencode/space-bunny-free\n');
 fs.writeFileSync(path.join(cfgDir, 'agent', 'docs.md'), '# d\nmodel: opencode/dead-model-free\n');
-fs.writeFileSync(path.join(cfgDir, 'opencode.jsonc'), '// e.g. OPENCODE_CONFIG_CONTENT=\'{"model":"opencode/decoy-model","small_model":"opencode/decoy-model"}\'\n{"model": "opencode/dead-model-free", "small_model": "opencode/beam-free"}');
+fs.writeFileSync(path.join(cfgDir, 'opencode.jsonc'), `// e.g. {"model":"opencode/decoy-model","small_model":"opencode/decoy-model"}
+{
+  "agent": {
+    "general": {"model": "opencode-go/minimax-m3.1-flash", "prompt": "https://example.test/*literal*/",},
+    "explore": {"model": "opencode-go/glm-5.3-flash"}, // quick lookup
+  },
+  /* a block-comment decoy: "model": "opencode/decoy-model" */
+  "model": "opencode/dead-model-free",
+  "small_model": "opencode/beam-free", // trailing comma
+}`);
 const accessPath = path.join(tmp, 'access.json');
 fs.writeFileSync(accessPath, JSON.stringify({ providers: {
   opencode: ['opencode/beam-free', 'opencode/space-bunny-free', 'opencode/glm-5.3-flash-free'],
@@ -95,9 +104,17 @@ if (j) {
   eq(j.perRoute[0].p50s, 17, 'p50 latency on top route');
   eq(j.metered.goUsd, 0.35, 'metered Go $ from DB cost field');
   eq(j.unmatchedCheckPins, [{ where: 'reviewer', model: 'opencode/space-bunny-free' }], 'unmatched check pin flagged');
-  eq(j.routing.reviewer.primary, 'opencode-go/glm-5.3-flash', 'routing artifact primary');
+  eq(j.routing.reviewer.primary, 'opencode/space-bunny-free', 'routing primary comes from reviewer fixture, not a hardcoded Go pin');
+  eq(j.routing.small_model.fallback, null, 'small-model bookkeeping has no session prompt handoff');
   eq(j.routing.reviewer.primaryLive, true, 'routing primary live');
-  eq(j.routing.reviewer.fallbackLive, true, 'routing fallback live');
+  eq(j.routing.reviewer.fallback, null, 'unmapped primary has no invented fallback');
+  eq(j.routing.reviewer.fallbackLive, null, 'unmapped fallback has no liveness claim');
+  eq(j.routing.general?.primary, 'opencode-go/minimax-m3.1-flash', 'inline general pin included');
+  eq(j.routing.explore?.primary, 'opencode-go/glm-5.3-flash', 'inline explore pin included');
+  eq(j.routing.main?.primary, 'opencode/dead-model-free', 'top-level model is not confused with inline agent model');
+  eq(j.routing.small_model?.primary, 'opencode/beam-free', 'small_model pin included');
+  ok(!j.pins.includes('opencode/decoy-model'), 'JSONC comment decoys excluded');
+  eq(j.routing.brainstorm, undefined, 'absent agents do not get stale fabricated routes');
   ok(j.goTop && j.goTop.family === 'glm-5.3-flash', 'goTop computed from Go routes');
   ok(j.pacing && j.pacing.daysToWeeklyCap > 0, 'pacing computed');
   ok(j.snapshotAges.check === '2026-10-18', 'snapshot age recorded');
@@ -108,7 +125,39 @@ ok(frag.includes('dead-model-free'), 'fragment names dead pin');
 const usagePart = frag.split('USAGE-TBODY')[1] || '';
 eq((usagePart.match(/<td/g) || []).length, 4 * 8, 'usage rows carry 8 cells (route/msgs/in/cached/equiv/fail/p50/role)');
 const rjson = JSON.parse(fs.readFileSync(path.join(tmp, 'routing-2026-10-18.json'), 'utf8'));
-eq(rjson.agents.reviewer.fallback, 'opencode-go/minimax-m3.1-flash', 'routing.json fallback (live Go route)');
+eq(rjson.agents, j.routing, 'routing.json mirrors dashboard configured routes');
+
+// All handoff lanes, including both live and historic Haiku spellings.
+const handoffModels = {
+  reviewer: 'opencode-go/glm-5.3-flash',
+  researcher: 'opencode-go/minimax-m3.1-flash',
+  'security-reviewer': 'opencode-go/claude-haiku-5-5',
+  'legacy-haiku': 'opencode-go/claude-haiku-5.5',
+  brainstorm: 'opencode-go/glm-5.3-flash',
+  'docs-writer': 'opencode-go/minimax-m3.1-flash',
+  'domain-companion': 'opencode-go/muse-spark-1.3-contributor',
+  build: 'opencode-go/muse-spark-1.3-contributor',
+};
+for (const [agent, model] of Object.entries(handoffModels)) {
+  fs.writeFileSync(path.join(cfgDir, 'agent', `${agent}.md`), `---\nmodel: ${model}\n---\n`);
+}
+const handoffPath = path.join(tmp, 'handoff.json');
+const fixtureConfig = path.join(cfgDir, 'opencode.jsonc');
+fs.writeFileSync(fixtureConfig, fs.readFileSync(fixtureConfig, 'utf8').replace('"opencode/beam-free"', '"opencode-go/glm-5.3-flash"'));
+r = spawnSync(process.execPath, [SCRIPT, '--date', '2026-10-18', '--db', dbPath, '--log', logPath, '--config', cfgDir, '--access', accessPath, '--out', handoffPath], { encoding: 'utf8' });
+eq(r.status, 0, 'handoff fixture exits 0');
+const handoffs = JSON.parse(fs.readFileSync(handoffPath, 'utf8')).routing;
+eq(handoffs.small_model.fallback, null, 'even a mapped Go small_model has no session prompt handoff');
+for (const [agent, primary] of Object.entries(handoffModels)) {
+  const lowStakes = ['brainstorm', 'docs-writer', 'domain-companion'].includes(agent);
+  const fallback = lowStakes ? 'nvidia/z-ai/glm-5.3-flash'
+    : primary === 'opencode-go/glm-5.3-flash' ? 'opencode-go/minimax-m3.1-flash' : 'opencode-go/glm-5.3-flash';
+  eq(handoffs[agent]?.primary, primary, `${agent} primary follows configured pin`);
+  eq(handoffs[agent]?.fallback, fallback, `${agent} availability fallback matches policy`);
+  eq(handoffs[agent]?.fallbackMode, 'next-prompt-handoff', `${agent} handoff mode explicit`);
+  ok(/next-prompt handoff/.test(handoffs[agent]?.why) && /availability-only/.test(handoffs[agent]?.why)
+    && /not.*account-wide quota/.test(handoffs[agent]?.why), `${agent} reason explains handoff and quota limits`);
+}
 
 // --write-guide on a minimal fixture (same anchor shape as the real guide)
 const guidePath = path.join(tmp, 'guide.html');

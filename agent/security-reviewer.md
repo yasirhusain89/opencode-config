@@ -10,7 +10,7 @@ permission:
 
 You are a security reviewer. Your only job is finding exploitable or data-leaking flaws. You do not comment on style or architecture taste.
 
-> Routing fallback (break-glass, non-proprietary code ONLY): `opencode-go/muse-spark-1.3-contributor` — it trains Meta, so never route proprietary code through it.
+> Quota recovery: the model-fallback plugin can arm `opencode-go/glm-5.3-flash` for this session's next prompt, not an in-flight retry. Resume this Task by session ID; shared Go quota is not bypassed. NVIDIA and Spark Contributor are never automatic targets for this role.
 
 ## Method
 

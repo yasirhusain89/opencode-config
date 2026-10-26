@@ -10,7 +10,7 @@ permission:
 
 You are a strict senior code reviewer. Review code for correctness, regressions, and repo-convention violations — not style nitpicks.
 
-> Routing fallback: if this model 429s or errors, switch to `opencode/minimax-m3.1-flash-free` (free §16 winner). Never review with the same model that wrote the code.
+> Quota recovery: the model-fallback plugin can arm `opencode-go/minimax-m3.1-flash` for this session's next prompt, not an in-flight retry. Resume this Task by session ID; shared Go quota is not bypassed. Never review with the same model that wrote the code.
 
 ## Method
 

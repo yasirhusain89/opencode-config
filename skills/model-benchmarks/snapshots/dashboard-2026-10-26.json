@@ -1,0 +1,537 @@
+{
+  "generated_at": "2026-10-26T18:24:45.575Z",
+  "date": "2026-10-26",
+  "totals": {
+    "msgs": 2594,
+    "inM": 19.7,
+    "outM": 0.77,
+    "cacheM": 310.8,
+    "cacheShare": 0.94
+  },
+  "perRoute": [
+    {
+      "model": "glm-5.3-flash",
+      "provider": "opencode-go",
+      "msgs": 1351,
+      "inM": 12.9281,
+      "outM": 0.341949,
+      "reasM": 0.392115,
+      "cacheM": 121.81982,
+      "last": "2026-10-26 18:21:53",
+      "usd": 5.961,
+      "failN": 5,
+      "failPct": 0.4,
+      "p50s": 7.4
+    },
+    {
+      "model": "muse-spark-1.3-contributor",
+      "provider": "opencode-go",
+      "msgs": 920,
+      "inM": 6.083641,
+      "outM": 0.328019,
+      "reasM": 0.464386,
+      "cacheM": 155.482052,
+      "last": "2026-10-26 18:24:41",
+      "usd": 1.078,
+      "failN": 3,
+      "failPct": 0.3,
+      "p50s": 5
+    },
+    {
+      "model": "z-ai/glm-5.3-flash",
+      "provider": "nvidia",
+      "msgs": 153,
+      "inM": 0.272295,
+      "outM": 0.035017,
+      "reasM": 0.024808,
+      "cacheM": 18.21824,
+      "last": "2026-10-26 17:55:20",
+      "usd": 0,
+      "failN": 3,
+      "failPct": 2,
+      "p50s": 35.9
+    },
+    {
+      "model": "openai/gpt-6.1-sol",
+      "provider": "openrouter",
+      "msgs": 129,
+      "inM": 0.000384,
+      "outM": 0.052345,
+      "reasM": 0.017024,
+      "cacheM": 13.139334,
+      "last": "2026-10-26 18:24:38",
+      "usd": 5.763,
+      "failN": 1,
+      "failPct": 0.8,
+      "p50s": 9.6
+    },
+    {
+      "model": "minimaxai/minimax-m3.1-flash",
+      "provider": "nvidia",
+      "msgs": 26,
+      "inM": 0.29656,
+      "outM": 0.00683,
+      "reasM": 0.014596,
+      "cacheM": 1.649664,
+      "last": "2026-10-26 01:52:50",
+      "usd": 0,
+      "failN": 0,
+      "failPct": 0,
+      "p50s": 30
+    },
+    {
+      "model": "gemini-4-argon",
+      "provider": "opencode-go",
+      "msgs": 8,
+      "inM": 0.089878,
+      "outM": 0.001389,
+      "reasM": 0.003553,
+      "cacheM": 0.449687,
+      "last": "2026-10-26 08:14:37",
+      "usd": 0.274,
+      "failN": 0,
+      "failPct": 0,
+      "p50s": 12.9
+    },
+    {
+      "model": "nemotron-3.5-super-vl-free",
+      "provider": "opencode",
+      "msgs": 6,
+      "inM": 0,
+      "outM": 0,
+      "reasM": 0,
+      "cacheM": 0,
+      "last": "2026-10-26 17:22:25",
+      "usd": 0,
+      "failN": 6,
+      "failPct": 100,
+      "p50s": 282.2
+    },
+    {
+      "model": "meta/muse-spark-1.3-contributor",
+      "provider": "openrouter",
+      "msgs": 1,
+      "inM": 0,
+      "outM": 0,
+      "reasM": 0,
+      "cacheM": 0,
+      "last": "2026-10-26 01:59:39",
+      "usd": 0,
+      "failN": 1,
+      "failPct": 100,
+      "p50s": 2866.7
+    }
+  ],
+  "goPrices": {
+    "glm-5.3-flash": {
+      "p": [
+        0.15,
+        0.5,
+        0.03
+      ],
+      "cap": 60
+    },
+    "glm-5.3": {
+      "p": [
+        1.4,
+        4.4,
+        0.26
+      ],
+      "cap": 15
+    },
+    "muse-spark-1.3-contributor": {
+      "p": [
+        0.1,
+        0.2,
+        0.002
+      ],
+      "cap": 60
+    },
+    "deepseek-v4.1-flash": {
+      "p": [
+        0.15,
+        0.6,
+        0.003
+      ],
+      "cap": 80
+    },
+    "deepseek-v4-pro": {
+      "p": [
+        0.66,
+        1.98,
+        0.022
+      ],
+      "cap": 15
+    },
+    "gpt-6-luna": {
+      "p": [
+        0.1,
+        0.5,
+        0.01
+      ],
+      "cap": 15
+    },
+    "claude-haiku-5.5": {
+      "p": [
+        0.1,
+        0.5,
+        0.01
+      ],
+      "cap": 15
+    },
+    "mimo-v2.6-pro": {
+      "p": [
+        0.435,
+        0.87,
+        0.0036
+      ],
+      "cap": 15
+    },
+    "mimo-v2.6-flash": {
+      "p": [
+        0.14,
+        0.28,
+        0.0028
+      ],
+      "cap": 60
+    },
+    "step-5-preview": {
+      "p": [
+        1,
+        2.7,
+        0.1
+      ],
+      "cap": 60
+    },
+    "space-bunny": {
+      "p": [
+        0.15,
+        0.6,
+        0.015
+      ],
+      "cap": 30
+    },
+    "minimax-m3.1-flash": {
+      "p": [
+        0.15,
+        0.6,
+        0.015
+      ],
+      "cap": 30
+    },
+    "gemini-4-argon-contributor": {
+      "p": [
+        2,
+        10,
+        0.1
+      ],
+      "cap": 60
+    },
+    "gpt-5.6-luna": {
+      "p": [
+        0.2,
+        1.2,
+        0.02
+      ],
+      "cap": 15
+    },
+    "kimi-k2.7-code": {
+      "p": [
+        0.95,
+        4,
+        0.19
+      ],
+      "cap": 15
+    },
+    "qwen3.8-flash": {
+      "p": [
+        0.15,
+        0.47,
+        0.016
+      ],
+      "cap": 15
+    },
+    "qwen3.7-plus": {
+      "p": [
+        0.4,
+        1.6,
+        0.04
+      ],
+      "cap": 15
+    },
+    "minimax-m3": {
+      "p": [
+        0.3,
+        1.2,
+        0.06
+      ],
+      "cap": 15
+    },
+    "qwen3.8-max": {
+      "p": [
+        2,
+        6,
+        0.25
+      ],
+      "cap": 15
+    },
+    "kimi-k3": {
+      "p": [
+        3,
+        15,
+        0.3
+      ],
+      "cap": 15
+    },
+    "kimi-k3-1-pro": {
+      "p": [
+        2,
+        10,
+        0.2
+      ],
+      "cap": 15
+    },
+    "gemini-4-argon": {
+      "p": [
+        2,
+        10,
+        0.1
+      ],
+      "cap": 60
+    },
+    "claude-haiku-5-5": {
+      "p": [
+        0.1,
+        0.5,
+        0.01
+      ],
+      "cap": 15
+    },
+    "kimi-k3.1-pro": {
+      "p": [
+        2,
+        10,
+        0.2
+      ],
+      "cap": 15
+    }
+  },
+  "peakHour": "2026-10-26 00",
+  "peakMsgs": 360,
+  "pins": [
+    "opencode-go/minimax-m3.1-flash",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/glm-5.3-flash",
+    "opencode-go/glm-5.3-flash",
+    "opencode-go/claude-haiku-5-5",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/glm-5.3-flash"
+  ],
+  "deadPins": [],
+  "errors429": {
+    "count": 2,
+    "first": "2026-10-26T00:54:08.431Z",
+    "last": "2026-10-26T01:50:56.399Z",
+    "models": [
+      "minimaxai/minimax-m3.1-flash"
+    ]
+  },
+  "freeShelf": {
+    "routes": [
+      {
+        "model": "nemotron-3.5-super-vl-free",
+        "msgs": 6,
+        "last": "2026-10-26 17:22:25"
+      }
+    ],
+    "lastActivity": "2026-10-26 17:22:25",
+    "paidContinuesAfter": "2026-10-26 18:24:41"
+  },
+  "goHeadroom": {
+    "family": "glm-5.3-flash",
+    "msgs": 1504,
+    "costPerDay": 6.58,
+    "cap": 60,
+    "capPct": 11
+  },
+  "goTop": {
+    "family": "glm-5.3-flash",
+    "model": "glm-5.3-flash",
+    "msgs": 1351,
+    "costPerDay": 5.96,
+    "cap": 60,
+    "capPct": 9.93
+  },
+  "unmatchedCheckPins": [
+    {
+      "where": "brainstorm",
+      "model": "opencode/glm-5.3-flash-free"
+    },
+    {
+      "where": "docs-writer",
+      "model": "opencode/glm-5.3-flash-free"
+    },
+    {
+      "where": "domain-companion",
+      "model": "opencode/glm-5.3-flash-free"
+    },
+    {
+      "where": "researcher",
+      "model": "opencode/nemotron-3.5-super-vl-free"
+    },
+    {
+      "where": "reviewer",
+      "model": "opencode-go/glm-5.3-flash"
+    },
+    {
+      "where": "security-reviewer",
+      "model": "opencode-go/claude-haiku-5.5"
+    },
+    {
+      "where": "(config model)",
+      "model": "opencode-go/muse-spark-1.3-contributor"
+    },
+    {
+      "where": "(config small_model)",
+      "model": "opencode-go/muse-spark-1.3-contributor"
+    }
+  ],
+  "snapshotAges": {
+    "check": "2026-10-24",
+    "access": "2026-10-24",
+    "coding": "2026-10-18"
+  },
+  "pacing": {
+    "family": "glm-5.3-flash",
+    "perDay": 6.58,
+    "weeklyCap": 30,
+    "daysToWeeklyCap": 4.6
+  },
+  "metered": {
+    "goUsd": 7.31,
+    "projectedGoLoopUsd": 6.58
+  },
+  "standardReq": {
+    "unit": "$0.01 of model spend (~1 GLM-5.3-flash console-mix request)",
+    "routes": [
+      {
+        "model": "glm-5.3-flash",
+        "msgs": 1351,
+        "usd": 5.961,
+        "cap": 60,
+        "costPerMsg": 0.00441,
+        "allowedMsgs": 13598,
+        "usedSR": 596,
+        "allowedSR": 6000
+      },
+      {
+        "model": "muse-spark-1.3-contributor",
+        "msgs": 920,
+        "usd": 1.078,
+        "cap": 60,
+        "costPerMsg": 0.00117,
+        "allowedMsgs": 51205,
+        "usedSR": 108,
+        "allowedSR": 6000
+      },
+      {
+        "model": "gemini-4-argon",
+        "msgs": 8,
+        "usd": 0.274,
+        "cap": 60,
+        "costPerMsg": 0.03425,
+        "allowedMsgs": 1751,
+        "usedSR": 27,
+        "allowedSR": 6000
+      }
+    ],
+    "allowedSR": 18000,
+    "usedSR": 731,
+    "pct": 4.1
+  },
+  "routing": {
+    "brainstorm": {
+      "primary": "opencode-go/minimax-m3.1-flash",
+      "fallback": "nvidia/z-ai/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": true,
+      "fallbackLive": true
+    },
+    "docs-writer": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "nvidia/z-ai/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": true,
+      "fallbackLive": true
+    },
+    "domain-companion": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "nvidia/z-ai/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": true,
+      "fallbackLive": true
+    },
+    "researcher": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode-go/minimax-m3.1-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": true,
+      "fallbackLive": true
+    },
+    "reviewer": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode-go/minimax-m3.1-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": true,
+      "fallbackLive": true
+    },
+    "security-reviewer": {
+      "primary": "opencode-go/claude-haiku-5-5",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": true,
+      "fallbackLive": true
+    },
+    "main": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": true,
+      "fallbackLive": true
+    },
+    "small_model": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": null,
+      "fallbackMode": null,
+      "why": "configured primary; no mapped availability fallback",
+      "primaryLive": true,
+      "fallbackLive": null
+    },
+    "general": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": true,
+      "fallbackLive": true
+    },
+    "explore": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode-go/minimax-m3.1-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": true,
+      "fallbackLive": true
+    }
+  }
+}

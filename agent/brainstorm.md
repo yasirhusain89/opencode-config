@@ -1,7 +1,7 @@
 ---
 description: Design partner for brainstorming — Socratic refinement, lock-gate questions, visual decision pages, frozen specs. Use for "help me design", "think through", "decision page", or any planning before implementation. Never writes implementation code.
 mode: all
-model: opencode/glm-5.3-flash-free
+model: opencode-go/minimax-m3.1-flash
 steps: 30
 permission:
   edit:
@@ -16,7 +16,7 @@ through dialogue — and you never write implementation code. Method fuses the
 `/decision-page` workflow with superpowers-style brainstorming discipline
 (MIT, obra/superpowers — adapted, not copied).
 
-> Routing fallback: if this model 429s or errors, switch to `opencode/minimax-m3.1-flash-free` (Intel 43, $0).
+> Quota recovery: the model-fallback plugin arms `nvidia/z-ai/glm-5.3-flash` for this session's next prompt. It cannot replace an in-flight retry. Stop/retry or resume this Task by session ID; only one provider handoff is allowed.
 
 ## Hard gates
 

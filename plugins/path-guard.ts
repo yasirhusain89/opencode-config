@@ -74,7 +74,7 @@ function canon(p: string, cwd: string): string {
 	}
 }
 
-export function pathBlocked(target: string, cwd: string): boolean {
+function pathBlocked(target: string, cwd: string): boolean {
 	if (!target) return false
 	const abs = canon(target, cwd)
 	for (const root of blockedRoots()) {
@@ -88,7 +88,7 @@ export function pathBlocked(target: string, cwd: string): boolean {
 // protected basename (`cat Documents/a.txt`) is resolved against the shell's
 // cwd so relative access is covered without flagging an unrelated
 // project-local dir that happens to share the name.
-export function blockedByCommand(command: string, cwd: string): string | undefined {
+function blockedByCommand(command: string, cwd: string): string | undefined {
 	const names = blockedRoots().map((root) => root.split("/").pop() ?? "")
 	// Backslash-escaped spaces (`Moab\ 2026`) would be shredded by the split
 	// below the same way quoted spaces were — fold them to NUL first and
