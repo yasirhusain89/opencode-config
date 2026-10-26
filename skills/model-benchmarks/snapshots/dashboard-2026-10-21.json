@@ -1,45 +1,249 @@
 {
-  "generated_at": "2026-10-21T02:59:05.857Z",
+  "generated_at": "2026-10-21T23:09:22.702Z",
   "date": "2026-10-21",
   "totals": {
-    "msgs": 368,
-    "inM": 4.1,
-    "outM": 0.12,
-    "cacheM": 149.6,
+    "msgs": 2822,
+    "inM": 17.7,
+    "outM": 0.88,
+    "cacheM": 539.5,
     "cacheShare": 0.97
   },
   "perRoute": [
     {
       "model": "muse-spark-1.3-contributor",
       "provider": "opencode-go",
-      "msgs": 353,
-      "inM": 3.353167,
-      "outM": 0.115027,
-      "reasM": 0.088739,
-      "cacheM": 148.472039,
-      "last": "2026-10-21 02:58:53",
-      "usd": 0.673,
+      "msgs": 2190,
+      "inM": 13.915707,
+      "outM": 0.621714,
+      "reasM": 0.57961,
+      "cacheM": 477.735731,
+      "last": "2026-10-21 22:39:32",
+      "usd": 2.587,
       "failN": 2,
-      "failPct": 0.6,
-      "p50s": 5
+      "failPct": 0.1,
+      "p50s": 5.4
+    },
+    {
+      "model": "deepseek-v4.1-flash-free",
+      "provider": "opencode",
+      "msgs": 547,
+      "inM": 2.10785,
+      "outM": 0.22804,
+      "reasM": 0.196686,
+      "cacheM": 53.987584,
+      "last": "2026-10-21 23:09:18",
+      "usd": 0,
+      "failN": 1,
+      "failPct": 0.2,
+      "p50s": 6.7
     },
     {
       "model": "gemini-4-argon-contributor",
       "provider": "opencode-go",
-      "msgs": 15,
-      "inM": 0.711886,
-      "outM": 0.006366,
-      "reasM": 0.01,
-      "cacheM": 1.114419,
-      "last": "2026-10-21 01:01:53",
-      "usd": 3.398,
+      "msgs": 79,
+      "inM": 1.496456,
+      "outM": 0.025377,
+      "reasM": 0.04344,
+      "cacheM": 7.299649,
+      "last": "2026-10-21 07:37:44",
+      "usd": 8.822,
       "failN": 0,
       "failPct": 0,
-      "p50s": 20.7
+      "p50s": 12.3
+    },
+    {
+      "model": "nvidia/nemotron-3.5-super-vl:free",
+      "provider": "openrouter",
+      "msgs": 4,
+      "inM": 0.176036,
+      "outM": 0.003334,
+      "reasM": 0.000548,
+      "cacheM": 0.494304,
+      "last": "2026-10-21 04:32:17",
+      "usd": 0,
+      "failN": 0,
+      "failPct": 0,
+      "p50s": 12.4
+    },
+    {
+      "model": "meta/muse-spark-1.3-contributor",
+      "provider": "openrouter",
+      "msgs": 2,
+      "inM": 0,
+      "outM": 0,
+      "reasM": 0,
+      "cacheM": 0,
+      "last": "2026-10-21 04:33:30",
+      "usd": 0,
+      "failN": 2,
+      "failPct": 100,
+      "p50s": 0.3
     }
   ],
-  "peakHour": "2026-10-21 00",
-  "peakMsgs": 176,
+  "goPrices": {
+    "glm-5.3-flash": {
+      "p": [
+        0.15,
+        0.5,
+        0.03
+      ],
+      "cap": 60
+    },
+    "glm-5.3": {
+      "p": [
+        1.4,
+        4.4,
+        0.26
+      ],
+      "cap": 15
+    },
+    "muse-spark-1.3-contributor": {
+      "p": [
+        0.1,
+        0.2,
+        0.002
+      ],
+      "cap": 60
+    },
+    "deepseek-v4.1-flash": {
+      "p": [
+        0.15,
+        0.6,
+        0.003
+      ],
+      "cap": 80
+    },
+    "deepseek-v4-pro": {
+      "p": [
+        0.66,
+        1.98,
+        0.022
+      ],
+      "cap": 15
+    },
+    "gpt-6-luna": {
+      "p": [
+        0.1,
+        0.5,
+        0.01
+      ],
+      "cap": 15
+    },
+    "claude-haiku-5.5": {
+      "p": [
+        0.1,
+        0.5,
+        0.01
+      ],
+      "cap": 15
+    },
+    "mimo-v2.6-pro": {
+      "p": [
+        0.435,
+        0.87,
+        0.0036
+      ],
+      "cap": 15
+    },
+    "mimo-v2.6-flash": {
+      "p": [
+        0.14,
+        0.28,
+        0.0028
+      ],
+      "cap": 60
+    },
+    "step-5-preview": {
+      "p": [
+        1,
+        2.7,
+        0.1
+      ],
+      "cap": 60
+    },
+    "space-bunny": {
+      "p": [
+        0.15,
+        0.6,
+        0.015
+      ],
+      "cap": 30
+    },
+    "minimax-m3.1-flash": {
+      "p": [
+        0.15,
+        0.6,
+        0.015
+      ],
+      "cap": 30
+    },
+    "gemini-4-argon-contributor": {
+      "p": [
+        4,
+        20,
+        0.2
+      ],
+      "cap": 60
+    },
+    "gpt-5.6-luna": {
+      "p": [
+        0.2,
+        1.2,
+        0.02
+      ],
+      "cap": 15
+    },
+    "kimi-k2.7-code": {
+      "p": [
+        0.95,
+        4,
+        0.19
+      ],
+      "cap": 15
+    },
+    "qwen3.8-flash": {
+      "p": [
+        0.15,
+        0.47,
+        0.016
+      ],
+      "cap": 15
+    },
+    "qwen3.7-plus": {
+      "p": [
+        0.4,
+        1.6,
+        0.04
+      ],
+      "cap": 15
+    },
+    "minimax-m3": {
+      "p": [
+        0.3,
+        1.2,
+        0.06
+      ],
+      "cap": 15
+    },
+    "qwen3.8-max": {
+      "p": [
+        2,
+        6,
+        0.25
+      ],
+      "cap": 15
+    },
+    "kimi-k3": {
+      "p": [
+        3,
+        15,
+        0.3
+      ],
+      "cap": 15
+    }
+  },
+  "peakHour": "2026-10-21 05",
+  "peakMsgs": 467,
   "pins": [
     "opencode/glm-5.3-flash-free",
     "opencode/glm-5.3-flash-free",
@@ -58,9 +262,15 @@
     "models": []
   },
   "freeShelf": {
-    "routes": [],
-    "lastActivity": null,
-    "paidContinuesAfter": "2026-10-21 02:58:53"
+    "routes": [
+      {
+        "model": "deepseek-v4.1-flash-free",
+        "msgs": 547,
+        "last": "2026-10-21 23:09:18"
+      }
+    ],
+    "lastActivity": "2026-10-21 23:09:18",
+    "paidContinuesAfter": "2026-10-21 22:39:32"
   },
   "goHeadroom": null,
   "unmatchedCheckPins": [
@@ -109,7 +319,7 @@
     "daysToWeeklyCap": null
   },
   "metered": {
-    "goUsd": 4.07,
+    "goUsd": 11.41,
     "projectedGoLoopUsd": 0
   },
   "standardReq": {
@@ -117,28 +327,28 @@
     "routes": [
       {
         "model": "muse-spark-1.3-contributor",
-        "msgs": 353,
-        "usd": 0.673,
+        "msgs": 2190,
+        "usd": 2.587,
         "cap": 60,
-        "costPerMsg": 0.00191,
-        "allowedMsgs": 31471,
-        "usedSR": 67,
+        "costPerMsg": 0.00118,
+        "allowedMsgs": 50792,
+        "usedSR": 259,
         "allowedSR": 6000
       },
       {
         "model": "gemini-4-argon-contributor",
-        "msgs": 15,
-        "usd": 3.398,
+        "msgs": 79,
+        "usd": 8.822,
         "cap": 60,
-        "costPerMsg": 0.22653,
-        "allowedMsgs": 264,
-        "usedSR": 340,
+        "costPerMsg": 0.11167,
+        "allowedMsgs": 537,
+        "usedSR": 882,
         "allowedSR": 6000
       }
     ],
     "allowedSR": 12000,
-    "usedSR": 407,
-    "pct": 3.4
+    "usedSR": 1141,
+    "pct": 9.5
   },
   "routing": {
     "reviewer": {

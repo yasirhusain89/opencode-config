@@ -57,8 +57,8 @@ const genAt = sr ? parseTs(sr.generated_at) : NaN;
 const fullAt = (sr && parseTs(sr.fullRecomputeAt)) || genAt;
 let stateAgeMs = Number.isFinite(fullAt) ? Date.now() - fullAt : NaN;
 let recomputedInline = false;
-// Recompute inline when the file is old OR was written by pre-v2 code.
-if (!sr || sr.schema !== 2 || !(stateAgeMs < 90000)) {
+// Recompute inline when the file is old OR was written by pre-v4 code.
+if (!sr || sr.schema !== 4 || !(stateAgeMs < 90000)) {
   try {
     const { execFileSync } = await import("node:child_process");
     const fresh = execFileSync("node", [SR_CALC], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
@@ -72,11 +72,13 @@ if (sr?.windows) {
   const dur = (sec) => (sec == null || !Number.isFinite(sec) || sec < 0 ? null
     : sec >= 86400 ? `${(sec / 86400).toFixed(1)}d` : sec >= 3600 ? `${(sec / 3600).toFixed(1)}h` : `${Math.max(1, Math.round(sec / 60))}m`);
   const w = sr.windows;
-  const win = (label, x) => {
-    if (!x) return `${label} n/a`;
+  const win = (x) => {
+    if (!x) return `n/a`;
     const left = x.remainingPct == null ? "" : ` · ${p(x.remainingPct)} left`;
     const drop = x.freesAt ? dur((parseTs(x.freesAt) - Date.now()) / 1000) : null;
-    return `${label} ${p(x.pct)} used${left}${drop ? ` · next drop in ${drop}` : ""}`;
+    const when = drop ? (x.label?.startsWith("Monthly") ? ` · resets in ${drop}` : ` · next drop in ${drop}`) : "";
+    const prov = x.capReq == null ? " · no cap yet" : x.calibrated ? "" : " · UNCALIBRATED";
+    return `${x.label || "?"}: ${x.pct == null ? `${(x.usedReq || 0).toLocaleString("en-US")} reqs` : `${p(x.pct)} used`}${left}${when}${prov}`;
   };
   // Freshness: idle time is not staleness. If nothing was spent since the last
   // full recompute, an hours-old file is still exact — only activity after the
@@ -85,22 +87,20 @@ if (sr?.windows) {
   const drifted = Number.isFinite(lastAct) && Number.isFinite(fullAt) && lastAct > fullAt;
   const stale = !recomputedInline && stateAgeMs > 10 * 60e3 && drifted;
   const stamp = recomputedInline ? "as of now"
-    : !sr.fullRecomputeAt || sr.schema !== 2
+    : sr.schema !== 4
       ? "state written by an older cost-tracker — restart OpenCode to refresh"
       : stale ? `STALE — full recompute ${ago(new Date(fullAt).toISOString())}, see ~/.local/share/opencode/sr-debug.log`
       : `as of ${stateAgeMs < 2000 ? "now" : ago(new Date(Date.now() - stateAgeMs).toISOString())}${drifted ? " (incremental)" : ""}`;
-  lines.push(`Go burn (est.): ${win("7d", w.d7)} | ${win("30d", w.d30)} | ${win("5h", w.h5)} — ${stamp}`);
-  const capUsd = w.d7.allowedSR != null ? w.d7.allowedSR * 0.01 : null;
-  if (capUsd != null && sr.paceUsdPerDay > 0) {
-    const leftUsd = Math.max(0, capUsd - w.d7.usedUsd);
-    const days = leftUsd / sr.paceUsdPerDay;
-    lines.push(`  pace $${sr.paceUsdPerDay.toFixed(2)}/day (7d) · weekly headroom $${leftUsd.toFixed(2)} → ${days < 7 ? `exhausts in ~${days.toFixed(1)}d at this pace` : "holds at this pace"}`);
+  lines.push(`Go burn (est.): ${win(w.month)} | ${win(w.week)} | ${win(w.rolling)} — ${stamp}`);
+  const leftReq = w.month.allowedReq != null ? w.month.allowedReq : null;
+  if (leftReq != null && sr.paceReqPerDay > 0) {
+    const days = leftReq / sr.paceReqPerDay;
+    lines.push(`  pace ${Math.round(sr.paceReqPerDay)} req/day (month) · monthly headroom ${leftReq.toLocaleString("en-US")} reqs → ${days < 30 ? `exhausts in ~${days.toFixed(1)}d at this pace` : "holds at this pace"}`);
   }
-  const gos = (sr.perModel || []).filter((m) => m.provider === "opencode-go" && m.msgs.d30 > 0);
-  for (const m of gos.sort((a, b) => b.usd.d30 - a.usd.d30)) {
-    const cap = m.cap == null ? "no cap" : `of $${m.cap} cap`;
-    const left = m.remainingMsgs == null ? "" : ` · ~${m.remainingMsgs.toLocaleString("en-US")} msgs left`;
-    lines.push(`  ${m.model.split("/").pop()}: 7d ${m.msgs.d7} msgs $${m.usd.d7.toFixed(2)} · 30d $${m.usd.d30.toFixed(2)} ${cap}${left}`);
+  const gos = (sr.perModel || []).filter((m) => m.provider === "opencode-go" && (m.msgs.month > 0 || m.msgs.week > 0));
+  for (const m of gos.sort((a, b) => b.msgs.month - a.msgs.month).slice(0, 6)) {
+    const sh = m.shareGo == null ? "" : ` (${Math.round(m.shareGo)}% of Go)`;
+    lines.push(`  ${m.model.split("/").pop()}: month ${m.msgs.month} reqs $${m.usd.month.toFixed(2)}${sh} · week ${m.msgs.week}`);
   }
   if (sr.alerts?.length) lines.push(`⚠ alerts: ${sr.alerts.join(", ")}`);
   if (sr.lastTurn && sr.lastTurn.usd >= 0.05) lines.push(`  last heavy turn: ${sr.lastTurn.model} $${sr.lastTurn.usd}`);

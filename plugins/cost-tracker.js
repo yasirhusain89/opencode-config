@@ -24,7 +24,10 @@ const DB = path.join(HOME, ".local/share/opencode/opencode.db");
 const LIVE = path.join(HOME, ".local/share/opencode/sr-live.json");
 const DEBUG_LOG = path.join(HOME, ".local/share/opencode/sr-debug.log");
 const SR = 0.01;
-const SCHEMA = 2; // must match sr-calc.mjs; older writers' files are ignored
+// Schema 4: account-level fixed periods (month 19th–19th, week Mon–Mon,
+// trailing 5h). Per-model binding was removed 2026-10-26 after the console
+// proved caps are account-wide — see sr-calc.mjs header.
+const SCHEMA = 4; // must match sr-calc.mjs; older writers' files are ignored
 const WARN_PCT = 70;
 const CRIT_PCT = 90;
 const RECOMPUTE_MS = 60_000;
@@ -81,18 +84,24 @@ function readLive() {
 }
 function writeLive(state) {
   try {
-    fs.writeFileSync(LIVE, JSON.stringify(state, null, 1) + "\n");
+    // Atomic write (takes effect on next opencode restart with this file):
+    // the bar's timer now writes this file too — rename avoids torn reads.
+    const tmp = `${LIVE}.tmp.${process.pid}`;
+    fs.writeFileSync(tmp, JSON.stringify(state, null, 1) + '\n');
+    fs.renameSync(tmp, LIVE);
   } catch {
     /* state dir unwritable — stay silent, never break the session */
   }
 }
 function alertsFor(windows) {
+  // Keep in sync with sr-calc.mjs `alertsFor` (exported; tested there): only
+  // CALIBRATED windows may toast — an uncalibrated pct is a raw DB count over
+  // a cap and can differ from the console by 7x+ (midnight flood).
   const a = [];
-  const h5 = windows?.h5?.pct ?? 0;
-  if (h5 >= CRIT_PCT) a.push("h5_90");
-  else if (h5 >= 80) a.push("h5_80");
-  for (const w of ["d7", "d30"]) {
-    const p = windows?.[w]?.pct ?? 0;
+  for (const w of ["month", "week"]) {
+    const win = windows?.[w];
+    if (!win || win.calibrated === false) continue;
+    const p = win.pct ?? 0;
     if (p >= CRIT_PCT) a.push(`${w}_90`);
     else if (p >= WARN_PCT) a.push(`${w}_70`);
   }
@@ -163,19 +172,22 @@ export default async (input) => {
           recomputed = state != null && lastFull !== before;
           if (!state) return;
         }
-        // Incremental patch: this turn's spend applies to every rolling window
-        // until the next full recompute corrects for window slide.
+        // Incremental patch: this turn counts against every account window
+        // until the next full recompute corrects for period boundaries.
         // Skipped when a recompute just ran in this event: the DB scan may
         // already include this turn, and adding it again double-counts. Worst
         // case the turn lands in the next recompute (≤60s), bounded to one
         // turn instead of unbounded drift.
         if (!recomputed) {
           for (const w of Object.values(state.windows || {})) {
-            if (w.usedUsd == null) continue;
-            w.usedUsd = +(w.usedUsd + turnCost).toFixed(4);
-            w.usedSR = Math.round(w.usedUsd / SR);
-            if (w.allowedSR) w.pct = +(100 * w.usedUsd / (w.allowedSR * SR)).toFixed(1);
-            if (w.pct != null) w.remainingPct = +(100 - w.pct).toFixed(1);
+            if (w.usedReq == null) continue;
+            w.usedReq = w.usedReq + 1;
+            if (w.usedUsd != null) w.usedUsd = +(w.usedUsd + turnCost).toFixed(4);
+            if (w.capReq && w.allowedReq != null) {
+              w.allowedReq = Math.max(0, w.allowedReq - 1);
+              w.pct = +(100 * (w.capReq - w.allowedReq) / w.capReq).toFixed(1);
+              w.remainingPct = Math.max(0, +(100 - w.pct).toFixed(1));
+            }
           }
         }
         state.lastTurn = {
@@ -197,12 +209,10 @@ export default async (input) => {
           fired.add(a);
           if (a === "turn_heavy") {
             await toast("Heavy turn", `${state.lastTurn.model} spent $${state.lastTurn.usd} in one turn.`);
-          } else if (a === "h5_90" || a === "h5_80") {
-            await toast("Go 5h window", `${Math.round(state.windows.h5.pct)}% used — ${Math.round(state.windows.h5.remainingPct ?? 0)}% left.`);
           } else if (a.endsWith("_90") || a.endsWith("_70")) {
             const w = a.split("_")[0];
             const win = state.windows[w];
-            await toast("Go cap pressure", `${w === "d7" ? "Weekly" : "Monthly"} window ${Math.round(win.pct)}% used — ${Math.round(win.remainingPct ?? 0)}% left.`);
+            await toast("Go cap pressure", `${w === "week" ? "Weekly" : "Monthly"} window ${Math.round(win.pct)}% used — ${Math.round(win.remainingPct ?? 0)}% left.`);
           }
         }
       } catch {
