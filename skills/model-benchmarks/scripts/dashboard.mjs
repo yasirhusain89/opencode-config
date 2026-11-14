@@ -130,14 +130,19 @@ for (const cfg of ['opencode.json', 'opencode.jsonc']) {
     token => token.startsWith('"') ? token : '');
   const config = JSON.parse(code.replace(/"(?:\\.|[^"\\])*"|,\s*(?=[}\]])/g,
     token => token.startsWith('"') ? token : ''));
-  for (const key of ['model', 'small_model']) {
-    if (typeof config[key] !== 'string') continue;
-    pins.push({ where: `${cfg} ${key}`, model: config[key] });
-    agentModels[key === 'model' ? 'main' : key] = config[key];
+  // V2 native shape: top-level `model`, `agents.title.model` (was `small_model`),
+  // `agents.<name>.model` (was `agent.<name>.model`). V1 keys still normalize,
+  // so accept both while the file may be in either shape.
+  const smallModel = typeof config.small_model === 'string' ? config.small_model
+    : typeof config.agents?.title?.model === 'string' ? config.agents.title.model : undefined;
+  for (const [key, val] of [['model', config.model], ['small_model', smallModel]]) {
+    if (typeof val !== 'string') continue;
+    pins.push({ where: `${cfg} ${key}`, model: val });
+    agentModels[key === 'model' ? 'main' : key] = val;
   }
-  for (const [agent, settings] of Object.entries(config.agent || {})) {
-    if (typeof settings?.model !== 'string') continue;
-    pins.push({ where: `${cfg} agent.${agent}`, model: settings.model });
+  for (const [agent, settings] of Object.entries(config.agents || config.agent || {})) {
+    if (agent === 'title' || typeof settings?.model !== 'string') continue;
+    pins.push({ where: `${cfg} agents.${agent}`, model: settings.model });
     // Markdown agent definitions are loaded after inline config overrides.
     agentModels[agent] ??= settings.model;
   }

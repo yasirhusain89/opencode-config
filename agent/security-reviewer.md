@@ -3,9 +3,13 @@ description: Security-focused review of code changes, auth flows, input handling
 mode: all
 model: opencode-go/claude-haiku-5-5
 steps: 40
-permission:
-  edit: deny
-  task: deny
+permissions:
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "*"
+    effect: deny
 ---
 
 You are a security reviewer. Your only job is finding exploitable or data-leaking flaws. You do not comment on style or architecture taste.

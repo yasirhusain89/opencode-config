@@ -1,4 +1,11 @@
-import type { Plugin } from "@opencode-ai/plugin"
+// Dual V1/V2 plugin: V1 calls `server()`, V2 calls `setup(ctx)`.
+// V2 renamed the bash tool to `shell`; read/edit/glob/grep use `path`.
+type GuardInput = { tool: string }
+type GuardArgs = Record<string, unknown> | undefined
+type ToolHookContext = {
+	location: { directory: string }
+	tool: { hook(name: "execute.before", cb: (event: { tool: string; input?: GuardArgs }) => void): Promise<unknown> }
+}
 import { realpathSync } from "node:fs"
 import { isAbsolute, join, resolve } from "node:path"
 
@@ -135,39 +142,48 @@ function argPaths(args: Record<string, unknown> | undefined): string[] {
 	return found
 }
 
-export const PathGuard: Plugin = async ({ directory }) => {
-	const cwd = directory
+function createGuard(cwd: string) {
+	return (input: GuardInput, args: GuardArgs): void => {
+		if (process.env.OPENCODE_PATH_GUARD === "off") return
 
-	return {
-		"tool.execute.before": async (input, output) => {
-			if (process.env.OPENCODE_PATH_GUARD === "off") return
-
-			if (input.tool === "bash") {
-				const args = output.args as { command?: unknown; workdir?: unknown; cwd?: unknown } | undefined
-				// Relative paths in a shell command resolve against the shell's
-				// cwd, not the plugin's project directory — use the tool's own
-				// workdir override when it sets one.
-				const workdir = [args?.workdir, args?.cwd].find((v): v is string => typeof v === "string" && v.length > 0)
-				const command = String(args?.command ?? "")
-				const hit = blockedByCommand(command, workdir ?? cwd)
-				if (hit) {
-					throw new Error(
-						`[path-guard] Blocked bash command — it references protected path "${hit}". ` +
-							`Protected roots: ${blockedRoots().join(", ")}. Ask the user to run it manually if it is genuinely needed.`,
-					)
-				}
-				return
+		if (input.tool === "bash" || input.tool === "shell") {
+			// Relative paths in a shell command resolve against the shell's
+			// cwd, not the plugin's project directory — use the tool's own
+			// workdir override when it sets one.
+			const workdir = [args?.workdir, args?.cwd].find((v): v is string => typeof v === "string" && v.length > 0)
+			const command = String(args?.command ?? "")
+			const hit = blockedByCommand(command, workdir ?? cwd)
+			if (hit) {
+				throw new Error(
+					`[path-guard] Blocked bash command — it references protected path "${hit}". ` +
+						`Protected roots: ${blockedRoots().join(", ")}. Ask the user to run it manually if it is genuinely needed.`,
+				)
 			}
+			return
+		}
 
-			if (!PATH_TOOLS.has(input.tool)) return
-			for (const candidate of argPaths(output.args)) {
-				if (pathBlocked(candidate, cwd)) {
-					throw new Error(
-						`[path-guard] Blocked ${input.tool} on "${candidate}" — resolves inside a protected directory. ` +
-							`Protected roots: ${blockedRoots().join(", ")}. Copy the file into the project (or ask the user) if you need its contents.`,
-					)
-				}
+		if (!PATH_TOOLS.has(input.tool)) return
+		for (const candidate of argPaths(args)) {
+			if (pathBlocked(candidate, cwd)) {
+				throw new Error(
+					`[path-guard] Blocked ${input.tool} on "${candidate}" — resolves inside a protected directory. ` +
+						`Protected roots: ${blockedRoots().join(", ")}. Copy the file into the project (or ask the user) if you need its contents.`,
+				)
 			}
-		},
+		}
 	}
+}
+
+export default {
+	id: "path-guard",
+	server: async ({ directory }: { directory: string }) => {
+		const before = createGuard(directory)
+		return {
+			"tool.execute.before": async (input: GuardInput, output: { args?: GuardArgs }) => before(input, output.args),
+		}
+	},
+	async setup(ctx: ToolHookContext) {
+		const before = createGuard(ctx.location.directory)
+		await ctx.tool.hook("execute.before", (event) => before({ tool: event.tool }, event.input))
+	},
 }

@@ -39,8 +39,8 @@ distilled, still-true conclusions.
   decision pages degrade.
 - **No automatic failover exists.** A dead quota surfaces as a session error;
   switch via `/models` or `OPENCODE_CONFIG_CONTENT` override — and the
-  override MUST include `small_model` (title/summary calls hit the same
-  quota). Fallback order: 1.2-contributor-free (same gateway) → Go plan
+  override MUST include `agents.title.model` (was `small_model`; title/summary
+  calls hit the same quota). Fallback order: 1.2-contributor-free (same gateway) → Go plan
   (`opencode-go/...`, trains on prompts) → local `ollama/qwen3.8:latest`.
   Evidence: `opencode.jsonc:1-17`, `README.md` quota section.
 - **Local Ollama needs `compaction: {auto:false}`** in the override (it
@@ -401,6 +401,38 @@ distilled, still-true conclusions.
   bar-owns-data entry above.)
   Evidence: `sr-calc.mjs` (`goRows`, `remainingMsgs`), `cost-tracker.js`
   `readLive`, `quota-status.mjs`, `tools/cost-bar/main.swift` `isStale`.
+
+- **2026-11-14 — V2 migration: storage, events, config, and anchors.**
+  Live DB is V2-migrated the moment any V2 process opens it (same path);
+  legacy `message`/`part` tables freeze, new turns go to `session_message`
+  (parts embedded in `data.content`) with per-session aggregates on
+  `session_v2.cost`/`tokens_*`. Completed assistant rows DO carry
+  cost/tokens (verify with `finish`/`cost` keys — the live turn's in-flight
+  row lacks them until it completes). V2 has no `message.updated` event:
+  cost-tracker subscribes `session.step.started/ended/failed` (model from
+  started, cost from ended) and sr-calc counts `type='assistant'` rows —
+  verified 20 `ignoring unknown event types` WARNs ending 02:55Z, none since.
+  Anchors are source-stamped (`v1`/`v2`): the V2 migration copies history
+  but not 1:1 (−45 rows in Oct 19–26, −$3.93 month cost), so a V1 dbCount
+  must never delta against V2 counts — the month anchor was rebased
+  9604(v1)→9559(v2) by recounting the same window in the new table.
+  Config: `agent`→`agents`, `provider`→`providers` (`npm`→`package`
+  `aisdk:`-prefixed, `options`→`settings`, `tool_call`→`capabilities.tools`,
+  `reasoning` dropped as unsupported), `permission`→ordered `permissions`
+  (`bash`→`shell`, `task`→`subagent`), `mcp`→`mcp.servers` (timeout triple
+  startup/catalog/execution), `small_model`→`agents.title.model`;
+  agent `temperature` dropped (V2 normalizer ignores it; the runner never
+  sends `request.body` either). Verified by `debug config`/`debug agents`
+  normalized-output identity before/after. `agent/` and `command/` dirs stay
+  (V2 discovers all four layouts; rename was rejected in
+  `docs/archive/agent-setup-review.md`). `debug agent <name>` is gone (V2
+  only has `debug agents`); harness oracle rewritten for the array shape
+  with runtime `~`-expansion mirrored for read/edit/external_directory.
+  Write-then-validate configs: the live service rejects malformed JSONC and
+  keeps last-good (observed one transient WARN mid-conversion, recovered on
+  next write). Known pre-existing V2 gap (not migration-caused):
+  `aa_bench inventory` shells `opencode models <provider>`, which V2 no
+  longer accepts — 2 test failures, out of scope.
 
 ## 5. How to add a lesson
 Append under the right section (or add one): `**YYYY-MM-DD — one-line

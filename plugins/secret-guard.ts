@@ -1,4 +1,10 @@
-import type { Plugin } from "@opencode-ai/plugin"
+// Dual V1/V2 plugin: V1 calls `server()`, V2 calls `setup(ctx)`.
+// V2 renamed the bash tool to `shell` and read/edit take `path`.
+type GuardInput = { tool: string }
+type GuardArgs = Record<string, unknown> | undefined
+type ToolHookContext = {
+	tool: { hook(name: "execute.before", cb: (event: { tool: string; input?: GuardArgs }) => void): Promise<unknown> }
+}
 
 const SECRET_FILE_PATTERNS = [
 	/\.env\b/i,
@@ -46,29 +52,37 @@ const DANGEROUS_BASH = [
 	/git\s+config\s+.*--global/,
 ]
 
-export const SecretGuard: Plugin = async () => ({
-	"tool.execute.before": async (input, output) => {
-		if (input.tool === "read" || input.tool === "edit" || input.tool === "write") {
-			const filePath =
-				output.args?.filePath ??
-				output.args?.path ??
-				(typeof output.args?.pattern === "string" ? output.args.pattern : undefined)
-			if (isSecretPath(filePath)) {
+function block(input: GuardInput, args: GuardArgs): void {
+	if (input.tool === "read" || input.tool === "edit" || input.tool === "write") {
+		const filePath =
+			(typeof args?.path === "string" ? args.path : undefined) ??
+			(typeof args?.filePath === "string" ? args.filePath : undefined) ??
+			(typeof args?.pattern === "string" ? args.pattern : undefined)
+		if (isSecretPath(filePath)) {
+			throw new Error(
+				`[secret-guard] Blocked ${input.tool} on "${filePath}" — matches a secret/credential pattern. If this is a non-secret file that was misidentified, rename it or ask the user to allow it explicitly.`,
+			)
+		}
+	}
+
+	if (input.tool === "bash" || input.tool === "shell") {
+		const command = String(args?.command ?? "")
+		for (const re of DANGEROUS_BASH) {
+			if (re.test(command)) {
 				throw new Error(
-					`[secret-guard] Blocked ${input.tool} on "${filePath}" — matches a secret/credential pattern. If this is a non-secret file that was misidentified, rename it or ask the user to allow it explicitly.`,
+					`[secret-guard] Blocked bash command matching "${re.source}" — destructive or secret-exposing. Ask the user to run it manually if it is genuinely needed.`,
 				)
 			}
 		}
+	}
+}
 
-		if (input.tool === "bash") {
-			const command = String(output.args?.command ?? "")
-			for (const re of DANGEROUS_BASH) {
-				if (re.test(command)) {
-					throw new Error(
-						`[secret-guard] Blocked bash command matching "${re.source}" — destructive or secret-exposing. Ask the user to run it manually if it is genuinely needed.`,
-					)
-				}
-			}
-		}
+export default {
+	id: "secret-guard",
+	server: async () => ({
+		"tool.execute.before": async (input: GuardInput, output: { args?: GuardArgs }) => block(input, output.args),
+	}),
+	async setup(ctx: ToolHookContext) {
+		await ctx.tool.hook("execute.before", (event) => block({ tool: event.tool }, event.input))
 	},
-})
+}

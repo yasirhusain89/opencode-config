@@ -92,7 +92,8 @@ Notes:
   `~/PycharmProjects/monartha`) or set `PW_CORE=/path/to/playwright-core/index.mjs`.
 - `--config DIR` overrides the opencode config dir (default
   `~/.config/opencode`); reads `agent/*.md` (`agents/` too) `^model:` lines
-  plus `"model"` / `"small_model"` from opencode.json(c).
+  plus `"model"` / `"small_model"` (`agents.title.model` in V2 native files)
+  from opencode.json(c).
 - `check` is ~1 + N page loads, ~2-6 min depending on slug count;
   `coding` is 1 page + 3 tab clicks, ~2-3 min; `personality` is 8 index
   pages, ~3 min (top 10 per index only — absentees are outside the top 10,
@@ -291,7 +292,8 @@ Z.ai Coding Plan ~$18/mo. Go plan caps our loop: GLM-flash $60/mo
   Intelligence Index — useful cost proxy when per-task is missing; ratio it
   against a model that has both).
 - `check` cross-checks `agent/*.md` (`agents/` too) plus `"model"` /
-  `"small_model"` from `opencode.json(c)` — each pin mapped to `aa_slug`,
+  `"small_model"` (`agents.title.model` in V2 native files) from
+  `opencode.json(c)` — each pin mapped to `aa_slug`,
   `aa_match`, `engineering`. `aa_slug: null` means no fetched slug matched:
   check the mapping (provider prefixes like `nvidia/`, `-free` suffixes,
   and `-NNNN` date pins like `-0813` are stripped automatically; anything

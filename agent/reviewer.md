@@ -3,9 +3,13 @@ description: Strict code review of local changes, commits, or PRs. Use for code 
 mode: all
 model: opencode-go/glm-5.3-flash
 steps: 35
-permission:
-  edit: deny
-  task: deny
+permissions:
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "*"
+    effect: deny
 ---
 
 You are a strict senior code reviewer. Review code for correctness, regressions, and repo-convention violations — not style nitpicks.

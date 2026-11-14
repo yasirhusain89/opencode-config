@@ -1,5 +1,11 @@
-import type { Plugin } from "@opencode-ai/plugin"
-import { statSync } from "node:fs"
+// Dual V1/V2 plugin: V1 calls `server()`, V2 calls `setup(ctx)`.
+// V2 renamed the bash tool to `shell`.
+type GuardInput = { tool: string };
+type GuardArgs = Record<string, unknown> | undefined;
+type ToolHookContext = {
+	tool: { hook(name: "execute.before", cb: (event: { tool: string; input?: GuardArgs }) => void): Promise<unknown> };
+};
+import { statSync } from "node:fs";
 
 // Blocks bash tool calls that hold the agent loop hostage or detach unsupervised
 // work from it. Rationale: in Oct 2026 a pileup of `sleep 55/90/240` waits,
@@ -664,34 +670,42 @@ function intEnv(name: string, fallback: number): number {
 	return Number.isFinite(v) && v > 0 ? v : fallback;
 }
 
-export const ExecGuard: Plugin = async () => ({
-	"tool.execute.before": async (input, output) => {
-		if (process.env.OPENCODE_EXEC_GUARD === "off") return;
-		if (input.tool !== "bash") return;
+function block(input: GuardInput, args: GuardArgs): void {
+	if (process.env.OPENCODE_EXEC_GUARD === "off") return;
+	if (input.tool !== "bash" && input.tool !== "shell") return;
 
-		const command = String(output.args?.command ?? "");
-		const reason = execBlocked(command, intEnv("OPENCODE_MAX_SLEEP_SECS", 120));
-		if (reason) throw new Error(`[exec-guard] ${reason}`);
+	const command = String(args?.command ?? "");
+	const reason = execBlocked(command, intEnv("OPENCODE_MAX_SLEEP_SECS", 120));
+	if (reason) throw new Error(`[exec-guard] ${reason}`);
 
-		// Two-tier timeout ceiling: waits must return quickly so the agent
-		// re-checks next turn; plain work (builds, installs, eval runners)
-		// gets a longer leash.
-		const waitMax = intEnv("OPENCODE_MAX_WAIT_MS", 300000);
-		const workMax = intEnv("OPENCODE_MAX_TIMEOUT_MS", 1800000);
-		const timeout = (output.args as { timeout?: unknown } | undefined)?.timeout;
-		if (typeof timeout === "number") {
-			if (isWaitClass(command) && timeout > waitMax) {
-				throw new Error(
-					`[exec-guard] Refusing wait-class timeout ${timeout}ms (max ${waitMax}ms, OPENCODE_MAX_WAIT_MS). ` +
-					`Waits must return so the agent re-checks next turn — poll in ≤5min chunks instead of one marathon call.`,
-				);
-			}
-			if (!isWaitClass(command) && timeout > workMax) {
-				throw new Error(
-					`[exec-guard] Refusing bash timeout ${timeout}ms (max ${workMax}ms, OPENCODE_MAX_TIMEOUT_MS). ` +
-					`Split the work into bounded foreground steps instead of one long call.`,
-				);
-			}
+	// Two-tier timeout ceiling: waits must return quickly so the agent
+	// re-checks next turn; plain work (builds, installs, eval runners)
+	// gets a longer leash.
+	const waitMax = intEnv("OPENCODE_MAX_WAIT_MS", 300000);
+	const workMax = intEnv("OPENCODE_MAX_TIMEOUT_MS", 1800000);
+	const timeout = args?.timeout;
+	if (typeof timeout === "number") {
+		if (isWaitClass(command) && timeout > waitMax) {
+			throw new Error(
+				`[exec-guard] Refusing wait-class timeout ${timeout}ms (max ${waitMax}ms, OPENCODE_MAX_WAIT_MS). ` +
+				`Waits must return so the agent re-checks next turn — poll in ≤5min chunks instead of one marathon call.`,
+			);
 		}
+		if (!isWaitClass(command) && timeout > workMax) {
+			throw new Error(
+				`[exec-guard] Refusing bash timeout ${timeout}ms (max ${workMax}ms, OPENCODE_MAX_TIMEOUT_MS). ` +
+				`Split the work into bounded foreground steps instead of one long call.`,
+			);
+		}
+	}
+}
+
+export default {
+	id: "exec-guard",
+	server: async () => ({
+		"tool.execute.before": async (input: GuardInput, output: { args?: GuardArgs }) => block(input, output.args),
+	}),
+	async setup(ctx: ToolHookContext) {
+		await ctx.tool.hook("execute.before", (event) => block({ tool: event.tool }, event.input));
 	},
-});
+};

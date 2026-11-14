@@ -6,52 +6,54 @@
   // Meta region-limited). Requires the Go key: /connect → OpenCode Go.
   // Availability-only switch on model-specific 429 (Go quota is account-wide):
   //   TUI: /models → opencode-go/glm-5.3-flash (zero-retention, ~5x cost)
-  //   CLI (verified): OPENCODE_CONFIG_CONTENT='{"model":"opencode-go/glm-5.3-flash","small_model":"opencode-go/glm-5.3-flash"}' opencode run --title "backup" "..."
+  //   CLI: OPENCODE_CONFIG_CONTENT='{"model":"opencode-go/glm-5.3-flash","agents":{"title":{"model":"opencode-go/glm-5.3-flash"}}}' opencode run --title "backup" "..."
   // Free approved low-stakes backup: nvidia/z-ai/glm-5.3-flash.
   // model-fallback.js arms the next prompt; it cannot replace in-flight retries.
-  // small_model must ride along: title/summary calls hit the same quota.
+  // title/summary calls (agents.title.model) must ride along: title/summary calls hit the same quota.
   // Last resort (offline, no quota): ollama/qwen3.8:latest — needs
   // "compaction":{"auto":false} added to the override JSON (it rambles summaries).
   "model": "opencode-go/muse-spark-1.3-contributor",
-  "small_model": "opencode-go/muse-spark-1.3-contributor",
-  "agent": {
+  "agents": {
     "general": {
       "model": "opencode-go/muse-spark-1.3-contributor"
     },
     "explore": {
       "model": "opencode-go/glm-5.3-flash",
-      "permission": { "edit": "deny", "task": "deny" }
+      "permissions": [
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "*", "effect": "deny" }
+      ]
     },
     "plan": {
-      "permission": {
+      "permissions": [
         // Agent overrides come after global allows. Restore the built-in
         // plan-file exceptions for worktree-relative and absolute tool paths.
-        "edit": {
-          "*": "deny",
-          ".opencode/plans/*.md": "allow",
-          "**/.opencode/plans/*.md": "allow",
-          "**/.local/share/opencode/plans/*.md": "allow"
-        },
-        "task": { "general": "deny" },
-        "external_directory": {
-          "~/.local/share/opencode/plans": "allow",
-          "~/.local/share/opencode/plans/**": "allow"
-        }
-      }
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "edit", "resource": ".opencode/plans/*.md", "effect": "allow" },
+        { "action": "edit", "resource": "**/.opencode/plans/*.md", "effect": "allow" },
+        { "action": "edit", "resource": "**/.local/share/opencode/plans/*.md", "effect": "allow" },
+        { "action": "subagent", "resource": "general", "effect": "deny" },
+        { "action": "external_directory", "resource": "~/.local/share/opencode/plans", "effect": "allow" },
+        { "action": "external_directory", "resource": "~/.local/share/opencode/plans/**", "effect": "allow" }
+      ]
+    },
+    "title": {
+      "model": "opencode-go/muse-spark-1.3-contributor"
     }
   },
-  "provider": {
+  "providers": {
     "ollama": {
-      "npm": "@ai-sdk/openai-compatible",
+      "package": "aisdk:@ai-sdk/openai-compatible",
       "name": "Ollama (local)",
-      "options": {
+      "settings": {
         "baseURL": "http://localhost:11434/v1"
       },
       "models": {
         "qwen3.8:latest": {
           "name": "Qwen 3.8 (local, quota backup)",
-          "tool_call": true,
-          "reasoning": true,
+          "capabilities": {
+            "tools": true
+          },
           "limit": {
             // Keep modest: opencode passes this as num_ctx. 262k on a 27B
             // local model reloads ~19GB+ KV cache and stalls startup.
@@ -62,175 +64,148 @@
       }
     }
   },
-  "permission": {
-    "edit": {
-      "*": "allow",
-      "**/.env*": "deny",
-      "**/access_token": "deny",
-      "**/token.json": "deny",
-      "**/credentials.json": "deny",
-      "**/auth.json": "deny",
-      "**/.go-api-key": "deny",
-      "**/.npmrc": "deny",
-      "**/.netrc": "deny",
-      "**/id_rsa": "deny",
-      "**/id_ed25519": "deny",
-      "**/*.keystore": "deny",
-      "**/*.jks": "deny",
-      "**/*.mobileprovision": "deny",
-      "**/google-services.json": "deny",
-      "**/GoogleService-Info.plist": "deny"
-    },
-    "read": {
-      "*": "allow",
-      "**/.env": "deny",
-      "**/.env.*": "deny",
-      "**/access_token": "deny",
-      "**/token.json": "deny",
-      "**/credentials.json": "deny",
-      "**/auth.json": "deny",
-      "**/.go-api-key": "deny",
-      "**/.npmrc": "deny",
-      "**/.netrc": "deny",
-      "**/id_rsa": "deny",
-      "**/id_ed25519": "deny",
-      "**/*.keystore": "deny",
-      "**/*.jks": "deny",
-      "**/monartha.db*": "allow",
-      "**/myfinances.db*": "allow"
-    },
-    "bash": {
-      "*": "allow",
-      "rm -rf *": "allow",
-      "rm -r *": "allow",
-      // Last-match-wins: these must sit after the rm allows above to keep
-      // root/home wipes denied (exec-guard.ts is the precise guard).
-      "rm -rf /*": "deny",
-      "rm -rf ~*": "deny",
-      "sudo *": "deny",
-      "su *": "deny",
-      "chown *": "deny",
-      "chmod -R *": "allow",
-      "mkfs *": "deny",
-      "dd *": "deny",
-      "git reset --hard*": "allow",
-      "git clean -fd*": "allow",
-      "git push*": "allow",
-      "git commit*": "allow",
-      "git merge*": "allow",
-      "git rebase*": "allow",
-      // Last-match-wins: after "git push*" allow so force-push still asks.
-      "git push --force*": "ask",
-      "git push * --force*": "ask",
-      "gh pr merge*": "ask",
-      "gh release delete*": "ask",
-      "gh api *DELETE*": "ask",
-      "gh variable delete*": "ask",
-      "gh variable set*": "ask",
-      "cargo publish*": "ask",
-      "npm publish*": "ask",
-      "curl *": "allow",
-      "wget *": "allow",
-      // Last-match-wins: after the curl/wget allows so pipe-to-shell stays
-      // denied.
-      "curl *|*sh*": "deny",
-      "wget *|*sh*": "deny",
-      // exec-guard backup (plugins/exec-guard.ts is the real guard — it parses
-      // durations, waits, backgrounding, and tiered timeouts, which globs
-      // can't). These stay last so they win over "*" allow above. Coarse
-      // on purpose: the plugin enforces the fine thresholds (sleep ≤120s,
-      // wait-class timeout ≤5min); these only catch the extremes if it is off.
-      "*sleep [1][8-9][0-9]*": "deny",
-      "*sleep [2-9][0-9][0-9]*": "deny",
-      "*sleep [1-9][0-9][0-9][0-9]*": "deny",
-      "*nohup*": "deny",
-      "*setsid*": "deny",
-      "*disown*": "deny",
-      "*caffeinate*": "deny",
-      "*pkill*-9*": "deny",
-      "killall *": "deny",
-      // Process-spawning runtimes (backup for plugins/exec-guard.ts WINE
-      // block — the plugin is the precise segment/executable guard; these
-      // use "ask" so OPENCODE_ALLOW_WINE=1 prompts for user confirmation in
-      // the TUI instead of being silently allowed or hard-denied, and are
-      // scoped to binary paths/verbs so read-only pgrep/ls/build commands on
-      // game-porting-toolkit or *.app/Contents/MacOS stay frictionless).
-      "wine *": "ask",
-      "wine32 *": "ask",
-      "wine64 *": "ask",
-      "wineserver *": "ask",
-      "wineboot *": "ask",
-      "winetricks *": "ask",
-      // Executable-leading paths only; wrappers/compound commands are parsed
-      // by exec-guard. Anchor known install roots: even /* can swallow an
-      // absolute inspection executable plus its arguments in native globs.
-      "/Applications/*/Contents/Resources/wine/bin/*": "ask",
-      "\"/Applications/*/Contents/Resources/wine/bin/*": "ask",
-      "'/Applications/*/Contents/Resources/wine/bin/*": "ask",
-      "/Applications/*/Contents/MacOS/wine*": "ask",
-      "\"/Applications/*/Contents/MacOS/wine*": "ask",
-      "'/Applications/*/Contents/MacOS/wine*": "ask",
-      "/opt/*/bin/wine*": "ask",
-      "\"/opt/*/bin/wine*": "ask",
-      "'/opt/*/bin/wine*": "ask",
-      "/usr/local/bin/wine*": "ask",
-      "*OPENCODE_ALLOW_WINE=1*": "ask",
-      // GUI/app/URL launches only — plain `open <file>` previews stay allowed.
-      "*open*://*": "deny",
-      "*open*.app*": "deny",
-      "*open -a*": "deny"
-    },
-    "external_directory": {
-      "*": "ask",
-      "~/projects": "allow",
-      "~/projects/**": "allow",
-      "~/Projects": "allow",
-      "~/Projects/**": "allow",
-      "~/PycharmProjects/monartha": "allow",
-      "~/PycharmProjects/monartha/**": "allow",
-      "~/PycharmProjects/opencode-config": "allow",
-      "~/PycharmProjects/opencode-config/**": "allow",
-      "~/.config/opencode": "allow",
-      "~/.config/opencode/**": "allow",
-      "/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode": "allow",
-      "/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode/**": "allow",
-      "/private/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode": "allow",
-      "/private/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode/**": "allow",
-      "~/.local/share/opencode/tool-output": "allow",
-      "~/.local/share/opencode/tool-output/**": "allow",
-      "~/.local/share/opencode/log": "allow",
-      "~/.local/share/opencode/log/**": "allow",
-      // Sensitive exact roots and descendants must follow all allows.
-      "~/.ssh": "deny",
-      "~/.ssh/**": "deny",
-      "~/.aws": "deny",
-      "~/.aws/**": "deny",
-      "~/.gnupg": "deny",
-      "~/.gnupg/**": "deny",
-      "~/Library/Keychains": "deny",
-      "~/Library/Keychains/**": "deny",
-      // Last-match-wins: these must sit after "*" to actually take effect.
-      // Defense in depth for plugins/path-guard.ts — the plugin is the real
-      // guard (it also covers in-project paths, symlinks and bash); this keeps
-      // the native boundary closed even if the plugin is disabled.
-      "~/Documents": "deny",
-      "~/Documents/**": "deny",
-      "~/Downloads": "deny",
-      "~/Downloads/**": "deny"
-    },
-    "webfetch": "allow",
-    "websearch": "allow",
-    "task": "allow",
-    "skill": "allow"
-  },
+  "permissions": [
+    { "action": "edit", "resource": "*", "effect": "allow" },
+    { "action": "edit", "resource": "**/.env*", "effect": "deny" },
+    { "action": "edit", "resource": "**/access_token", "effect": "deny" },
+    { "action": "edit", "resource": "**/token.json", "effect": "deny" },
+    { "action": "edit", "resource": "**/credentials.json", "effect": "deny" },
+    { "action": "edit", "resource": "**/auth.json", "effect": "deny" },
+    { "action": "edit", "resource": "**/.go-api-key", "effect": "deny" },
+    { "action": "edit", "resource": "**/.npmrc", "effect": "deny" },
+    { "action": "edit", "resource": "**/.netrc", "effect": "deny" },
+    { "action": "edit", "resource": "**/id_rsa", "effect": "deny" },
+    { "action": "edit", "resource": "**/id_ed25519", "effect": "deny" },
+    { "action": "edit", "resource": "**/*.keystore", "effect": "deny" },
+    { "action": "edit", "resource": "**/*.jks", "effect": "deny" },
+    { "action": "edit", "resource": "**/*.mobileprovision", "effect": "deny" },
+    { "action": "edit", "resource": "**/google-services.json", "effect": "deny" },
+    { "action": "edit", "resource": "**/GoogleService-Info.plist", "effect": "deny" },
+    { "action": "read", "resource": "*", "effect": "allow" },
+    { "action": "read", "resource": "**/.env", "effect": "deny" },
+    { "action": "read", "resource": "**/.env.*", "effect": "deny" },
+    { "action": "read", "resource": "**/access_token", "effect": "deny" },
+    { "action": "read", "resource": "**/token.json", "effect": "deny" },
+    { "action": "read", "resource": "**/credentials.json", "effect": "deny" },
+    { "action": "read", "resource": "**/auth.json", "effect": "deny" },
+    { "action": "read", "resource": "**/.go-api-key", "effect": "deny" },
+    { "action": "read", "resource": "**/.npmrc", "effect": "deny" },
+    { "action": "read", "resource": "**/.netrc", "effect": "deny" },
+    { "action": "read", "resource": "**/id_rsa", "effect": "deny" },
+    { "action": "read", "resource": "**/id_ed25519", "effect": "deny" },
+    { "action": "read", "resource": "**/*.keystore", "effect": "deny" },
+    { "action": "read", "resource": "**/*.jks", "effect": "deny" },
+    { "action": "read", "resource": "**/monartha.db*", "effect": "allow" },
+    { "action": "read", "resource": "**/myfinances.db*", "effect": "allow" },
+    { "action": "shell", "resource": "*", "effect": "allow" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "allow" },
+    { "action": "shell", "resource": "rm -r *", "effect": "allow" },
+    { "action": "shell", "resource": "rm -rf /*", "effect": "deny" },
+    { "action": "shell", "resource": "rm -rf ~*", "effect": "deny" },
+    { "action": "shell", "resource": "sudo *", "effect": "deny" },
+    { "action": "shell", "resource": "su *", "effect": "deny" },
+    { "action": "shell", "resource": "chown *", "effect": "deny" },
+    { "action": "shell", "resource": "chmod -R *", "effect": "allow" },
+    { "action": "shell", "resource": "mkfs *", "effect": "deny" },
+    { "action": "shell", "resource": "dd *", "effect": "deny" },
+    { "action": "shell", "resource": "git reset --hard*", "effect": "allow" },
+    { "action": "shell", "resource": "git clean -fd*", "effect": "allow" },
+    { "action": "shell", "resource": "git push*", "effect": "allow" },
+    { "action": "shell", "resource": "git commit*", "effect": "allow" },
+    { "action": "shell", "resource": "git merge*", "effect": "allow" },
+    { "action": "shell", "resource": "git rebase*", "effect": "allow" },
+    { "action": "shell", "resource": "git push --force*", "effect": "ask" },
+    { "action": "shell", "resource": "git push * --force*", "effect": "ask" },
+    { "action": "shell", "resource": "gh pr merge*", "effect": "ask" },
+    { "action": "shell", "resource": "gh release delete*", "effect": "ask" },
+    { "action": "shell", "resource": "gh api *DELETE*", "effect": "ask" },
+    { "action": "shell", "resource": "gh variable delete*", "effect": "ask" },
+    { "action": "shell", "resource": "gh variable set*", "effect": "ask" },
+    { "action": "shell", "resource": "cargo publish*", "effect": "ask" },
+    { "action": "shell", "resource": "npm publish*", "effect": "ask" },
+    { "action": "shell", "resource": "curl *", "effect": "allow" },
+    { "action": "shell", "resource": "wget *", "effect": "allow" },
+    { "action": "shell", "resource": "curl *|*sh*", "effect": "deny" },
+    { "action": "shell", "resource": "wget *|*sh*", "effect": "deny" },
+    { "action": "shell", "resource": "*sleep [1][8-9][0-9]*", "effect": "deny" },
+    { "action": "shell", "resource": "*sleep [2-9][0-9][0-9]*", "effect": "deny" },
+    { "action": "shell", "resource": "*sleep [1-9][0-9][0-9][0-9]*", "effect": "deny" },
+    { "action": "shell", "resource": "*nohup*", "effect": "deny" },
+    { "action": "shell", "resource": "*setsid*", "effect": "deny" },
+    { "action": "shell", "resource": "*disown*", "effect": "deny" },
+    { "action": "shell", "resource": "*caffeinate*", "effect": "deny" },
+    { "action": "shell", "resource": "*pkill*-9*", "effect": "deny" },
+    { "action": "shell", "resource": "killall *", "effect": "deny" },
+    { "action": "shell", "resource": "wine *", "effect": "ask" },
+    { "action": "shell", "resource": "wine32 *", "effect": "ask" },
+    { "action": "shell", "resource": "wine64 *", "effect": "ask" },
+    { "action": "shell", "resource": "wineserver *", "effect": "ask" },
+    { "action": "shell", "resource": "wineboot *", "effect": "ask" },
+    { "action": "shell", "resource": "winetricks *", "effect": "ask" },
+    { "action": "shell", "resource": "/Applications/*/Contents/Resources/wine/bin/*", "effect": "ask" },
+    { "action": "shell", "resource": "\"/Applications/*/Contents/Resources/wine/bin/*", "effect": "ask" },
+    { "action": "shell", "resource": "'/Applications/*/Contents/Resources/wine/bin/*", "effect": "ask" },
+    { "action": "shell", "resource": "/Applications/*/Contents/MacOS/wine*", "effect": "ask" },
+    { "action": "shell", "resource": "\"/Applications/*/Contents/MacOS/wine*", "effect": "ask" },
+    { "action": "shell", "resource": "'/Applications/*/Contents/MacOS/wine*", "effect": "ask" },
+    { "action": "shell", "resource": "/opt/*/bin/wine*", "effect": "ask" },
+    { "action": "shell", "resource": "\"/opt/*/bin/wine*", "effect": "ask" },
+    { "action": "shell", "resource": "'/opt/*/bin/wine*", "effect": "ask" },
+    { "action": "shell", "resource": "/usr/local/bin/wine*", "effect": "ask" },
+    { "action": "shell", "resource": "*OPENCODE_ALLOW_WINE=1*", "effect": "ask" },
+    { "action": "shell", "resource": "*open*://*", "effect": "deny" },
+    { "action": "shell", "resource": "*open*.app*", "effect": "deny" },
+    { "action": "shell", "resource": "*open -a*", "effect": "deny" },
+    { "action": "external_directory", "resource": "*", "effect": "ask" },
+    { "action": "external_directory", "resource": "~/projects", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/projects/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/Projects", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/Projects/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/PycharmProjects/monartha", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/PycharmProjects/monartha/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/PycharmProjects/opencode-config", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/PycharmProjects/opencode-config/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/.config/opencode", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/.config/opencode/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode", "effect": "allow" },
+    { "action": "external_directory", "resource": "/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "/private/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode", "effect": "allow" },
+    { "action": "external_directory", "resource": "/private/var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/opencode/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/.local/share/opencode/tool-output", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/.local/share/opencode/tool-output/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/.local/share/opencode/log", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/.local/share/opencode/log/**", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/.ssh", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/.ssh/**", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/.aws", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/.aws/**", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/.gnupg", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/.gnupg/**", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/Library/Keychains", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/Library/Keychains/**", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/Documents", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/Documents/**", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/Downloads", "effect": "deny" },
+    { "action": "external_directory", "resource": "~/Downloads/**", "effect": "deny" },
+    { "action": "webfetch", "resource": "*", "effect": "allow" },
+    { "action": "websearch", "resource": "*", "effect": "allow" },
+    { "action": "subagent", "resource": "*", "effect": "allow" },
+    { "action": "skill", "resource": "*", "effect": "allow" }
+  ],
   "mcp": {
-    "gitnexus": {
-      "type": "local",
-      "command": [
-        "/opt/homebrew/bin/gitnexus",
-        "mcp"
-      ],
-      "timeout": 600000
+    "servers": {
+      "gitnexus": {
+        "type": "local",
+        "command": [
+          "/opt/homebrew/bin/gitnexus",
+          "mcp"
+        ],
+        "timeout": {
+          "startup": 600000,
+          "catalog": 600000,
+          "execution": 600000
+        }
+      }
     }
   }
 }

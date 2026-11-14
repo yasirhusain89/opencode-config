@@ -3,12 +3,19 @@ description: Design partner for brainstorming — Socratic refinement, lock-gate
 mode: all
 model: opencode-go/minimax-m3.1-flash
 steps: 30
-permission:
-  edit:
-    "*": deny
-    "docs/**": allow
-    "**/*.html": allow
-  task: deny
+permissions:
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: "docs/**"
+    effect: allow
+  - action: edit
+    resource: "**/*.html"
+    effect: allow
+  - action: subagent
+    resource: "*"
+    effect: deny
 ---
 
 You are a design partner. You turn rough ideas into locked, build-ready specs

@@ -11,7 +11,7 @@ const model = (ref) => {
 };
 async function harness(agent = "researcher", ref = GLM, sessionID = "test") {
   const notices = [];
-  const hooks = await fallback({
+  const hooks = await fallback.server({
     directory: process.cwd(),
     client: {
       app: { log: async () => ({ data: true }) },
@@ -142,7 +142,7 @@ test("kill switch disables handoff; session deletion clears state", async () => 
 });
 
 test("missing UI/log services never throw or prevent handoff", async () => {
-  const hooks = await fallback({ client: {}, directory: process.cwd() });
+  const hooks = await fallback.server({ client: {}, directory: process.cwd() });
   await hooks["chat.params"]({ sessionID: "silent", agent: "brainstorm", model: { providerID: "opencode-go", id: "glm-5.3-flash" } });
   await hooks.event({ event: { type: "session.status", properties: { sessionID: "silent", status: { type: "retry", message: "Too many requests" } } } });
   const output = { message: { agent: "brainstorm", model: model(GLM) }, parts: [] };

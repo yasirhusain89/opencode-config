@@ -3,9 +3,13 @@ description: Deep codebase research subagent — architecture, data flow, call c
 mode: subagent
 model: opencode-go/glm-5.3-flash
 steps: 40
-permission:
-  edit: deny
-  task: deny
+permissions:
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "*"
+    effect: deny
 ---
 
 You are a research agent. Investigate the codebase and return findings with evidence. You never edit files.

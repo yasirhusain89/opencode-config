@@ -101,8 +101,8 @@ ok((pm['nvidia/z-ai/glm-5.3-flash'].msgs.month || 0) > 0 || exp.month === goMont
 // ---- anchors: console truth + exact DB deltas ----
 {
   const anchored = {
-    month: { periodStart: new Date(mp.start).toISOString(), usage: 9000, dbCount: exp.month - 2, at: new Date(now).toISOString(), note: 'test' },
-    week: { periodStart: '2000-01-01T00:00:00.000Z', usage: 5, dbCount: 0, at: new Date(now).toISOString(), note: 'stale period' },
+    month: { periodStart: new Date(mp.start).toISOString(), usage: 9000, dbCount: exp.month - 2, source: 'v1', at: new Date(now).toISOString(), note: 'test' },
+    week: { periodStart: '2000-01-01T00:00:00.000Z', usage: 5, dbCount: 0, source: 'v1', at: new Date(now).toISOString(), note: 'stale period' },
   };
   fs.writeFileSync(anchorsPath, JSON.stringify(anchored));
   const j2 = calcSR(db, anchorsPath);
@@ -110,6 +110,17 @@ ok((pm['nvidia/z-ai/glm-5.3-flash'].msgs.month || 0) > 0 || exp.month === goMont
   eq(j2.windows.month.calibrated, true, 'month calibrated with matching anchor');
   eq(j2.windows.week.usedReq, exp.week, 'stale-period anchor ignored, DB truth used');
   eq(j2.windows.week.calibrated, false, 'week uncalibrated with stale anchor');
+}
+
+// ---- anchor source mismatch (e.g. V1 anchor read after V2 migration) ----
+{
+  const mismatched = {
+    month: { periodStart: new Date(mp.start).toISOString(), usage: 9000, dbCount: 0, source: 'v2', at: new Date(now).toISOString(), note: 'wrong source' },
+  };
+  fs.writeFileSync(anchorsPath, JSON.stringify(mismatched));
+  const j3 = calcSR(db, anchorsPath);
+  eq(j3.windows.month.usedReq, exp.month, 'source-mismatched anchor ignored, DB truth used');
+  eq(j3.windows.month.calibrated, false, 'month uncalibrated on source mismatch');
 }
 
 // ---- alerts: only CALIBRATED windows may alert; uncalibrated pct is unreliable ----

@@ -1,4 +1,10 @@
-import type { Plugin } from "@opencode-ai/plugin"
+// Dual V1/V2 plugin: V1 calls `server()`, V2 calls `setup(ctx)`.
+// V2 renamed the bash tool to `shell`.
+type GuardInput = { tool: string }
+type GuardArgs = Record<string, unknown> | undefined
+type ToolHookContext = {
+	tool: { hook(name: "execute.before", cb: (event: { tool: string; input?: GuardArgs }) => void): Promise<unknown> }
+}
 import { execSync } from "node:child_process"
 import { statSync } from "node:fs"
 import { dirname } from "node:path"
@@ -120,33 +126,41 @@ function targetPath(chain: string): string {
 	return process.platform === "darwin" ? "/System/Volumes/Data" : "/"
 }
 
-export const DiskGuard: Plugin = async () => ({
-	"tool.execute.before": async (input, output) => {
-		if (input.tool !== "bash") return
-		if (process.env.OPENCODE_DISK_GUARD === "off") return
+function block(input: GuardInput, args: GuardArgs): void {
+	if (input.tool !== "bash" && input.tool !== "shell") return
+	if (process.env.OPENCODE_DISK_GUARD === "off") return
 
-		const command = String(output.args?.command ?? "")
-		const heavy = heavySegment(command)
-		if (!heavy) return
+	const command = String(args?.command ?? "")
+	const heavy = heavySegment(command)
+	if (!heavy) return
 
-		let minFreeGiB = Number.parseInt(process.env.OPENCODE_MIN_FREE_GB ?? "10", 10)
-		if (!Number.isFinite(minFreeGiB) || minFreeGiB <= 0) minFreeGiB = 10
+	let minFreeGiB = Number.parseInt(process.env.OPENCODE_MIN_FREE_GB ?? "10", 10)
+	if (!Number.isFinite(minFreeGiB) || minFreeGiB <= 0) minFreeGiB = 10
 
-		let freeK: number
-		try {
-			freeK = freeKiB(targetPath(command))
-		} catch {
-			return // probe failed — fail open rather than block everything
-		}
+	let freeK: number
+	try {
+		freeK = freeKiB(targetPath(command))
+	} catch {
+		return // probe failed — fail open rather than block everything
+	}
 
-		const freeGiB = freeK / 1024 / 1024
-		if (freeGiB >= minFreeGiB) return
+	const freeGiB = freeK / 1024 / 1024
+	if (freeGiB >= minFreeGiB) return
 
-		throw new Error(
-			`[disk-guard] Refusing "${heavy.slice(0, 120)}" — only ${freeGiB.toFixed(1)}GiB free on the target volume, ` +
-				`need ≥${minFreeGiB}GiB for downloads/extracts to finish safely. ` +
-				`Run a cleanup pass first (check purgeable space, du -sh /tmp ~/Library/Caches ~/.cache, rm stale toolchains) and retry. ` +
-				`One-off bypass: OPENCODE_DISK_GUARD=off.`,
-		)
+	throw new Error(
+		`[disk-guard] Refusing "${heavy.slice(0, 120)}" — only ${freeGiB.toFixed(1)}GiB free on the target volume, ` +
+			`need ≥${minFreeGiB}GiB for downloads/extracts to finish safely. ` +
+			`Run a cleanup pass first (check purgeable space, du -sh /tmp ~/Library/Caches ~/.cache, rm stale toolchains) and retry. ` +
+			`One-off bypass: OPENCODE_DISK_GUARD=off.`,
+	)
+}
+
+export default {
+	id: "disk-guard",
+	server: async () => ({
+		"tool.execute.before": async (input: GuardInput, output: { args?: GuardArgs }) => block(input, output.args),
+	}),
+	async setup(ctx: ToolHookContext) {
+		await ctx.tool.hook("execute.before", (event) => block({ tool: event.tool }, event.input))
 	},
-})
+}

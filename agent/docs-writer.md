@@ -3,13 +3,22 @@ description: Writes and updates documentation only — README, docs/, AGENTS.md,
 mode: all
 model: opencode-go/muse-spark-1.3-contributor
 steps: 15
-permission:
-  edit:
-    "*": "deny"
-    "docs/**": "allow"
-    "*.md": "allow"
-    "**/*.md": "allow"
-  task: deny
+permissions:
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: "docs/**"
+    effect: allow
+  - action: edit
+    resource: "*.md"
+    effect: allow
+  - action: edit
+    resource: "**/*.md"
+    effect: allow
+  - action: subagent
+    resource: "*"
+    effect: deny
 ---
 
 You are a documentation writer. You may only write Markdown files and files under `docs/`. Never modify source code — if docs reveal a code bug, report it and stop.

@@ -16,6 +16,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const HOME = os.homedir();
 const SKILL_SCRIPTS = path.join(HOME, ".config/opencode/skills/model-benchmarks/scripts");
@@ -108,9 +112,8 @@ function alertsFor(windows) {
   return a;
 }
 
-export default async (input) => {
-  const { $, client } = input;
-
+// Core turn handler shared by the V1 `event` hook and the V2 event subscription.
+async function createTracker({ shell, toast }) {
   async function fullRecompute() {
     // Primary: import sr-calc in-process (no `node` binary or shell quoting
     // needed — the plugin host itself runs JS). Fallback: the old CLI spawn.
@@ -121,7 +124,12 @@ export default async (input) => {
     } catch (e) {
       debug(`recompute import failed: ${(e && e.message) || e}; trying CLI`);
       try {
-        await $`node ${SR_CALC} --db ${DB} --json ${LIVE}`.quiet();
+        if (shell) {
+          await shell`node ${SR_CALC} --db ${DB} --json ${LIVE}`.quiet();
+        } else {
+          // V2 has no Bun `$` helper; run the CLI without a shell.
+          await execFileAsync("node", [SR_CALC, "--db", DB, "--json", LIVE]);
+        }
         state = readLive();
       } catch (e2) {
         debug(`recompute CLI failed: ${(e2 && e2.message) || e2}`);
@@ -148,76 +156,134 @@ export default async (input) => {
     return readLive();
   }
 
-  async function toast(title, message) {
+  // `model` is "providerID/modelID". V1 passes the completed assistant
+  // message; V2 passes one completed step (same one-LLM-call granularity as
+  // a V1 assistant message — V2's `session.step.ended` carries cost).
+  async function onTurn({ model, cost }) {
     try {
-      await client.tui.showToast({ title, message, variant: "warning" });
+      const turnCost = Number(cost) || 0;
+
+      let state = readLive();
+      let recomputed = false;
+      if (!state || Date.now() - lastFull > RECOMPUTE_MS) {
+        const before = lastFull;
+        state = await fullRecompute();
+        recomputed = state != null && lastFull !== before;
+        if (!state) return;
+      }
+      // Incremental patch: this turn counts against every account window
+      // until the next full recompute corrects for period boundaries.
+      // Skipped when a recompute just ran in this event: the DB scan may
+      // already include this turn, and adding it again double-counts. Worst
+      // case the turn lands in the next recompute (≤60s), bounded to one
+      // turn instead of unbounded drift.
+      if (!recomputed) {
+        for (const w of Object.values(state.windows || {})) {
+          if (w.usedReq == null) continue;
+          w.usedReq = w.usedReq + 1;
+          if (w.usedUsd != null) w.usedUsd = +(w.usedUsd + turnCost).toFixed(4);
+          if (w.capReq && w.allowedReq != null) {
+            w.allowedReq = Math.max(0, w.allowedReq - 1);
+            w.pct = +(100 * (w.capReq - w.allowedReq) / w.capReq).toFixed(1);
+            w.remainingPct = Math.max(0, +(100 - w.pct).toFixed(1));
+          }
+        }
+      }
+      state.lastTurn = {
+        at: new Date().toISOString(),
+        model,
+        usd: +turnCost.toFixed(4),
+        sr: Math.round(turnCost / SR),
+      };
+      // NOTE: generated_at stays at the last full recompute (set by sr-calc);
+      // incremental touches record patched_at so readers can see drift risk.
+      state.patched_at = new Date().toISOString();
+      const alerts = alertsFor(state.windows);
+      if (turnCost >= TURN_ALERT_USD) alerts.push("turn_heavy");
+      state.alerts = alerts;
+      writeLive(state);
+
+      for (const a of alerts) {
+        if (fired.has(a)) continue;
+        fired.add(a);
+        if (a === "turn_heavy") {
+          await toast("Heavy turn", `${state.lastTurn.model} spent $${state.lastTurn.usd} in one turn.`);
+        } else if (a.endsWith("_90") || a.endsWith("_70")) {
+          const w = a.split("_")[0];
+          const win = state.windows[w];
+          await toast("Go cap pressure", `${w === "week" ? "Weekly" : "Monthly"} window ${Math.round(win.pct)}% used — ${Math.round(win.remainingPct ?? 0)}% left.`);
+        }
+      }
     } catch {
-      /* Desktop / headless: menu-bar companion covers alerting */
+      /* never break the session on cost bookkeeping */
     }
   }
 
   return {
-    event: async ({ event }) => {
-      try {
-        if (event.type !== "message.updated") return;
-        const info = event.properties?.info;
-        if (!info || info.role !== "assistant" || !info.time?.completed) return;
-        const turnCost = Number(info.cost) || 0;
-
-        let state = readLive();
-        let recomputed = false;
-        if (!state || Date.now() - lastFull > RECOMPUTE_MS) {
-          const before = lastFull;
-          state = await fullRecompute();
-          recomputed = state != null && lastFull !== before;
-          if (!state) return;
-        }
-        // Incremental patch: this turn counts against every account window
-        // until the next full recompute corrects for period boundaries.
-        // Skipped when a recompute just ran in this event: the DB scan may
-        // already include this turn, and adding it again double-counts. Worst
-        // case the turn lands in the next recompute (≤60s), bounded to one
-        // turn instead of unbounded drift.
-        if (!recomputed) {
-          for (const w of Object.values(state.windows || {})) {
-            if (w.usedReq == null) continue;
-            w.usedReq = w.usedReq + 1;
-            if (w.usedUsd != null) w.usedUsd = +(w.usedUsd + turnCost).toFixed(4);
-            if (w.capReq && w.allowedReq != null) {
-              w.allowedReq = Math.max(0, w.allowedReq - 1);
-              w.pct = +(100 * (w.capReq - w.allowedReq) / w.capReq).toFixed(1);
-              w.remainingPct = Math.max(0, +(100 - w.pct).toFixed(1));
-            }
-          }
-        }
-        state.lastTurn = {
-          at: new Date().toISOString(),
-          model: `${info.providerID}/${info.modelID}`,
-          usd: +turnCost.toFixed(4),
-          sr: Math.round(turnCost / SR),
-        };
-        // NOTE: generated_at stays at the last full recompute (set by sr-calc);
-        // incremental touches record patched_at so readers can see drift risk.
-        state.patched_at = new Date().toISOString();
-        const alerts = alertsFor(state.windows);
-        if (turnCost >= TURN_ALERT_USD) alerts.push("turn_heavy");
-        state.alerts = alerts;
-        writeLive(state);
-
-        for (const a of alerts) {
-          if (fired.has(a)) continue;
-          fired.add(a);
-          if (a === "turn_heavy") {
-            await toast("Heavy turn", `${state.lastTurn.model} spent $${state.lastTurn.usd} in one turn.`);
-          } else if (a.endsWith("_90") || a.endsWith("_70")) {
-            const w = a.split("_")[0];
-            const win = state.windows[w];
-            await toast("Go cap pressure", `${w === "week" ? "Weekly" : "Monthly"} window ${Math.round(win.pct)}% used — ${Math.round(win.remainingPct ?? 0)}% left.`);
-          }
-        }
-      } catch {
-        /* never break the session on cost bookkeeping */
-      }
+    onTurn,
+    async onAssistantMessage(info) {
+      if (!info || info.role !== "assistant" || !info.time?.completed) return;
+      await onTurn({ model: `${info.providerID}/${info.modelID}`, cost: info.cost });
     },
   };
+}
+
+export default {
+  id: "cost-tracker",
+  server: async (input) => {
+    const tracker = await createTracker({
+      shell: input?.$,
+      toast: async (title, message) => {
+        try {
+          await input?.client?.tui?.showToast({ title, message, variant: "warning" });
+        } catch {
+          /* Desktop / headless: menu-bar companion covers alerting */
+        }
+      },
+    });
+
+    return {
+      event: async ({ event }) => {
+        if (event?.type !== "message.updated") return;
+        await tracker.onAssistantMessage(event.properties?.info);
+      },
+    };
+  },
+  async setup(ctx) {
+    const tracker = await createTracker({
+      shell: null,
+      // V2 server plugins have no TUI toast API; the menu-bar companion and
+      // the TUI status plugin consume sr-live.json. Log for the server log.
+      toast: async (title, message) => debug(`${title}: ${message}`),
+    });
+
+    const controller = new AbortController();
+    // V2 has no `message.updated`; a completed step is the cost-bearing unit
+    // (`session.step.ended` carries cost, `session.step.started` carries the
+    // model). Steps map 1:1 to V1 assistant messages, so request counts keep
+    // the same meaning.
+    const models = new Map(); // assistantMessageID -> "providerID/modelID"
+    void (async () => {
+      for await (const event of ctx.event.subscribe({
+        types: ["session.step.started", "session.step.ended", "session.step.failed"],
+        signal: controller.signal,
+      })) {
+        const data = event.data ?? event.properties ?? {};
+        const id = data.assistantMessageID;
+        if (event.type === "session.step.started") {
+          if (id && data.model?.providerID) models.set(id, `${data.model.providerID}/${data.model.id}`);
+          continue;
+        }
+        const model = (id && models.get(id))
+          || (data.model?.providerID ? `${data.model.providerID}/${data.model.id}` : "unknown");
+        if (id) models.delete(id);
+        if (event.type === "session.step.ended") {
+          await tracker.onTurn({ model, cost: data.cost });
+        }
+      }
+    })().catch((error) => {
+      if (!controller.signal.aborted) debug(`event subscription failed: ${(error && error.message) || error}`);
+    });
+    return () => controller.abort();
+  },
 };

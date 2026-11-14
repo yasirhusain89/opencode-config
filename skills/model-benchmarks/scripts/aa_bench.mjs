@@ -396,12 +396,15 @@ function readAgentModels(configDir) {
     const p = path.join(configDir, cfg);
     if (!fs.existsSync(p)) continue;
     const body = fs.readFileSync(p, 'utf8');
+    // strip full-line // comments: they may contain {"model": ...} examples
+    const code = body.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
     for (const key of ['"model"', '"small_model"']) {
-      // strip full-line // comments: they may contain {"model": ...} examples
-      const code = body.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
       const mm = code.match(new RegExp(key + '\\s*:\\s*"([^"]+)"'));
       if (mm) agents.push({ agent: `(config ${key.replace(/"/g, '')})`, file: p, model: mm[1] });
     }
+    // V2 native shape: the title pin lives at agents.title.model (was "small_model").
+    const tmm = code.match(/"title"\s*:\s*\{[^}]*"model"\s*:\s*"([^"]+)"/);
+    if (tmm) agents.push({ agent: '(config agents.title)', file: p, model: tmm[1] });
   }
   return agents;
 }

@@ -1,9 +1,12 @@
 // Quota handoff for legacy and modern runners. A legacy retry captures its
 // model before backoff: changing session metadata cannot switch that request.
-// Instead, arm ONE fallback and apply it through the supported chat.message
-// hook when this session is prompted again (including a resumed Task).
-// No unauthenticated HTTP, automatic aborts, duplicate prompts, or retry chains.
+// Instead, arm ONE fallback and apply it when this session is prompted again
+// (including a resumed Task). No unauthenticated HTTP, automatic aborts,
+// duplicate prompts, or retry chains.
 // State is process-local; restart clears it. OPENCODE_MODEL_FALLBACK=off disables.
+//
+// Dual V1/V2 plugin: V1 receives chat.params/chat.message/event hooks; V2 uses
+// session.hook("context"), the retry hook, and experimental.model.resolve.
 const GO_FALLBACK = {
   "opencode-go/glm-5.3-flash": "opencode-go/minimax-m3.1-flash",
   "opencode-go/minimax-m3.1-flash": "opencode-go/glm-5.3-flash",
@@ -31,20 +34,29 @@ function modelRef(model) {
   return model?.providerID && id ? `${model.providerID}/${id}` : undefined;
 }
 
+function refFromV2(model) {
+  return model?.providerID && model?.id ? `${model.providerID}/${model.id}` : undefined;
+}
+
 function splitModel(ref) {
   const slash = ref.indexOf("/");
   return { providerID: ref.slice(0, slash), modelID: ref.slice(slash + 1) };
 }
 
-export default async ({ client }) => {
+// Shared state machine. Both adapters feed the same session map so behavior
+// stays identical across V1 and V2.
+function createEngine({ notice, enabled }) {
   const sessions = new Map();
-  const enabled = (process.env.OPENCODE_MODEL_FALLBACK || "").toLowerCase() !== "off";
 
-  async function notice(sessionID, message) {
-    // Session IDs in logs make child-session handoffs diagnosable without
-    // recording error bodies, prompts, or credentials.
-    try { await client.app.log({ body: { service: "model-fallback", level: "warn", message, extra: { sessionID } } }); } catch {}
-    try { await client.tui.showToast({ body: { title: "Model quota handoff", message, variant: "warning" } }); } catch {}
+  function track(sessionID, agent, current) {
+    if (!sessionID || !current) return;
+    const state = sessions.get(sessionID);
+    if (state) {
+      state.current = current;
+      if (!state.handled) state.agent = agent;
+    } else {
+      sessions.set(sessionID, { current, agent, handled: false });
+    }
   }
 
   async function arm(sessionID, error) {
@@ -74,54 +86,142 @@ export default async ({ client }) => {
     await notice(sessionID, `Fallback ready: ${from} → ${state.to} on this session's next prompt. Stop the current retry if needed, then resume${LOW_STAKES.has(state.agent) ? "" : "; Go quota remains shared"}.`);
   }
 
+  // Next-request resolution: explicit user model/agent changes win. Returns
+  // the armed fallback ref, or undefined when the request must proceed as-is.
+  function resolve(sessionID, agent, current) {
+    const state = sessions.get(sessionID);
+    if (!state) return undefined;
+    if (state.exhausted) {
+      state.to = undefined;
+      return undefined;
+    }
+    if (!state.to) return undefined;
+    if (agent !== state.agent) {
+      state.to = undefined;
+      return undefined;
+    }
+    if (current !== state.from && current !== state.to) {
+      state.to = undefined;
+      return undefined;
+    }
+    state.current = state.to;
+    return state.to;
+  }
+
+  function forget(sessionID) {
+    if (sessionID) sessions.delete(sessionID);
+  }
+
+  return { sessions, track, arm, resolve, forget };
+}
+
+const createFallback = async ({ client }) => {
+  const enabled = (process.env.OPENCODE_MODEL_FALLBACK || "").toLowerCase() !== "off";
+
+  async function notice(sessionID, message) {
+    // Session IDs in logs make child-session handoffs diagnosable without
+    // recording error bodies, prompts, or credentials.
+    try { await client.app.log({ body: { service: "model-fallback", level: "warn", message, extra: { sessionID } } }); } catch {}
+    try { await client.tui.showToast({ body: { title: "Model quota handoff", message, variant: "warning" } }); } catch {}
+  }
+
+  const engine = createEngine({ notice, enabled });
+
   return {
     "chat.params": async (input) => {
       // Title/summary calls share session IDs but must not overwrite the
       // task's routing/privacy identity.
       if (["title", "summary", "compaction"].includes(input?.agent)) return;
-      const current = modelRef(input?.model);
-      if (!input?.sessionID || !current) return;
-      const state = sessions.get(input.sessionID);
-      if (state) {
-        state.current = current;
-        if (!state.handled) state.agent = input.agent;
-      } else {
-        sessions.set(input.sessionID, { current, agent: input.agent, handled: false });
-      }
+      engine.track(input?.sessionID, input?.agent, modelRef(input?.model));
     },
 
     "chat.message": async (input, output) => {
-      const state = sessions.get(input?.sessionID);
       const message = output?.message;
-      if (!enabled || !state?.to || !message) return;
-      if (state.exhausted) {
-        state.to = undefined;
-        return;
-      }
+      if (!enabled || !message) return;
       const requested = modelRef(message.model);
-      // Explicit user model changes and agent changes always win. In
-      // particular, a brainstorm -> security switch must not reuse NVIDIA.
-      if (message.agent !== state.agent || (requested !== state.from && requested !== state.to)) {
-        state.to = undefined;
-        return;
-      }
-      message.model = splitModel(state.to); // drops provider-specific variants
-      state.current = state.to;
+      const target = engine.resolve(input?.sessionID, message.agent, requested);
+      if (target) message.model = splitModel(target); // drops provider-specific variants
     },
 
     event: async ({ event }) => {
       try {
         const props = event?.properties ?? {};
         if (event?.type === "session.deleted") {
-          sessions.delete(props.info?.id ?? props.sessionID);
+          engine.forget(props.info?.id ?? props.sessionID);
         } else if (event?.type === "session.status" && props.status?.type === "retry") {
-          await arm(props.sessionID, props.status);
+          await engine.arm(props.sessionID, props.status);
         } else if (["session.next.retried", "session.next.step.failed", "session.error"].includes(event?.type)) {
-          await arm(props.sessionID, props.error);
+          await engine.arm(props.sessionID, props.error);
         }
       } catch {
         // Observability/routing bookkeeping must never break an active turn.
       }
     },
   };
+};
+
+export default {
+  id: "model-fallback",
+  server: createFallback,
+  async setup(ctx) {
+    const enabled = (process.env.OPENCODE_MODEL_FALLBACK || "").toLowerCase() !== "off";
+    const engine = createEngine({
+      enabled,
+      notice: async (sessionID, message) => {
+        try {
+          console.warn(`[model-fallback] ${message} (session ${sessionID})`);
+        } catch {}
+        try {
+          await ctx.app?.log?.({ level: "warn", service: "model-fallback", message, extra: { sessionID } });
+        } catch {}
+      },
+    });
+
+    // Track the model/agent actually used for each primary request. These
+    // request kinds have separate hooks and must not overwrite routing state.
+    await ctx.session.hook("context", (event) => {
+      engine.track(event.sessionID, event.agent, refFromV2(event.model));
+    });
+
+    // Retry classification is the V2 equivalent of session.next.retried.
+    try {
+      await ctx.session.hook("retry", async (event) => {
+        const { type, message, status } = event.error ?? {};
+        await engine.arm(event.sessionID, { message: [message, type].filter(Boolean).join(" "), statusCode: status });
+      });
+    } catch {
+      // Older builds may not expose the retry hook; the event stream below
+      // still reports terminal errors.
+    }
+
+    const controller = new AbortController();
+    void (async () => {
+      for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+        const data = event?.data ?? event?.properties ?? {};
+        if (event?.type === "session.error") await engine.arm(data.sessionID, data.error);
+      }
+    })().catch(() => {});
+
+    // Apply the armed handoff to the next primary model request. This is the
+    // V2 replacement for rewriting chat.message.model: no persistence and no
+    // effect on title/summary/compaction requests.
+    try {
+      await ctx.session.hook("experimental.model.resolve", (event) => {
+        if (event.kind !== "primary") return;
+        const target = engine.resolve(event.sessionID, event.agent, refFromV2(event.model));
+        if (target) event.model = splitModel(target);
+      });
+    } catch {
+      // Fallback: switch the session model at the next prompt admission.
+      await ctx.session.hook("prompt", async (event) => {
+        const target = engine.resolve(event.sessionID, undefined, undefined);
+        if (target) {
+          const { providerID, modelID } = splitModel(target);
+          await ctx.session.switchModel({ sessionID: event.sessionID, model: { providerID, id: modelID } });
+        }
+      });
+    }
+
+    return () => controller.abort();
+  },
 };

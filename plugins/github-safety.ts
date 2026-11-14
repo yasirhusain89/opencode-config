@@ -1,4 +1,10 @@
-import type { Plugin } from "@opencode-ai/plugin"
+// Dual V1/V2 plugin: V1 calls `server()`, V2 calls `setup(ctx)`.
+// V2 renamed the bash tool to `shell`.
+type GuardInput = { tool: string }
+type GuardArgs = Record<string, unknown> | undefined
+type ToolHookContext = {
+	tool: { hook(name: "execute.before", cb: (event: { tool: string; input?: GuardArgs }) => void): Promise<unknown> }
+}
 
 const GITHUB_DESTRUCTIVE = [
 	/git\s+push\s+.*--force/,
@@ -19,23 +25,31 @@ const GITHUB_DESTRUCTIVE = [
 
 const CI_BRAKE_PATTERN = /gh\s+variable\s+set\s+CI_MODE\s+.*\boff\b/
 
-export const GithubSafety: Plugin = async () => ({
-	"tool.execute.before": async (input, output) => {
-		if (input.tool !== "bash") return
-		const command = String(output.args?.command ?? "")
+function block(input: GuardInput, args: GuardArgs): void {
+	if (input.tool !== "bash" && input.tool !== "shell") return
+	const command = String(args?.command ?? "")
 
-		for (const re of GITHUB_DESTRUCTIVE) {
-			if (re.test(command)) {
-				throw new Error(
-					`[github-safety] Blocked destructive git/GitHub command matching "${re.source}". Confirm with the user, run it manually, or scope it to a non-main branch.`,
-				)
-			}
-		}
-
-		if (CI_BRAKE_PATTERN.test(command)) {
+	for (const re of GITHUB_DESTRUCTIVE) {
+		if (re.test(command)) {
 			throw new Error(
-				"[github-safety] CI_MODE=off silently disables CI. Per repo convention: set CI_MODE=quick instead, and ALWAYS delete CI_MODE when done (gh variable delete CI_MODE). Confirm with the user before using the off brake.",
+				`[github-safety] Blocked destructive git/GitHub command matching "${re.source}". Confirm with the user, run it manually, or scope it to a non-main branch.`,
 			)
 		}
+	}
+
+	if (CI_BRAKE_PATTERN.test(command)) {
+		throw new Error(
+			"[github-safety] CI_MODE=off silently disables CI. Per repo convention: set CI_MODE=quick instead, and ALWAYS delete CI_MODE when done (gh variable delete CI_MODE). Confirm with the user before using the off brake.",
+		)
+	}
+}
+
+export default {
+	id: "github-safety",
+	server: async () => ({
+		"tool.execute.before": async (input: GuardInput, output: { args?: GuardArgs }) => block(input, output.args),
+	}),
+	async setup(ctx: ToolHookContext) {
+		await ctx.tool.hook("execute.before", (event) => block({ tool: event.tool }, event.input))
 	},
-})
+}

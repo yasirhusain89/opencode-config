@@ -106,21 +106,67 @@ function writeAnchors(p, anchors) {
   fs.renameSync(tmp, p);
 }
 
+// V2 moved message storage to `session_message` (type='assistant',
+// data.model.{providerID,id}); V1 used `message` (role='assistant',
+// data.providerID/modelID). A migrated DB has BOTH (the migration copies the
+// old rows), so exactly one source must be queried or history double-counts.
+// The table only exists once V2 has opened the DB, so its presence is the
+// version probe. `id` stamps which source an anchor's dbCount was measured
+// against — request deltas are only comparable within one source (the V2
+// migration copies rows but not 1:1: ~45 fewer rows in the Oct 19–26 window,
+// plus $3.93 less cost over the month, so a V1 dbCount must never be mixed
+// with a V2 dbCount).
+function msgSource(dbPath) {
+  try {
+    const has = q(dbPath, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session_message';`);
+    if (has.length && +has[0][0] > 0) {
+      const t = q(dbPath, `SELECT COUNT(*) FROM session_message WHERE type='assistant';`);
+      if (t.length && +t[0][0] > 0) {
+        return {
+          id: 'v2',
+          from: `session_message WHERE type='assistant'`,
+          provider: `COALESCE(json_extract(data,'$.model.providerID'),'?')`,
+          model: `COALESCE(json_extract(data,'$.model.id'),'?')`,
+        };
+      }
+      // Table exists but holds no assistant rows (e.g. fresh V2 DB) — still
+      // v2-sourced so anchors stamp the right source; counts read 0.
+      return {
+        id: 'v2',
+        from: `session_message WHERE type='assistant'`,
+        provider: `COALESCE(json_extract(data,'$.model.providerID'),'?')`,
+        model: `COALESCE(json_extract(data,'$.model.id'),'?')`,
+      };
+    }
+  } catch {
+    // Unreadable DB path — fall through to the V1 shape; the query will
+    // surface the real error.
+  }
+  return {
+    id: 'v1',
+    from: `message WHERE json_extract(data,'$.role')='assistant'`,
+    provider: `COALESCE(json_extract(data,'$.providerID'),'?')`,
+    model: `COALESCE(json_extract(data,'$.modelID'),'?')`,
+  };
+}
+
 function dbCountSince(dbPath, startMs) {
-  const r = q(dbPath, `SELECT COUNT(*) FROM message WHERE json_extract(data,'$.role')='assistant' AND time_created>=${startMs};`);
+  const src = msgSource(dbPath);
+  const r = q(dbPath, `SELECT COUNT(*) FROM ${src.from} AND time_created>=${startMs};`);
   return r.length ? (+r[0][0] || 0) : 0;
 }
 
 export function calcSR(dbPath = DEFAULT_DB, anchorsPath = DEFAULT_ANCHORS) {
   const now = Date.now();
   const mp = monthPeriod(now), wp = weekPeriod(now), tRoll = now - ROLL_MS;
+  const src = msgSource(dbPath);
   const cost = (t) => `COALESCE(SUM(CASE WHEN time_created>=${t} THEN COALESCE(json_extract(data,'$.cost'),0) ELSE 0 END),0)`;
   const msgs = (t) => `SUM(CASE WHEN time_created>=${t} THEN 1 ELSE 0 END)`;
   const rows = q(dbPath,
-    `SELECT COALESCE(json_extract(data,'$.providerID'),'?'), COALESCE(json_extract(data,'$.modelID'),'?'), COUNT(*), ` +
+    `SELECT ${src.provider}, ${src.model}, COUNT(*), ` +
     `${cost(mp.start)}, ${msgs(mp.start)}, ${cost(wp.start)}, ${msgs(wp.start)}, ${cost(tRoll)}, ${msgs(tRoll)}, ` +
     `MAX(time_created), MIN(CASE WHEN time_created>=${tRoll} THEN time_created END) ` +
-    `FROM message WHERE json_extract(data,'$.role')='assistant' AND time_created>=${mp.start} GROUP BY 1,2;`);
+    `FROM ${src.from} AND time_created>=${mp.start} GROUP BY 1,2;`);
   const perModel = rows.map((r) => {
     const provider = r[0], model = r[1];
     const n = { month: +r[4] || 0, week: +r[6] || 0, rolling: +r[8] || 0 };
@@ -137,12 +183,16 @@ export function calcSR(dbPath = DEFAULT_DB, anchorsPath = DEFAULT_ANCHORS) {
   const dbCounts = { month: tot('month'), week: tot('week'), rolling: tot('rolling') };
   // Oldest request inside the trailing window: its expiry is the countdown.
   const rollOldest = Math.min(...rows.map((r) => +r[10] || Infinity).filter((x) => Number.isFinite(x)), Infinity);
-  // Anchor math: console truth at sighting + exact DB deltas since.
+  // Anchor math: console truth at sighting + exact DB deltas since. The
+  // delta is only valid when the anchor's dbCount was measured against the
+  // same message source (v1 vs v2) — a source mismatch (e.g. a pre-migration
+  // V1 anchor read after the V2 migration copied the history) silently
+  // shifts usage, so it falls back to uncalibrated DB truth instead.
   const anchors = readAnchors(anchorsPath);
   const applyAnchor = (scope, periodStart, cap) => {
     const a = anchors[scope];
     const dbCount = dbCounts[scope];
-    if (a && a.periodStart === new Date(periodStart).toISOString() && a.dbCount != null && dbCount >= a.dbCount) {
+    if (a && a.source === src.id && a.periodStart === new Date(periodStart).toISOString() && a.dbCount != null && dbCount >= a.dbCount) {
       const usage = Math.max(0, Math.round(a.usage + (dbCount - a.dbCount)));
       return { usage, calibrated: true, note: a.note || null };
     }
@@ -193,9 +243,9 @@ export function calcSR(dbPath = DEFAULT_DB, anchorsPath = DEFAULT_ANCHORS) {
     byDay.set(d, { date: d, goMsgs: 0, otherMsgs: 0, goUsd: 0, otherUsd: 0 });
   }
   for (const r of q(dbPath,
-    `SELECT strftime('%Y-%m-%d', time_created/1000, 'unixepoch'), COALESCE(json_extract(data,'$.providerID'),'?'), COUNT(*), ` +
+    `SELECT strftime('%Y-%m-%d', time_created/1000, 'unixepoch'), ${src.provider}, COUNT(*), ` +
     `COALESCE(SUM(COALESCE(json_extract(data,'$.cost'),0)),0) ` +
-    `FROM message WHERE json_extract(data,'$.role')='assistant' AND time_created>=${now - 30 * DAY} GROUP BY 1,2;`)) {
+    `FROM ${src.from} AND time_created>=${now - 30 * DAY} GROUP BY 1,2;`)) {
     const e = byDay.get(r[0]);
     if (!e) continue;
     const n = +r[2] || 0, usd = +r[3] || 0;
@@ -245,6 +295,7 @@ if (invoked) {
     anchors[scope] = {
       periodStart: new Date(period.start).toISOString(),
       usage, dbCount: dbCountSince(db, period.start),
+      source: msgSource(db).id,
       at: new Date(now).toISOString(), note: arg('--note', null),
     };
     writeAnchors(ap, anchors);
