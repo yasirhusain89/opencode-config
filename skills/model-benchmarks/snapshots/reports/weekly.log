@@ -34,3 +34,319 @@ catalog fresh (/Users/yasihusain/.config/opencode/skills/model-benchmarks/snapsh
 catalog fresh (/Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/or-catalog-2026-10-18.json, 3d old) — nothing to do
 === weekly pull 2026-10-26 06:00:02 ===
 catalog fresh (/Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/or-catalog-2026-10-18.json, 4d old) — nothing to do
+=== weekly pull 2026-11-02 06:00:03 ===
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/or-catalog-2026-11-02.json (452 models)
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/reports/2026-11-02-value.md
+opencode: 16 models
+nvidia: 37 models
+ollama: 1 models
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/access-2026-11-02.json
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/dashboard-2026-11-02.json
+wrote routing-2026-11-02.json
+wrote Users/yasihusain/.config/opencode/skills/model-benchmarks/data.js (dashboard-2026-11-02.json, 2026-11-02; 17 sections, 286 rows)
+expressiveness: 10 models
+organization: 10 models
+informativeness: 10 models
+transparency: 10 models
+warmth: 10 models
+conviction: 10 models
+imagination: 10 models
+slop: 10 models
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/personality-2026-11-02.json
+aa index version: v2.0
+v2.0
+VERSION DRIFT: expected v1.5, live page shows v2.0 — re-pull coding snapshot + update guide/SKILL
+AA INDEX VERSION CHANGED (was v1.5)
+ok   parseArgs slugs
+ok   parseArgs trailing --out
+ok   parseArgs unknown flag
+ok   parseArgs values
+ok   validate check needs slug
+ok   validate coding rejects slugs
+ok   validate coding rejects --config
+ok   validate unknown command
+ok   validate inventory clean
+ok   parseEngineering anchor miss
+ok   parseEngineering CTA miss
+ok   parseEngineering rows
+ok   parseModelPage single-line
+ok   parseModelPage wrapped
+ok   parseModelPage miss
+ok   slugCandidates strips date pin
+ok   slugCandidates strips contributor-free
+ok   slugCandidates plain
+ok   matchEng exact
+ok   matchEng fuzzy prefers 0813
+ok   matchEng flash not v41
+ok   matchEng miss
+ok   parseNameValueSection time values
+ok   parseAgentChart SWE-2 fold
+ok   parseAgentChart 2026-10 layout (N-of-M anchor, Mirror, Devin two-model)
+ok   parsePersonality pairs
+ok   parsePersonality anchor miss
+ok   parsePersonality length mismatch
+ok   parsePersonality needs ints
+ok   cli unknown command exits 2
+ok   cli unknown command message
+ok   cli check without slugs exits 2
+ok   cli trailing --out exits 2
+ok   cli personality with slugs exits 2
+ok   cli coding with slugs exits 2
+ok   cli inventory exits 0 without playwright
+ok   cli inventory opencode lists models (free shelf churns — count not pinned)
+ok   cli inventory partial false
+
+ALL TESTS PASSED
+ok   dashboard exits 0, stderr: wrote /var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/dash-test-4PhPmA/dashboard-2026-10-18.json
+wrote routing-2026-10-18.json
+wrote /var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/dash-test-4PhPmA/
+ok   dashboard writes JSON
+ok   assistant messages counted (incl. 1 failed row)
+ok   input M summed
+ok   two dead pins found
+ok   dead pin is dead-model-free
+ok   pins listed
+ok   two 429s in window (17th excluded)
+ok   429 model attributed
+ok   go headroom family
+ok   go headroom msgs (family incl. -free + Go route)
+ok   go $/day + cap
+ok   standardReq covers the Go route
+ok   standardReq usedSR = $0.35/$0.01
+ok   standardReq allowedSR = $60/$0.01
+ok   standardReq runway = floor(60/0.35) own-mix msgs
+ok   free shelf halt detected (failed 09:30 row included)
+ok   peak hour
+ok   top route row
+ok   fail rate on top route (1/4 zero-token)
+ok   p50 latency on top route
+ok   metered Go $ from DB cost field
+ok   unmatched check pin flagged
+ok   routing primary comes from reviewer fixture, not a hardcoded Go pin
+ok   small-model bookkeeping has no session prompt handoff
+ok   routing primary live
+ok   unmapped primary has no invented fallback
+ok   unmapped fallback has no liveness claim
+ok   inline general pin included
+ok   inline explore pin included
+ok   top-level model is not confused with inline agent model
+ok   small_model pin included
+ok   JSONC comment decoys excluded
+ok   absent agents do not get stale fabricated routes
+ok   goTop computed from Go routes
+ok   pacing computed
+ok   snapshot age recorded
+ok   html fragment markers
+ok   fragment names dead pin
+ok   usage rows carry 8 cells (route/msgs/in/cached/equiv/fail/p50/role)
+ok   routing.json mirrors dashboard configured routes
+ok   handoff fixture exits 0
+ok   even a mapped Go small_model has no session prompt handoff
+ok   reviewer primary follows configured pin
+ok   reviewer availability fallback matches policy
+ok   reviewer handoff mode explicit
+ok   reviewer reason explains handoff and quota limits
+ok   researcher primary follows configured pin
+ok   researcher availability fallback matches policy
+ok   researcher handoff mode explicit
+ok   researcher reason explains handoff and quota limits
+ok   security-reviewer primary follows configured pin
+ok   security-reviewer availability fallback matches policy
+ok   security-reviewer handoff mode explicit
+ok   security-reviewer reason explains handoff and quota limits
+ok   legacy-haiku primary follows configured pin
+ok   legacy-haiku availability fallback matches policy
+ok   legacy-haiku handoff mode explicit
+ok   legacy-haiku reason explains handoff and quota limits
+ok   brainstorm primary follows configured pin
+ok   brainstorm availability fallback matches policy
+ok   brainstorm handoff mode explicit
+ok   brainstorm reason explains handoff and quota limits
+ok   docs-writer primary follows configured pin
+ok   docs-writer availability fallback matches policy
+ok   docs-writer handoff mode explicit
+ok   docs-writer reason explains handoff and quota limits
+ok   domain-companion primary follows configured pin
+ok   domain-companion availability fallback matches policy
+ok   domain-companion handoff mode explicit
+ok   domain-companion reason explains handoff and quota limits
+ok   build primary follows configured pin
+ok   build availability fallback matches policy
+ok   build handoff mode explicit
+ok   build reason explains handoff and quota limits
+ok   write-guide exits 0, stderr: wrote /var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/dash-test-4PhPmA/d2.json
+wrote routing-2026-10-18.json
+updated /var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/dash-test-4PhPmA/guide.html
+
+ok   guide tbodys replaced
+ok   generated marker present in guide
+ok   guide tags balanced <table>
+ok   guide tags balanced <tbody>
+ok   guide tags balanced <tr>
+ok   guide tags balanced <td>
+ok   ambiguous anchor aborts
+
+ALL DASHBOARD TESTS PASSED
+rendered 144872 chars; 23 tables, 309 rows
+check OK
+changelog updated: 1 finding(s)
+done: /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/reports/2026-11-02-value.md
+=== weekly pull 2026-11-09 06:00:01 ===
+catalog fresh (/Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/or-catalog-2026-11-02.json, 6d old) — nothing to do
+=== weekly pull 2026-11-13 19:13:48 ===
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/or-catalog-2026-11-13.json (471 models)
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/reports/2026-11-13-value.md
+opencode: 24 models
+nvidia: 37 models
+ollama: 1 models
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/access-2026-11-13.json
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/dashboard-2026-11-13.json
+wrote routing-2026-11-13.json
+wrote Users/yasihusain/.config/opencode/skills/model-benchmarks/data.js (dashboard-2026-11-13.json, 2026-11-13; 17 sections, 283 rows)
+expressiveness: 10 models
+organization: 10 models
+informativeness: 10 models
+transparency: 10 models
+warmth: 10 models
+conviction: 10 models
+imagination: 10 models
+slop: 10 models
+wrote /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/personality-2026-11-13.json
+aa index version: v2.1
+v2.1
+VERSION DRIFT: expected v1.5, live page shows v2.1 — re-pull coding snapshot + update guide/SKILL
+AA INDEX VERSION CHANGED (was v1.5)
+ok   parseArgs slugs
+ok   parseArgs trailing --out
+ok   parseArgs unknown flag
+ok   parseArgs values
+ok   validate check needs slug
+ok   validate coding rejects slugs
+ok   validate coding rejects --config
+ok   validate unknown command
+ok   validate inventory clean
+ok   parseEngineering anchor miss
+ok   parseEngineering CTA miss
+ok   parseEngineering rows
+ok   parseModelPage single-line
+ok   parseModelPage wrapped
+ok   parseModelPage miss
+ok   slugCandidates strips date pin
+ok   slugCandidates strips contributor-free
+ok   slugCandidates plain
+ok   matchEng exact
+ok   matchEng fuzzy prefers 0813
+ok   matchEng flash not v41
+ok   matchEng miss
+ok   parseNameValueSection time values
+ok   parseAgentChart SWE-2 fold
+ok   parseAgentChart 2026-10 layout (N-of-M anchor, Mirror, Devin two-model)
+ok   parsePersonality pairs
+ok   parsePersonality anchor miss
+ok   parsePersonality length mismatch
+ok   parsePersonality needs ints
+ok   cli unknown command exits 2
+ok   cli unknown command message
+ok   cli check without slugs exits 2
+ok   cli trailing --out exits 2
+ok   cli personality with slugs exits 2
+ok   cli coding with slugs exits 2
+ok   cli inventory exits 0 without playwright
+ok   cli inventory opencode lists models (free shelf churns — count not pinned)
+ok   cli inventory partial false
+
+ALL TESTS PASSED
+ok   dashboard exits 0, stderr: wrote /var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/dash-test-leVkr3/dashboard-2026-10-18.json
+wrote routing-2026-10-18.json
+wrote /var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/dash-test-leVkr3/
+ok   dashboard writes JSON
+ok   assistant messages counted (incl. 1 failed row)
+ok   input M summed
+ok   two dead pins found
+ok   dead pin is dead-model-free
+ok   pins listed
+ok   two 429s in window (17th excluded)
+ok   429 model attributed
+ok   go headroom family
+ok   go headroom msgs (family incl. -free + Go route)
+ok   go $/day + cap
+ok   standardReq covers the Go route
+ok   standardReq usedSR = $0.35/$0.01
+ok   standardReq allowedSR = $60/$0.01
+ok   standardReq runway = floor(60/0.35) own-mix msgs
+ok   free shelf halt detected (failed 09:30 row included)
+ok   peak hour
+ok   top route row
+ok   fail rate on top route (1/4 zero-token)
+ok   p50 latency on top route
+ok   metered Go $ from DB cost field
+ok   unmatched check pin flagged
+ok   routing primary comes from reviewer fixture, not a hardcoded Go pin
+ok   small-model bookkeeping has no session prompt handoff
+ok   routing primary live
+ok   unmapped primary has no invented fallback
+ok   unmapped fallback has no liveness claim
+ok   inline general pin included
+ok   inline explore pin included
+ok   top-level model is not confused with inline agent model
+ok   small_model pin included
+ok   JSONC comment decoys excluded
+ok   absent agents do not get stale fabricated routes
+ok   goTop computed from Go routes
+ok   pacing computed
+ok   snapshot age recorded
+ok   html fragment markers
+ok   fragment names dead pin
+ok   usage rows carry 8 cells (route/msgs/in/cached/equiv/fail/p50/role)
+ok   routing.json mirrors dashboard configured routes
+ok   handoff fixture exits 0
+ok   even a mapped Go small_model has no session prompt handoff
+ok   reviewer primary follows configured pin
+ok   reviewer availability fallback matches policy
+ok   reviewer handoff mode explicit
+ok   reviewer reason explains handoff and quota limits
+ok   researcher primary follows configured pin
+ok   researcher availability fallback matches policy
+ok   researcher handoff mode explicit
+ok   researcher reason explains handoff and quota limits
+ok   security-reviewer primary follows configured pin
+ok   security-reviewer availability fallback matches policy
+ok   security-reviewer handoff mode explicit
+ok   security-reviewer reason explains handoff and quota limits
+ok   legacy-haiku primary follows configured pin
+ok   legacy-haiku availability fallback matches policy
+ok   legacy-haiku handoff mode explicit
+ok   legacy-haiku reason explains handoff and quota limits
+ok   brainstorm primary follows configured pin
+ok   brainstorm availability fallback matches policy
+ok   brainstorm handoff mode explicit
+ok   brainstorm reason explains handoff and quota limits
+ok   docs-writer primary follows configured pin
+ok   docs-writer availability fallback matches policy
+ok   docs-writer handoff mode explicit
+ok   docs-writer reason explains handoff and quota limits
+ok   domain-companion primary follows configured pin
+ok   domain-companion availability fallback matches policy
+ok   domain-companion handoff mode explicit
+ok   domain-companion reason explains handoff and quota limits
+ok   build primary follows configured pin
+ok   build availability fallback matches policy
+ok   build handoff mode explicit
+ok   build reason explains handoff and quota limits
+ok   write-guide exits 0, stderr: wrote /var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/dash-test-leVkr3/d2.json
+wrote routing-2026-10-18.json
+updated /var/folders/4g/6g1qk_3j4_30czm9c_r3wrlc0000gn/T/dash-test-leVkr3/guide.html
+
+ok   guide tbodys replaced
+ok   generated marker present in guide
+ok   guide tags balanced <table>
+ok   guide tags balanced <tbody>
+ok   guide tags balanced <tr>
+ok   guide tags balanced <td>
+ok   ambiguous anchor aborts
+
+ALL DASHBOARD TESTS PASSED
+rendered 143749 chars; 23 tables, 306 rows
+check OK
+changelog updated: 1 finding(s)
+done: /Users/yasihusain/.config/opencode/skills/model-benchmarks/snapshots/reports/2026-11-13-value.md

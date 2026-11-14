@@ -1,0 +1,459 @@
+{
+  "generated_at": "2026-11-02T13:00:11.672Z",
+  "date": "2026-11-02",
+  "totals": {
+    "msgs": 135,
+    "inM": 0.6,
+    "outM": 0.04,
+    "cacheM": 16.3,
+    "cacheShare": 0.96
+  },
+  "perRoute": [
+    {
+      "model": "muse-spark-1.3-contributor",
+      "provider": "opencode-go",
+      "msgs": 73,
+      "inM": 0.346103,
+      "outM": 0.020261,
+      "reasM": 0.017414,
+      "cacheM": 11.899991,
+      "last": "2026-11-02 06:25:02",
+      "usd": 0.066,
+      "failN": 0,
+      "failPct": 0,
+      "p50s": 3.1
+    },
+    {
+      "model": "glm-5.3-flash",
+      "provider": "opencode-go",
+      "msgs": 40,
+      "inM": 0.081541,
+      "outM": 0.00675,
+      "reasM": 0.008848,
+      "cacheM": 1.808256,
+      "last": "2026-11-02 05:28:45",
+      "usd": 0.074,
+      "failN": 0,
+      "failPct": 0,
+      "p50s": 4.3
+    },
+    {
+      "model": "gemini-4-argon",
+      "provider": "opencode-go",
+      "msgs": 22,
+      "inM": 0.184281,
+      "outM": 0.010012,
+      "reasM": 0.00839,
+      "cacheM": 2.601346,
+      "last": "2026-11-02 05:38:18",
+      "usd": 0.813,
+      "failN": 0,
+      "failPct": 0,
+      "p50s": 12.3
+    }
+  ],
+  "goPrices": {
+    "glm-5.3-flash": {
+      "p": [
+        0.15,
+        0.5,
+        0.03
+      ],
+      "cap": 60
+    },
+    "glm-5.3": {
+      "p": [
+        1.4,
+        4.4,
+        0.26
+      ],
+      "cap": 15
+    },
+    "muse-spark-1.3-contributor": {
+      "p": [
+        0.1,
+        0.2,
+        0.002
+      ],
+      "cap": 60
+    },
+    "deepseek-v4.1-flash": {
+      "p": [
+        0.15,
+        0.6,
+        0.003
+      ],
+      "cap": 80
+    },
+    "deepseek-v4-pro": {
+      "p": [
+        0.66,
+        1.98,
+        0.022
+      ],
+      "cap": 15
+    },
+    "gpt-6-luna": {
+      "p": [
+        0.1,
+        0.5,
+        0.01
+      ],
+      "cap": 15
+    },
+    "claude-haiku-5.5": {
+      "p": [
+        0.1,
+        0.5,
+        0.01
+      ],
+      "cap": 15
+    },
+    "mimo-v2.6-pro": {
+      "p": [
+        0.435,
+        0.87,
+        0.0036
+      ],
+      "cap": 15
+    },
+    "mimo-v2.6-flash": {
+      "p": [
+        0.14,
+        0.28,
+        0.0028
+      ],
+      "cap": 60
+    },
+    "step-5-preview": {
+      "p": [
+        1,
+        2.7,
+        0.1
+      ],
+      "cap": 60
+    },
+    "space-bunny": {
+      "p": [
+        0.15,
+        0.6,
+        0.015
+      ],
+      "cap": 30
+    },
+    "minimax-m3.1-flash": {
+      "p": [
+        0.15,
+        0.6,
+        0.015
+      ],
+      "cap": 30
+    },
+    "gemini-4-argon-contributor": {
+      "p": [
+        2,
+        10,
+        0.1
+      ],
+      "cap": 60
+    },
+    "gpt-5.6-luna": {
+      "p": [
+        0.2,
+        1.2,
+        0.02
+      ],
+      "cap": 15
+    },
+    "kimi-k2.7-code": {
+      "p": [
+        0.95,
+        4,
+        0.19
+      ],
+      "cap": 15
+    },
+    "qwen3.8-flash": {
+      "p": [
+        0.15,
+        0.47,
+        0.016
+      ],
+      "cap": 15
+    },
+    "qwen3.7-plus": {
+      "p": [
+        0.4,
+        1.6,
+        0.04
+      ],
+      "cap": 15
+    },
+    "minimax-m3": {
+      "p": [
+        0.3,
+        1.2,
+        0.06
+      ],
+      "cap": 15
+    },
+    "qwen3.8-max": {
+      "p": [
+        2,
+        6,
+        0.25
+      ],
+      "cap": 15
+    },
+    "kimi-k3": {
+      "p": [
+        3,
+        15,
+        0.3
+      ],
+      "cap": 15
+    },
+    "kimi-k3-1-pro": {
+      "p": [
+        2,
+        10,
+        0.2
+      ],
+      "cap": 15
+    },
+    "gemini-4-argon": {
+      "p": [
+        2,
+        10,
+        0.1
+      ],
+      "cap": 60
+    },
+    "claude-haiku-5-5": {
+      "p": [
+        0.1,
+        0.5,
+        0.01
+      ],
+      "cap": 15
+    },
+    "kimi-k3.1-pro": {
+      "p": [
+        2,
+        10,
+        0.2
+      ],
+      "cap": 15
+    }
+  },
+  "peakHour": "2026-11-02 05",
+  "peakMsgs": 86,
+  "pins": [
+    "opencode-go/minimax-m3.1-flash",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/glm-5.3-flash",
+    "opencode-go/glm-5.3-flash",
+    "opencode-go/claude-haiku-5-5",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/muse-spark-1.3-contributor",
+    "opencode-go/glm-5.3-flash"
+  ],
+  "deadPins": [],
+  "errors429": {
+    "count": 0,
+    "first": null,
+    "last": null,
+    "models": []
+  },
+  "freeShelf": {
+    "routes": [],
+    "lastActivity": null,
+    "paidContinuesAfter": "2026-11-02 06:25:02"
+  },
+  "goHeadroom": {
+    "family": "glm-5.3-flash",
+    "msgs": 40,
+    "costPerDay": 0.07,
+    "cap": 60,
+    "capPct": 0.1
+  },
+  "goTop": {
+    "family": "gemini-4-argon",
+    "model": "gemini-4-argon",
+    "msgs": 22,
+    "costPerDay": 0.81,
+    "cap": 60,
+    "capPct": 1.35
+  },
+  "unmatchedCheckPins": [
+    {
+      "where": "brainstorm",
+      "model": "opencode/glm-5.3-flash-free"
+    },
+    {
+      "where": "docs-writer",
+      "model": "opencode/glm-5.3-flash-free"
+    },
+    {
+      "where": "domain-companion",
+      "model": "opencode/glm-5.3-flash-free"
+    },
+    {
+      "where": "researcher",
+      "model": "opencode/nemotron-3.5-super-vl-free"
+    },
+    {
+      "where": "reviewer",
+      "model": "opencode-go/glm-5.3-flash"
+    },
+    {
+      "where": "security-reviewer",
+      "model": "opencode-go/claude-haiku-5.5"
+    },
+    {
+      "where": "(config model)",
+      "model": "opencode-go/muse-spark-1.3-contributor"
+    },
+    {
+      "where": "(config small_model)",
+      "model": "opencode-go/muse-spark-1.3-contributor"
+    }
+  ],
+  "snapshotAges": {
+    "check": "2026-10-24",
+    "access": "2026-11-02",
+    "coding": "2026-10-18"
+  },
+  "pacing": {
+    "family": "glm-5.3-flash",
+    "perDay": 0.07,
+    "weeklyCap": 30,
+    "daysToWeeklyCap": 403.9
+  },
+  "metered": {
+    "goUsd": 0.95,
+    "projectedGoLoopUsd": 0.07
+  },
+  "standardReq": {
+    "unit": "$0.01 of model spend (~1 GLM-5.3-flash console-mix request)",
+    "routes": [
+      {
+        "model": "muse-spark-1.3-contributor",
+        "msgs": 73,
+        "usd": 0.066,
+        "cap": 60,
+        "costPerMsg": 0.0009,
+        "allowedMsgs": 66363,
+        "usedSR": 7,
+        "allowedSR": 6000
+      },
+      {
+        "model": "glm-5.3-flash",
+        "msgs": 40,
+        "usd": 0.074,
+        "cap": 60,
+        "costPerMsg": 0.00185,
+        "allowedMsgs": 32432,
+        "usedSR": 7,
+        "allowedSR": 6000
+      },
+      {
+        "model": "gemini-4-argon",
+        "msgs": 22,
+        "usd": 0.813,
+        "cap": 60,
+        "costPerMsg": 0.03695,
+        "allowedMsgs": 1623,
+        "usedSR": 81,
+        "allowedSR": 6000
+      }
+    ],
+    "allowedSR": 18000,
+    "usedSR": 95,
+    "pct": 0.5
+  },
+  "routing": {
+    "brainstorm": {
+      "primary": "opencode-go/minimax-m3.1-flash",
+      "fallback": "nvidia/z-ai/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": true
+    },
+    "docs-writer": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "nvidia/z-ai/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": true
+    },
+    "domain-companion": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "nvidia/z-ai/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": true
+    },
+    "researcher": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode-go/minimax-m3.1-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "reviewer": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode-go/minimax-m3.1-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "security-reviewer": {
+      "primary": "opencode-go/claude-haiku-5-5",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "main": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "small_model": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": null,
+      "fallbackMode": null,
+      "why": "configured primary; no mapped availability fallback",
+      "primaryLive": false,
+      "fallbackLive": null
+    },
+    "general": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "explore": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode-go/minimax-m3.1-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    }
+  }
+}

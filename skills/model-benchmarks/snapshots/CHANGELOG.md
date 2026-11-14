@@ -351,3 +351,17 @@
 - Svelte source lives in `app/` (deps vendored, gitignored): `npm run build`
   emits shell + assets; `npm run check` SSR-asserts 17 sections / 23 tables.
   `--write-guide` is kept only for the existing splice-safety tests.
+
+## 2026-11-02 — AA index version drift (weekly pull)
+- Coding Agent Index version differs from pinned v1.5.
+- Action: re-run `coding` pull, refresh guide §2/§17 + SKILL agentic table.
+
+## 2026-11-02 — weekly pull findings
+- No AA coverage: opencode/glm-5.3-flash-free, opencode/nemotron-3.5-super-vl-free, opencode-go/glm-5.3-flash, opencode-go/claude-haiku-5.5, opencode-go/muse-spark-1.3-contributor
+
+## 2026-11-13 — AA index version drift (weekly pull)
+- Coding Agent Index version differs from pinned v1.5.
+- Action: re-run `coding` pull, refresh guide §2/§17 + SKILL agentic table.
+
+## 2026-11-13 — weekly pull findings
+- No AA coverage: opencode/glm-5.3-flash-free, opencode/nemotron-3.5-super-vl-free, opencode-go/glm-5.3-flash, opencode-go/claude-haiku-5.5, opencode-go/muse-spark-1.3-contributor

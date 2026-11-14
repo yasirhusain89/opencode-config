@@ -1,0 +1,86 @@
+{
+  "generated_at": "2026-11-14T02:14:04.173Z",
+  "source_snapshot": "dashboard-2026-11-13.json",
+  "agents": {
+    "brainstorm": {
+      "primary": "opencode-go/minimax-m3.1-flash",
+      "fallback": "nvidia/z-ai/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": true
+    },
+    "docs-writer": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "nvidia/z-ai/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": true
+    },
+    "domain-companion": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "nvidia/z-ai/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": true
+    },
+    "researcher": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode-go/minimax-m3.1-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "reviewer": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode-go/minimax-m3.1-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "security-reviewer": {
+      "primary": "opencode-go/claude-haiku-5-5",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "main": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "small_model": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": null,
+      "fallbackMode": null,
+      "why": "configured primary; no mapped availability fallback",
+      "primaryLive": false,
+      "fallbackLive": null
+    },
+    "general": {
+      "primary": "opencode-go/muse-spark-1.3-contributor",
+      "fallback": "opencode-go/glm-5.3-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    },
+    "explore": {
+      "primary": "opencode-go/glm-5.3-flash",
+      "fallback": "opencode-go/minimax-m3.1-flash",
+      "fallbackMode": "next-prompt-handoff",
+      "why": "availability-only next-prompt handoff; no automatic in-flight recovery; not an account-wide quota escape",
+      "primaryLive": false,
+      "fallbackLive": false
+    }
+  }
+}
