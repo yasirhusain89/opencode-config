@@ -434,6 +434,19 @@ distilled, still-true conclusions.
   `aa_bench inventory` shells `opencode models <provider>`, which V2 no
   longer accepts — 2 test failures, out of scope.
 
+- **2026-11-15 — after any sr-calc/plugin change, restart the SERVICE
+  (`opencode service restart`), not the app/terminal — and recognize the
+  two-writer flap.** Restarting the desktop app orphaned the service
+  (PPID 1, same pid) with the old sr-calc cached: sr-live.json flapped
+  between V1-sourced (`dbCount` frozen at the legacy 14576) and V2-sourced
+  (advancing ~15600+) writers about once a minute. Signature: `usedReq`
+  jumps ±hundreds between reads, `/quota` week/rolling read 0 while sessions
+  are active. Only a service restart clears Node's per-process module cache
+  (plugin reloads re-execute plugin code but keep cached imports). Verify
+  post-restart: `service.json` has a new pid, sr-live `dbCount` matches
+  `session_message` counts and advances monotonically across two reads 70s
+  apart, zero WARN/ERROR in the log.
+
 ## 5. How to add a lesson
 Append under the right section (or add one): `**YYYY-MM-DD — one-line
 claim.**` 1–2 lines of context, then `Evidence: <file:line / snapshot /
