@@ -6,4 +6,6 @@ sync.sh.bak
 __pycache__/
 # Local semantic code index (ollama + sqlite-vec; rebuild with npm run index:semantic)
 .semindex/
+# GitNexus graph index (rebuild with gitnexus analyze --index-only --name <repo>)
+.gitnexus/
 .check-tmp/

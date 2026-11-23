@@ -207,6 +207,28 @@ distilled, still-true conclusions.
 - **pnpm forwards a bare `--` through to the script**, which breaks argparse
   option parsing (`pnpm semantic:q "text" -k 3`, never `-- "text"`). npm
   strips it, so the npm form keeps `--`. Evidence: fotoflow `AGENTS.md`.
+- **2026-11-23 — universal semantic index + session-context eval
+  (`scripts/context_eval.mjs`, SCOS/NCR).** `scripts/semantic_index.py` is now
+  project-agnostic (git-root auto-detect, `--root`, `ensure --gitnexus
+  --index-only --name`, auto-build on query when missing/>7d stale,
+  per-project overrides in `<repo>/.semindex/config.json`, localhost-only
+  guard retained); fotoflow `scripts/semantic_index.py` and monartha
+  `python/semantic_index.py` are thin delegates to it (existing
+  `semantic:q`/`index:semantic` wrappers keep working). `.semindex/.gitignore`
+  now ignores only `index.db*` so a committed `config.json` stays visible;
+  GraphRAG writes use `--index-only` (no AGENTS.md/`.claude/skills`
+  injection — delete stale Oct-20 fotoflow skill files on sight).
+  `context_eval.mjs` (`eval:context`) scores 220 multi-turn sessions
+  deterministically (0 LLM calls): mean SCOS 71.5/100, byte-weighted NCR
+  42.2%, 33% of read lines are unmodified duplicates, semantic/graph search
+  used in only 13% of the 82 sessions that needed it. Embedding-rescue cosine
+  thresholds (0.58 dead-file / 0.62 slice-tail) are bootstrap priors, NOT
+  tuned constants: `--ollama-embed` appends raw cosine observations to local
+  `context-eval-calibration.jsonl`, `--suggest-thresholds` prints the
+  empirical rescue-rate elbow — re-derive monthly or after ~50 enriched
+  sessions. Evidence: `scripts/context_eval.mjs` (`--self-test` green),
+  `scripts/semantic_index.py:load_scan_config`, 4 fresh indexes
+  (mw5-advisor 922 chunks, opencode 796, fotoflow 587, monartha 699).
 
 ## 4. Eval & benchmark hygiene
 

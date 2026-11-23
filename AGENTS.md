@@ -13,13 +13,8 @@
   (`open` of files and `open -R` are fine). `plugins/exec-guard.ts` enforces
   this; bypass only per-session via its env overrides, and kill anything you
   detach.
-- Locate code with native Grep/glob and GitNexus graph tools (`query`, `context`, `trace`); for meaning-based search use the project's `semantic:q` script when present; read the file before citing it.
-
-<!-- semantic fallback: when GitNexus graph lookups come back empty/UNKNOWN, or -->
-<!-- the question is "find code by meaning" (unknown vocabulary), use -->
-<!-- `npm run semantic:q -- "concept"` (ollama + sqlite-vec over agent/, skills/, -->
-<!-- docs/, plugins/, command/). Rebuild with `npm run index:semantic`. Needs -->
-<!-- `ollama serve` + the nomic-embed-text model. Lexical fallback: native Grep. -->
+- Locate code with native Grep/glob and GitNexus graph tools (`query`, `context`, `trace` via `execute` → `search("gitnexus")`); for meaning-based or unknown-vocabulary search in ANY project, run `uv run --with sqlite-vec python ~/.config/opencode/scripts/semantic_index.py query "<concept>" -k 5` (or `pnpm semantic:q "<concept>" -k 5` / `npm run semantic:q -- "<concept>" -k 5`; auto-builds `.semindex/index.db` if missing or >7d stale). Escalate to semantic search whenever ≥2 lexical greps return empty or before reading ≥4 candidate files.
+- Keep session context lean: never re-read unmodified lines already loaded in the current compaction epoch; read targeted `offset`/`limit` slices around grep/semantic hits instead of paging >400-line files in main; delegate multi-file exploration (≥4 files) to `explore` or `researcher` so exploratory reads stay out of the main session's KV cache. Audit with `npm --prefix ~/.config/opencode run eval:context`.
 
 ## Specialist delegation (standing authorization: delegate automatically)
 
