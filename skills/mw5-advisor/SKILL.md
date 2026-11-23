@@ -1,11 +1,11 @@
 ---
 name: mw5-advisor
-description: "Use when advising on MechWarrior 5: Mercenaries campaign decisions — optimal lance, backup lances and bench readiness, mech ranking, repair/sell/buy cost-benefit, contract selection, salvage, travel, factions and loadouts. Examples: MW5 screenshots, 'what lance should I field', 'repair or sell', multi-mission preparation, Heroes of the Inner Sphere progression"
+description: "Use when advising on MechWarrior 5: Mercenaries campaign decisions — optimal lance, backup lances and bench readiness, mech ranking, repair/sell/buy cost-benefit, mech upgrades and career blueprints, pilot rosters, contract negotiation and mission types, salvage, travel, factions and loadouts. Examples: MW5 screenshots, 'what lance should I field', 'repair or sell', multi-mission preparation, Heroes of the Inner Sphere progression"
 ---
 
 # MW5 Advisor
 
-Save-grounded, screenshot-assisted advisor for MechWarrior 5: Mercenaries. Deep tables live in `docs/mw5-mercenaries-advisor.md`. The companion app is `~/Projects/mw5-advisor`; its deterministic planner is `src/lib/bench.ts` and its versioned variant data is `static/data/mechs.json`.
+Save-grounded, screenshot-assisted advisor for MechWarrior 5: Mercenaries. Deep tables & rules (verified combat math, variant-pinning method, heat-sink model, spread stackables, the full 50-blueprint career pool, curated weapon/EW tables, contract/mission/pilot/component-damage rules, append-only gap/drift log) live in `docs/mw5-mercenaries-advisor.md` — log any UI-vs-source conflict there instead of picking silently. The companion app is `~/Projects/mw5-advisor`; its deterministic planner is `src/lib/bench.ts` and its versioned variant data is `static/data/mechs.json`.
 
 ## The Iron Law
 
@@ -18,7 +18,7 @@ Never guess a mech variant, tier, year, or standing.
 
 Screenshots omit context. State the source save, in-game date and freshness. Reuse verified current state from the same question; do not repeatedly ask for information already pulled. If the user has played since that save, identify what needs refreshing. Read game files only; never watch or modify saves.
 
-For read-only JSON through the Rust parser, use the app's `src-tauri` working directory: `cargo run --quiet --example pull_all -- --help`, then `cargo run --quiet --example pull_all -- --snapshot SLOT_ID [SAVE_ID]` (omit SAVE_ID to use Campaign.json's latest save). Output includes the snapshot and matching before/after SHA-256 hashes. The Python oracle may omit roster fields; do not interpret a missing field as an empty mech bay.
+For read-only JSON through the Rust parser, use the app's `src-tauri` working directory: `cargo run --quiet --example pull_all -- --help`, then `cargo run --quiet --example pull_all -- --snapshot SLOT_ID [SAVE_ID]` (omit SAVE_ID to use Campaign.json's latest save). Output includes the snapshot and matching before/after SHA-256 hashes. The Python oracle (`scripts/mw5save.py`) may omit roster fields; do not interpret a missing field as an empty mech bay.
 
 ## State intake (ask only for decision-relevant gaps)
 
@@ -35,7 +35,7 @@ Give a qualified answer from verified state when possible. Missing faction stand
 Four screenshot types; transcribe before reasoning:
 
 - **Contract / negotiation screen:** employer, target, mission type, difficulty, tonnage limit, biome, payout / salvage / coverage / airstrike rows, negotiation points. Missing → ask employer + target + difficulty at minimum.
-- **Mech bay / cold storage:** exact variant and individual copy, owned vs market, current armor/structure, inoperable flags, fitted weapons/ammo, repair + fitting costs/days, sale quote. A ready duplicate is bench insurance, not an automatic sale. Cold storage does not prove drop readiness.
+- **Mech bay / cold storage:** exact variant and individual copy, owned vs market, current armor/structure, inoperable flags, fitted weapons/ammo, repair + fitting costs/days, sale quote. A ready duplicate is bench insurance, not an automatic sale. Cold storage does not prove drop readiness and storing strips fitted weapons, equipment and upgrades (manual).
 - **Starmap:** current system, conflict-zone rep label, nearest Industrial Hub, highlighted HRQ/transmission + its expiry year. If the user asks "reasonable move?" with only a map, demand destination + rep + objective.
 - **Store / equipment:** item + tier (T0–T5, T6 = Clan), price, year. Never recommend a buy without naming which owned mech takes it and what comes off.
 
@@ -43,7 +43,7 @@ Thumbnails and cropped phone photos are not evidence. If unreadable, say so and 
 
 ## Decision trees
 
-**Mission selection:** procedural (reset, skippable) vs High Reward Quest (never expires, hidden mech bonus is the real prize) vs DLC mini-campaign (time-gated: Kestrel 3026, Rasalhague 3031, Dragon's Gambit 3038, Solaris ~3040, Kerensky 3049 — miss the window = miss it). Never take a contract *against* Independents to chase payout; never do both sides of an opposing pair. Leaving procedural missions in a red zone is free; leaving an HRQ just defers static loot; leaving a DLC window is permanent.
+**Mission selection:** procedural (reset, skippable) vs High Reward Quest (never expires, hidden mech bonus is the real prize) vs DLC mini-campaign (time-gated: Kestrel 3026, Rasalhague 3031, Dragon's Gambit 3038, Solaris ~3040, Kerensky 3049 — miss the window = miss it). Never take a contract *against* Independents to chase payout; never do both sides of an opposing pair. Leaving procedural missions in a red zone is free; leaving an HRQ just defers static loot; leaving a DLC window is permanent. Tonnage: save-exact `AllowedTonnage` wins (companion app board: exact `Nt`); procedural fallback is the difficulty table (`≤Nt M`); arena uses format weight-class caps and quests carry fixed limits (`—` = check the in-game TONNAGE LIMIT). Multi-mission ops state their leg count (`×2 Op`, `×3 Op`) from the save — rotate mechs + pilots, no repair between legs.
 
 **Reward split:** mech-poor → max salvage (leg/headshot hero mechs to drop salvage cost; "missed out by 1" is a kill-method problem). Cash-poor pre-DLC → max cash + damage coverage on Warzone/Defense. Standing-grind → favor employer standing over split optimization. Never abort — withdraw via dropship where allowed.
 
@@ -82,8 +82,23 @@ Start with source/date/system/rep/cash. Give: (a) proposed main lance and missio
 
 Stale save after play, market mechs counted as owned, duplicate-as-sale logic, cold storage counted as ready, unknown costs treated as zero, unverified price multiples, overweight recommendations, role gaps hidden by raw chassis counts, both sides of a conflict, buying a weapon with no named host, or advancing time near a DLC deadline.
 
+## Starmap video review (maintainer procedure)
+
+When the user asks to validate the companion app's star map against a
+pan recording: `docs/starmap-video-review.md` is the runbook
+(frames -> poses -> stitched detail maps -> pak radial extract ->
+dash-pixel calibration -> ring kill/confirm -> overlays -> compare
+checklist -> land fixes). Working scripts are archived in
+`scripts/starmap-review/` (see its `README.md`); the rival extractor is
+committed in the app repo (`scripts/extract-rivals.py`). Confirmed
+model: radial circle = member-mean center, radius = Radius x 12.3 ly,
+OwnerTimeline-gated per save date; legacy zone rings suppressed where
+covered. Record deltas in the app's visual catalog, never silently.
+
 ## Sources (ground every mech/faction/date claim)
 
-- Deep guide: `docs/mw5-mercenaries-advisor.md`
-- Mech hardpoints/tonnage/speed/availability/hero: https://github.com/Kalbintion/MechWarrior5MercenariesData (`data/mechs.json`)
-- Rules/factions/quests/equipment/zones: https://www.sarna.net/wiki/MechWarrior_5:_Mercenaries and subpages `/Factions`, `/High_Reward_Quests`, `/Equipment`, `/Conflict_Zones`, `/Campaign_Missions`
+Precedence when sources disagree: **observed save/UI > Sarna > Kalbintion repo > app scrapes (trust their `meta.fetched` dates only)** — except where Sarna explicitly flags the in-game display as wrong (Stream-variant ROF: the UI number ignores inter-missile delay; use the wiki's file-derived ROF for sustain math). Never reconcile silently — append to the gap/drift log in the deep doc.
+
+- Deep tables & rules + gap/drift log: `docs/mw5-mercenaries-advisor.md` (verified formulas, variant pinning, weapon/EW tables, the full 50-blueprint career pool, contract/mission-type/pilot/component-damage rules)
+- Mech hardpoints/tonnage/speed/availability/hero: https://github.com/Kalbintion/MechWarrior5MercenariesData (`data/mechs.json`; hardpoints are mount capacity, never installed weapons). Known gaps: `data/upgrades.json` covers only the Equipment Collector career track (HotIS quirks; tiers = career-rep levels) — shop upgrades from the other career tracks are absent, and `data/weapons.json` is truncated; treat shop-upgrade effects as UI-verified only.
+- Rules/factions/quests/equipment/zones: https://www.sarna.net/wiki/MechWarrior_5:_Mercenaries and subpages `/Factions`, `/High_Reward_Quests`, `/Equipment`, `/Conflict_Zones`, `/Campaign_Missions`. `/Equipment` covers weapons + equipment tables and availability dates but has **no upgrade-shop table**; stamp the page revision (`oldid`) when citing.
