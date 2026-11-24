@@ -4,7 +4,8 @@ import fallback from "../plugins/model-fallback.js";
 
 const GLM = "opencode-go/glm-5.3-flash";
 const MINI = "opencode-go/minimax-m3.1-flash";
-const FREE = "nvidia/z-ai/glm-5.3-flash";
+const FREE = "opencode/mimo-v2.6-flash-free";
+const NVIDIA_LAST = "nvidia/z-ai/glm-5.3-flash";
 const model = (ref) => {
   const [providerID, ...rest] = ref.split("/");
   return { providerID, modelID: rest.join("/") };
@@ -88,6 +89,17 @@ test("single-hop routing stays on fallback across turns and never chains to NVID
   assert.ok(h.notices.length <= 2);
 });
 
+test("low-stakes free-pool chain advances to NVIDIA last when free also caps", async () => {
+  const h = await harness("docs-writer");
+  await h.retry();
+  assert.deepEqual(await h.next(), model(FREE));
+  // Simulate the free-pool fallback also hitting its own limit: next arm
+  // advances down the chain to the slow NVIDIA last resort.
+  await h.hooks["chat.params"]({ sessionID: "test", agent: "docs-writer", model: { providerID: "opencode", id: "mimo-v2.6-flash-free" } });
+  await h.retry({ message: "Free usage exceeded", statusCode: 429 });
+  assert.deepEqual(await h.next(), model(NVIDIA_LAST));
+});
+
 test("model-specific rate limit exceeded is not classified as account-wide quota", async () => {
   const h = await harness();
   await h.retry({ statusCode: 429, message: "Rate limit exceeded" });
@@ -115,12 +127,19 @@ test("manual model or role change cancels the pending handoff", async () => {
   assert.deepEqual(await other.next(), model(GLM));
 });
 
-test("unknown models, existing NVIDIA and missing session state remain unchanged", async () => {
-  for (const ref of ["other/unknown", FREE]) {
-    const h = await harness("docs-writer", ref);
+test("unknown models and missing session state remain unchanged; free-pool rows advance down the chain", async () => {
+  {
+    const h = await harness("docs-writer", "other/unknown");
     await h.retry();
-    assert.deepEqual(await h.next(), model(ref));
+    assert.deepEqual(await h.next(), model("other/unknown"));
     assert.equal(h.notices.length, 0);
+  }
+  {
+    // Already on the free pool: one more cap hops to NVIDIA last resort.
+    const h = await harness("docs-writer", FREE);
+    await h.retry({ message: "Free usage exceeded", statusCode: 429 });
+    assert.deepEqual(await h.next(), model(NVIDIA_LAST));
+    assert.equal(h.notices.length, 1);
   }
 });
 

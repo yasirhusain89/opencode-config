@@ -61,7 +61,7 @@ test("V2 retry arms a one-hop fallback applied at the next primary request", asy
   await cleanup();
 });
 
-test("V2 low-stakes roles take the approved NVIDIA lane", async () => {
+test("V2 low-stakes roles take the free-pool lane first (NVIDIA only as last resort)", async () => {
   const { hooks } = await setup();
   track(hooks, "s2", "docs-writer", "opencode-go", "glm-5.3-flash");
   await hooks.retry({
@@ -73,8 +73,8 @@ test("V2 low-stakes roles take the approved NVIDIA lane", async () => {
     decision: { retry: true, delay: 1000 },
   });
   assert.deepEqual(resolve(hooks, "s2", "docs-writer", "opencode-go", "glm-5.3-flash"), {
-    providerID: "nvidia",
-    modelID: "z-ai/glm-5.3-flash",
+    providerID: "opencode",
+    modelID: "mimo-v2.6-flash-free",
   });
 });
 

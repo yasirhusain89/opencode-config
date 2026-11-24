@@ -79,6 +79,20 @@ test("V2 completed step records model from step.started and increments windows",
   await cleanup();
 });
 
+test("V2 non-Go completed step does not consume Go windows", async () => {
+  const { ctx, readAfterIdle } = await harness([
+    { type: "session.step.started", data: { sessionID: "s3", assistantMessageID: "a3", model: { providerID: "opencode", id: "deepseek-v4.1-flash-free" } } },
+    { type: "session.step.ended", data: { sessionID: "s3", assistantMessageID: "a3", cost: 0 } },
+  ]);
+  const cleanup = await plugin.setup(ctx);
+  const state = await readAfterIdle((s) => s.lastTurn != null);
+  assert.equal(state.lastTurn.model, "opencode/deepseek-v4.1-flash-free");
+  assert.equal(state.windows.month.usedReq, 10, "free turn must not increment month");
+  assert.equal(state.windows.week.usedReq, 5, "free turn must not increment week");
+  assert.equal(state.windows.rolling.usedReq, 2, "free turn must not increment rolling");
+  await cleanup();
+});
+
 test("V2 failed step clears the model mapping (no stale attribution)", async () => {
   const { ctx, readAfterIdle } = await harness([
     { type: "session.step.started", data: { sessionID: "s2", assistantMessageID: "a2", model: { providerID: "nvidia", id: "z-ai/glm-5.3-flash" } } },

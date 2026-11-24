@@ -14,7 +14,16 @@ const GO_FALLBACK = {
   "opencode-go/claude-haiku-5-5": "opencode-go/glm-5.3-flash",
   "opencode-go/claude-haiku-5.5": "opencode-go/glm-5.3-flash",
 };
-const FREE_FALLBACK = "nvidia/z-ai/glm-5.3-flash";
+const FREE_CHAIN = [
+  // Free pool first: outside the Go $10 quota, own tighter (~200/day-class)
+  // limits. Prefer opencode/*-free so Go infra stays clear for loop volume.
+  "opencode/mimo-v2.6-flash-free",
+  // NVIDIA last: poor token rates (usage-dashboard per-model table: p50 ~37s
+  // vs ~7s on Go) — latency-poor, use only when the free pool is also capped.
+  "nvidia/z-ai/glm-5.3-flash",
+];
+const FREE_FALLBACK = FREE_CHAIN[0];
+const NVIDIA_LAST = FREE_CHAIN[FREE_CHAIN.length - 1];
 const LOW_STAKES = new Set(["brainstorm", "docs-writer", "domain-companion"]);
 const QUOTA_RE = /rate.?limit|quota|too many requests|\b429\b|free usage exceeded|usage limit|capacity|overloaded/i;
 const ACCOUNT_RE = /(?:weekly|monthly|daily|five.hour|5.hour|account.wide|shared).*(?:quota|limit|usage)|(?:quota|usage).*(?:reset|exhaust|exceed)|insufficient.*(?:balance|credit)|free usage exceeded/i;
@@ -67,23 +76,58 @@ function createEngine({ notice, enabled }) {
     if (status !== 429 && !QUOTA_RE.test(text)) return;
     if (state.handled) {
       if (state.to && state.current === state.to && !state.exhausted) {
+        // Low-stakes free-pool chain: opencode/*-free first, NVIDIA last
+        // (slow). Advance one hop instead of giving up.
+        const nextIdx = (state.chainIdx ?? 0) + 1;
+        if (state.chain && nextIdx < state.chain.length) {
+          state.chainIdx = nextIdx;
+          state.to = state.chain[nextIdx];
+          await notice(sessionID, `Free pool also capped — next fallback: ${state.to} (NVIDIA is slow; prefer waiting for the free reset when you can). Stop the current retry if needed, then resume.`);
+          return;
+        }
         state.exhausted = true;
         await notice(sessionID, "The fallback also hit a limit. No further automatic handoff; wait or select a model manually.");
       }
       return;
     }
     const from = state.current;
-    // Only approved Go primaries may cross to NVIDIA, and only for these
-    // low-stakes roles. Private/unknown roles never cross that boundary.
-    if (!GO_FALLBACK[from]) return;
+    // Approved Go primaries may fall back to another Go route, and low-stakes
+    // roles may additionally fall back through the free pool (outside Go
+    // quota, own tighter limits) with NVIDIA as the slow last resort.
+    // Private/unknown roles never cross that boundary. Already-on-free rows
+    // may still advance down the free chain.
+    const inFreeChain = FREE_CHAIN.includes(from);
+    if (!GO_FALLBACK[from] && !(LOW_STAKES.has(state.agent) && inFreeChain)) return;
     state.handled = true; // latch before awaits: duplicate events cannot chain
     if (!LOW_STAKES.has(state.agent) && ACCOUNT_RE.test(text)) {
       await notice(sessionID, "Go account quota is shared across models. Wait for reset or choose an approved provider manually; another Go model will not restore quota.");
       return;
     }
     state.from = from;
-    state.to = LOW_STAKES.has(state.agent) ? FREE_FALLBACK : GO_FALLBACK[from];
-    await notice(sessionID, `Fallback ready: ${from} → ${state.to} on this session's next prompt. Stop the current retry if needed, then resume${LOW_STAKES.has(state.agent) ? "" : "; Go quota remains shared"}.`);
+    if (LOW_STAKES.has(state.agent)) {
+      if (inFreeChain) {
+        // Already on the free chain: hop to the NEXT link (free → NVIDIA
+        // last), not back to self. At the last link there is nowhere to go.
+        const idx = FREE_CHAIN.indexOf(from);
+        state.chain = FREE_CHAIN.slice(idx + 1);
+        state.chainIdx = 0;
+        state.to = state.chain[0];
+        if (!state.to) {
+          state.exhausted = true;
+          await notice(sessionID, "The last-resort fallback also hit a limit. No further automatic handoff; wait or select a model manually.");
+          return;
+        }
+      } else {
+        state.chain = [...FREE_CHAIN];
+        state.chainIdx = 0;
+        state.to = state.chain[0];
+      }
+    } else {
+      state.chain = null;
+      state.chainIdx = 0;
+      state.to = GO_FALLBACK[from];
+    }
+    await notice(sessionID, `Fallback ready: ${from} → ${state.to} on this session's next prompt. Stop the current retry if needed, then resume${LOW_STAKES.has(state.agent) ? " (free pool: own limits, outside Go quota; NVIDIA last — slow)" : "; Go quota remains shared"}.`);
   }
 
   // Next-request resolution: explicit user model/agent changes win. Returns

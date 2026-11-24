@@ -14,7 +14,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const GLM = { providerID: "opencode-go", modelID: "glm-5.3-flash" };
 const MINI = { providerID: "opencode-go", modelID: "minimax-m3.1-flash" };
-const FREE = { providerID: "nvidia", modelID: "z-ai/glm-5.3-flash" };
+const FREE = { providerID: "opencode", modelID: "mimo-v2.6-flash-free" };
+const NVIDIA_LAST = { providerID: "nvidia", modelID: "z-ai/glm-5.3-flash" };
 const dummyKey = "runtime-fixture-not-a-real-key";
 const sandbox = `(version 1)
 (allow default)
@@ -178,7 +179,7 @@ setTimeout(() => { socket.destroy(); process.exit(4); }, 1500).unref();
         assert.equal(phase, "prompts", "Provider call before isolated config was proven safe");
         assert.equal(req.headers.authorization, `Bearer ${dummyKey}`);
         assert.equal(req.method, "POST");
-        assert.match(req.url, /^\/(go|nvidia)\/v1\/chat\/completions$/);
+        assert.match(req.url, /^\/(go|free)\/v1\/chat\/completions$/);
         assert.ok(lane === "go" ? [GLM.modelID, MINI.modelID].includes(body.model) : body.model === FREE.modelID);
         if (lane === "go" && body.model === GLM.modelID) {
           res.writeHead(429, { "content-type": "application/json", "retry-after": "30" });
@@ -216,8 +217,8 @@ setTimeout(() => { socket.destroy(); process.exit(4); }, 1500).unref();
     const config = {
       $schema: "https://opencode.ai/config.json", model: `${GLM.providerID}/${GLM.modelID}`,
       small_model: `${FREE.providerID}/${FREE.modelID}`, default_agent: "researcher",
-      enabled_providers: ["opencode-go", "nvidia"],
-      provider: { "opencode-go": defineProvider("go", [GLM.modelID, MINI.modelID]), nvidia: defineProvider("nvidia", [FREE.modelID]) },
+      enabled_providers: ["opencode-go", "opencode"],
+      provider: { "opencode-go": defineProvider("go", [GLM.modelID, MINI.modelID]), opencode: defineProvider("free", [FREE.modelID]) },
       plugin: [pathToFileURL(join(root, "observer.mjs")).href],
       agent: { researcher: agent, "docs-writer": agent, title: { disable: true }, summary: { disable: true } },
       mcp: {}, skills: { paths: [], urls: [] }, instructions: [],
@@ -243,14 +244,14 @@ setTimeout(() => { socket.destroy(); process.exit(4); }, 1500).unref();
     phase = "resolved config safety gate";
     const actual = await api("/config");
     assert.deepEqual(actual.enabled_providers, config.enabled_providers);
-    assert.deepEqual(Object.keys(actual.provider).sort(), ["nvidia", "opencode-go"]);
+    assert.deepEqual(Object.keys(actual.provider).sort(), ["opencode", "opencode-go"]);
     assert.deepEqual(actual.plugin, config.plugin);
     assert.equal(Object.keys(actual.mcp ?? {}).length, 0);
     assert.deepEqual(actual.instructions ?? [], []);
     assert.deepEqual(actual.skills, config.skills);
     assert.equal(actual.small_model, config.small_model);
     const available = await api("/config/providers");
-    assert.deepEqual(available.providers.map((item) => item.id).sort(), ["nvidia", "opencode-go"]);
+    assert.deepEqual(available.providers.map((item) => item.id).sort(), ["opencode", "opencode-go"]);
     for (const item of available.providers) {
       assert.equal(item.options.apiKey, dummyKey);
       assert.equal(item.options.baseURL, config.provider[item.id].options.baseURL);
@@ -317,7 +318,7 @@ setTimeout(() => { socket.destroy(); process.exit(4); }, 1500).unref();
       assert.ok(result.info.time.completed);
       assert.ok(result.parts.some((part) => part.type === "text" && part.text.includes("fixture fallback completed")));
       assert.ok(requests.slice(beforeNext).some((item) => item.model === target.modelID &&
-        item.lane === (target.providerID === "nvidia" ? "nvidia" : "go") && item.stream === true));
+        item.lane === (target.providerID === "opencode" ? "free" : "go") && item.stream === true));
       assert.ok(!requests.slice(beforeNext).some((item) => item.lane === "go" && item.model === GLM.modelID),
         "Stopped primary must not be retried on resumed prompt");
       t.diagnostic(`${role}: real 429 → legacy retry delivered to plugin → explicit abort → persisted ${target.providerID}/${target.modelID} → actual localhost fallback HTTP/SSE → completed assistant text.`);
