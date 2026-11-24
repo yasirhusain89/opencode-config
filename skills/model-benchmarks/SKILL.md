@@ -43,10 +43,14 @@ session pulls everything, so a refresh is a single command.
   reads `data.js` instead. Run this on every refresh.
 - `<skill dir>/scripts/guide_data.mjs` — composes `data.js`
   (`window.__MB__`) from `content/guide.json` + the newest
-  dashboard/routing snapshots; replaces §1/§8/§9 table rows and the
-  snapshot date. Run after `dashboard.mjs`; **no rebuild needed** for a
-  data refresh. `content/guide.json` is the editorial source for the
-  other 14 sections.
+  dashboard/routing snapshots **plus the newest check / coding-index /
+  access snapshots**; replaces §1 (gap + what's-new + freshness + headroom),
+  §2 (live availability badges), §6 (full 33-route Go catalog, tiered),
+  §8/§9 table rows and the snapshot date. Run after `dashboard.mjs`;
+  **no rebuild needed** for a data refresh. `content/guide.json` is the
+  editorial source for the other sections. Quota semantics: `-free` rows
+  never burn Go quota (separate free pool, tighter limits); NVIDIA is the
+  slow last resort. Gap math is same-vintage only.
 - `<skill dir>/app/` — Svelte 5 source for the guide (shell + components;
   deps in gitignored `node_modules`, so `npm install` only to rebuild).
   `npm run build` writes `model-selection-guide.html` + `assets/`;
@@ -151,15 +155,29 @@ snapshot ages vs today, and Go spend pacing vs caps. Re-verify Go console
 monthly limits on the same cadence (promos change them).
 Run-log lives in `snapshots/CHANGELOG.md`, never in the guide.
 
-## Mini-eval runs (guide §16 protocol, hardened 2026-10-19)
+## Mini-eval runs (guide §16 2-stage funnel, hardened 2026-11-22)
 
-Corpus: 10 frozen diffs covering bugfix / security / feature / dep-bump /
-test-only / ops / refactor. Judge MUST be pinned (model id + version +
-date in the scorecard); key stays sealed until scoring is done; disclose
-deviations. Minimum 6 diffs before any stop; drop only on mathematical
-futility; pause (don't score) on 2 consecutive provider DNFs and re-run on
-a fallback route; never stop the leader early. With n=10 only tier gaps
-resolve — report per-type wins, not just the net score.
+Source of truth: `<skill dir>/scripts/mini_eval.mjs` + `scripts/mini_eval.test.mjs`.
+
+1. **Stage 1 — Fast Quant Triage (`probe`, 4 deterministic tasks, 0–100 composite, ~90s/model):**
+   Run on any new or stealth launch (`iceman-free`, `tidepool-alpha-free`, `big-pickle`, `flint-40b-free`, `hy4-flash-free`, `longcat-2.5-free`, `qwen4-max`, etc.) alongside calibrated anchors (`mimo-v2.6-flash-free`, `glm-5.3-flash`, `kimi-k3.1-pro`):
+   ```bash
+   node ~/.config/opencode/skills/model-benchmarks/scripts/mini_eval.mjs probe \
+     opencode/iceman-free opencode/tidepool-alpha-free opencode-go/iceman-contributor-free \
+     --date $(date +%F) --timeout-ms 90000
+   ```
+   - **P1 Coding (35 pts):** 10-case unit test battery on trailing-window quota accounting (`vm` sandbox, 1s CPU cap).
+   - **P2 BugHunt (35 pts):** 3 planted defects (blocking truncation commit +14, major SQLi +10, minor unit bug +5, format +6) minus 10 pts per false alarm on a clean decoy hunk (`src/currency.ts`).
+   - **P3 Logic (15 pts):** 3-part constraint schedule & peak write-buffer invariant (`16s`, `A,B,C,E,D`, `350 KiB`).
+   - **P4 Agentic (15 pts):** Sandboxed fixture workspace (`read`/`grep`/`glob` allowed, `edit`/`shell` denied) testing root-cause grounding (`src/reconcile.mjs:23`, `>=` → `>`) and tool discipline.
+   - **Isolation guarantees:** `OPENCODE_MODEL_FALLBACK=off`, `--archived`, `--title`, `agents.title.model` pinned to candidate (never burns paid Go quota when probing free routes), and tool-deny config on standalone tasks P1–P3 (eliminates the 2026-10-18 exploration rabbit-hole DNFs). Pauses any route after 2 consecutive provider DNFs. Writes `snapshots/evals/<date>/probe-summary.json` + `probe-scorecard.md`; `guide_data.mjs` auto-joins scores into §1, §4, §6, and §16.
+
+2. **Stage 2 — Blind Diff-Review Corpus (`corpus`, 6-to-10 frozen MonArtha diffs):**
+   ```bash
+   node ~/.config/opencode/skills/model-benchmarks/scripts/mini_eval.mjs corpus \
+     <modelA> <modelB> --judge opencode-go/gemini-4-argon --phase core6
+   ```
+   Corpus: 10 frozen diffs covering bugfix / security / feature / dep-bump / test-only / ops / refactor. Judge MUST be pinned (`--judge`); `runs/<code-dXX>.json` omits `model` and scrubs model-identity tokens so the key stays truly sealed until scoring is locked. Minimum 6 diffs (`--phase core6`, ≥4 types) before any stop; drop only on mathematical futility (`checkSequentialStopping`); pause on 2 consecutive provider DNFs; never stop the leader early. With n=10 only tier gaps resolve — report per-type wins, not just the net score.
 - Other scoring sites (LMArena, Aider polyglot, SWE-bench, Vellum) are
   documented in the guide (§11) for hand cross-checks; only the Aider YAML
   (`aider/website/_data/polyglot_leaderboard.yml`) is pull-friendly today.

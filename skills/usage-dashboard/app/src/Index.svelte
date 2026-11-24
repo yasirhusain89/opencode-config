@@ -26,12 +26,39 @@
 
   const perday = $derived([...data.perday].reverse());
   const hist = $derived(data.hist.slice(-30));
+  // daily usage trend: sessions per day + Go reqs as % of the 18,000/mo cap
+  const goDaily = $derived(new Map((data.go_daily ?? []).map((d) => [d.day, d])));
+  const trendDays = $derived(data.perday.slice(-14));
+  const trendMax = $derived(Math.max(...trendDays.map((d) => goDaily.get(d.day)?.pct ?? 0), 0.01));
+  const trendPeak = $derived(trendDays.reduce((m, d) => ((goDaily.get(d.day)?.reqs ?? 0) > (goDaily.get(m.day)?.reqs ?? 0) ? d : m), trendDays[0]));
+  // per-model reliability: provider filter + click-to-sort headers
+  const relProvs = $derived([...new Set((data.model_rel ?? []).map((e) => e.provider))].sort());
+  let relProv = $state("all");
+  let relSort = $state({ key: "msgs", dir: -1 });
+  const relRows = $derived(
+    (data.model_rel ?? [])
+      .filter((e) => relProv === "all" || e.provider === relProv)
+      .slice()
+      .sort((a, b) => {
+        const k = relSort.key;
+        let av = k === "rate" ? (a.calls ? a.errors / a.calls : 0) : a[k];
+        let bv = k === "rate" ? (b.calls ? b.errors / b.calls : 0) : b[k];
+        if (typeof av === "string") { av = av.toLowerCase(); bv = String(bv).toLowerCase(); }
+        return (av < bv ? -1 : av > bv ? 1 : 0) * relSort.dir;
+      })
+  );
+  const relSortBy = (key) => {
+    if (relSort.key === key) relSort.dir = -relSort.dir;
+    else relSort = { key, dir: key === "provider" || key === "model" ? 1 : -1 };
+  };
+  const relArrow = (key) => (relSort.key === key ? (relSort.dir === 1 ? " ↑" : " ↓") : "");
   const clamp = (p) => Math.max(0, Math.min(100, p));
 
   // table pagination (page state is per-table, in-memory)
   const PAGE = 10;
   let sessPage = $state(0);
   let dayPage = $state(0);
+  let goIdx = $state(0);
   const sessPages = $derived(Math.max(1, Math.ceil(data.sessions.length / PAGE)));
   const dayPages = $derived(Math.max(1, Math.ceil(perday.length / PAGE)));
   const sessRows = $derived(data.sessions.slice(sessPage * PAGE, sessPage * PAGE + PAGE));
@@ -71,12 +98,6 @@
     <div class="v">{money(h.opus55)}</div>
     <div class="s">{h.sessions} sessions · {num(h.messages)} messages</div>
   </div>
-  <div class="card big">
-    <div class="k">Actually paid</div>
-    <div class="v ok">{money(h.actual)}</div>
-    <div class="s">{h.prov} / {h.model}</div>
-    <div class="s">{h.paid_note}</div>
-  </div>
   {#if h.quota}
     <div class="card">
       <div class="k">Go quota · rolling 5h</div>
@@ -84,11 +105,6 @@
       <div class="s">week {h.quota.weekly?.percent?.toFixed(0) ?? "–"}% · month {h.quota.monthly?.percent?.toFixed(0) ?? "–"}% · as of {String(h.quota.fetched_at || "").slice(0, 16).replace("T", " ")}</div>
     </div>
   {/if}
-  <div class="card">
-    <div class="k">Avoided</div>
-    <div class="v ok">{money(h.avoided)}</div>
-    <div class="s">vs Opus 5.5 list price</div>
-  </div>
   <div class="card">
     <div class="k">Cache hit</div>
     <div class="v ok">{h.cache_hit.toFixed(1)}%</div>
@@ -101,10 +117,78 @@
   </div>
   <div class="card">
     <div class="k">Time with opencode</div>
-    <div class="v">{hrs(h.active_min)}</div>
-    <div class="s">active assistant turns · {hrs(h.overall_min)} wall union</div>
+    <div class="v">{hrs(h.human_min)} <span class="hnote">human</span> · {hrs(h.active_min)} <span class="hnote">model</span></div>
+    <div class="s">engaged wall minus turns = human · active assistant turns = model/harness · {hrs(h.overall_min)} wall union (idle gaps &gt;15m excluded from human)</div>
   </div>
 </div>
+
+{#if data.go}
+  {@const goCycles = data.go_cycles ?? [data.go]}
+  {@const go = goCycles[goIdx] ?? data.go}
+  <h2>OpenCode Go</h2>
+  {#if goCycles.length > 1}
+    <div class="s">
+      Cycle
+      <select class="cmpsel" bind:value={goIdx}>
+        {#each goCycles as c, i}
+          <option value={i}>{c.start_iso} → {c.end_iso}{i === 0 ? " (current)" : ""} · {num(c.reqs)} reqs</option>
+        {/each}
+      </select>
+    </div>
+  {/if}
+  <div class="card">
+    <div class="k">Cycle {go.start} → {go.end} · {num(go.reqs)} Go requests</div>
+    <div class="s">
+      Month {num(go.reqs)} of {num(go.capReq ?? 18000)} ({go.pct != null ? go.pct.toFixed(1) + "%" : "–"})
+      · day {go.day}/{go.days} — even pace would be ~{num(go.expected_req)} by now
+      {#if go.pace != null}
+        · <b>{go.pace.toFixed(0)}% of pace ({go.pace <= 100 ? "under" : "over"})</b>
+      {/if}
+    </div>
+    {#if go.live}
+      <div class="s">
+        console-anchored request windows, as of {String(go.live.as_of || "").slice(0, 16).replace("T", " ")}:
+        {#if go.live.windows.month}
+          month <b>{(go.live.windows.month.pct ?? 0).toFixed(0)}%</b>
+          {#if (go.live.windows.month.pct ?? 0) >= 100}· <b>BLOCKED until {String(go.live.windows.month.freesAt || "").slice(0, 16).replace("T", " ")} UTC</b>{/if}
+        {/if}
+        {#if go.live.windows.week}
+          · week {(go.live.windows.week.pct ?? 0).toFixed(0)}%{#if go.live.windows.week.capReq} of {num(go.live.windows.week.capReq)}{/if}
+        {/if}
+        {#if go.live.windows.rolling && go.live.windows.rolling.usedReq != null}
+          · trailing 5h {num(go.live.windows.rolling.usedReq)} reqs
+        {/if}
+        {/if}
+      </div>
+    {/if}
+    <table><tbody>
+      <tr><th>Model</th><th class="r">Reqs</th><th class="r">Tokens in</th><th class="r">Cache read</th><th class="r">Allow reqs (scaled)</th><th class="r">Pace</th><th class="r">Quota used</th></tr>
+      {#each go.models as g}
+        {@const perReq = g.reqs ? g.est / g.reqs : 0}
+        {@const full = g.allow && perReq > 0 ? Math.floor(g.allow[0] / perReq) : null}
+        {@const scaled = full != null ? Math.floor(full * go.elapsed) : null}
+        {@const mpace = scaled != null && scaled >= 1 ? (100 * g.reqs / scaled) : null}
+        {@const usedPct = full ? (100 * g.reqs / Math.max(full, 1)) : null}
+        <tr>
+          <td title={g.allow ? `$${g.allow[0]}/mo ÷ $${perReq.toFixed(5)}/req at this cycle's mix` : "no published allowance"}>{g.model}{#if !g.priced}*{/if}</td>
+          <td class="r">{num(g.reqs)}</td>
+          <td class="r">{fmt(g.tin)}</td>
+          <td class="r">{fmt(g.tcr)}</td>
+          <td class="r">{scaled != null ? `~${num(scaled)} / ${num(full)}` : "–"}</td>
+          <td class="r">{mpace != null ? `${mpace.toFixed(0)}%${mpace <= 100 ? "" : " over"}` : "–"}</td>
+          <td class="r">{usedPct != null ? `${usedPct.toFixed(1)}%` : "–"}</td>
+        </tr>
+      {/each}
+    </tbody></table>
+    <div class="s">
+      Reference: {go.source} — per-model $ allowance (⅕ per 5h, ½ per week). Allow reqs =
+      monthly $ allowance ÷ this model's observed $/req this cycle, scaled by elapsed time
+      (~prorated / full-cycle). * = recorded DB cost, price unpublished. DeepSeek prices
+      double 01:00–04:00 &amp; 06:00–10:00 UTC on weekdays. The console actually enforces
+      account-wide request counts (month {go.live?.windows?.month?.capReq ?? go.capReq ?? "18,000"}{#if go.live?.windows?.week?.capReq ?? go.weekCapReq} · week {num(go.live?.windows?.week?.capReq ?? go.weekCapReq)}{/if}), not the per-model dollar table.
+    </div>
+  </div>
+{/if}
 
 <h2>Pricing — your usage on each model</h2>
 <div class="grid2">
@@ -181,35 +265,37 @@
 </details>
 
 <h2>
-  Daily Opus-5 trend
-  {#if data.peak}<span class="pill">peak {data.peak.day} · {money(data.peak.cost)}</span>{/if}
+  Daily usage trend
+  {#if trendPeak}<span class="pill">peak {trendPeak.day} · {num(goDaily.get(trendPeak.day)?.reqs ?? 0)} reqs ({goDaily.get(trendPeak.day)?.pct ?? 0}% of monthly quota)</span>{/if}
 </h2>
 <div class="hist">
-  {#each hist as b}
-    <div class="hcol" title={`${b.date}: ${money(b.opus55)}`}>
-      <div class="hval">{money(b.opus55)}</div>
+  {#each trendDays as d}
+    {@const g = goDaily.get(d.day)}
+    {@const pct = g?.pct ?? 0}
+    <div class="hcol" title={`${d.day}: ${d.sessions} sessions, ${g?.reqs ?? 0} Go reqs (${pct}% of 18,000/mo cap)`}>
+      <div class="hval">{d.sessions}s · {pct}%</div>
       <div class="htrack">
-        <div class="hfill" style={`height:${(100 * b.opus55 / data.max_hist).toFixed(1)}%`}></div>
+        <div class="hfill" style={`height:${(100 * pct / trendMax).toFixed(1)}%`}></div>
       </div>
-      <div class="hdate">{b.date.slice(5)}</div>
+      <div class="hdate">{d.day.slice(5)}</div>
     </div>
   {:else}
     <span class="note">no snapshots yet</span>
   {/each}
 </div>
 <div class="s">
-  Each bar is that day's Opus 5.5-equivalent usage. Past days freeze once snapshotted;
-  today's bar refreshes on every run. Days before the first snapshot are backfilled
-  from the sessions DB.
+  Last 14 days. Bar height = Go requests that day as a share of the 18,000/month
+  account quota; labels show sessions and quota %. Full history is in Cost per day below.
 </div>
 
 <h2>Cost per day</h2>
 <table><tbody>
-  <tr><th>Day</th><th>Sessions</th><th>Active</th><th>Tokens</th><th style="text-align:right">Opus 5.5</th></tr>
+  <tr><th>Day</th><th>Sessions</th><th>Human</th><th>Model</th><th>Tokens</th><th style="text-align:right">Opus 5.5</th></tr>
   {#each dayRows as d}
     <tr>
       <td class="mono">{d.day}</td>
       <td>{d.sessions}</td>
+      <td>{hrs(d.human ?? 0)}</td>
       <td>{hrs(d.active)}</td>
       <td>{fmt(d.tokens)}</td>
       <td class="r">{money(d.cost)}</td>
@@ -346,19 +432,33 @@
   {/if}
 </details>
 
-<h2>Reliability &amp; efficiency — per provider</h2>
+<h2>Reliability &amp; efficiency — per model</h2>
+<div class="s">
+  Turns, tool calls + errors, and turn latency for each observed model.
+  Same message-table basis as the cost tables above. Click a column header to sort.
+  <select class="cmpsel" bind:value={relProv}>
+    <option value="all">All providers ({(data.model_rel ?? []).length} models)</option>
+    {#each relProvs as p}
+      <option value={p}>{p}</option>
+    {/each}
+  </select>
+</div>
 <table><tbody>
   <tr>
-    <th>Provider</th><th>Turns</th><th>Tool calls</th>
-    <th style="text-align:right">Err</th>
-    <th style="text-align:right">Err rate</th>
-    <th style="text-align:right">p50 turn</th>
-    <th style="text-align:right">p95 turn</th>
-    <th style="text-align:right">tok/s p50</th>
+    <th><button class="thbtn" onclick={() => relSortBy("provider")}>Provider{relArrow("provider")}</button></th>
+    <th><button class="thbtn" onclick={() => relSortBy("model")}>Model{relArrow("model")}</button></th>
+    <th><button class="thbtn" onclick={() => relSortBy("msgs")}>Turns{relArrow("msgs")}</button></th>
+    <th><button class="thbtn" onclick={() => relSortBy("calls")}>Tool calls{relArrow("calls")}</button></th>
+    <th style="text-align:right"><button class="thbtn" onclick={() => relSortBy("errors")}>Err{relArrow("errors")}</button></th>
+    <th style="text-align:right"><button class="thbtn" onclick={() => relSortBy("rate")}>Err rate{relArrow("rate")}</button></th>
+    <th style="text-align:right"><button class="thbtn" onclick={() => relSortBy("p50")}>p50 turn{relArrow("p50")}</button></th>
+    <th style="text-align:right"><button class="thbtn" onclick={() => relSortBy("p95")}>p95 turn{relArrow("p95")}</button></th>
+    <th style="text-align:right"><button class="thbtn" onclick={() => relSortBy("tps")}>tok/s p50{relArrow("tps")}</button></th>
   </tr>
-  {#each data.prov_rel as e}
+  {#each relRows as e}
     <tr>
       <td class="mono">{e.provider}</td>
+      <td class="mono">{e.model}</td>
       <td>{num(e.msgs)}</td>
       <td>{num(e.calls)}</td>
       <td class="r">{e.errors}</td>
@@ -560,9 +660,7 @@
     usage-dashboard skill). Reasoning billed as output everywhere. Time figures are
     active assistant-turn minutes (wall spans shown separately; hours are local).
     The landing ratio counts only sessions that edited code — Q&A/exploration
-    sits outside it. Actually paid =
-    flat subscriptions (OpenCode Go $10/mo since Oct 2026, covering opencode-go
-    metered usage) plus any metered cost on non-covered providers;     per-row Paid
+    sits outside it. Per-row Paid
     figures are recorded metered value, not bills. Billing flags list non-free
     model IDs served by key-authed providers (nvidia, openrouter), where opencode
     records $0 — confirm free-tier status on the provider billing page. The 429

@@ -2,11 +2,15 @@
   --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --line: #ddd;
   --head: #f4f4f4; --row2: #fafafa; --accent: #1a56db; --warn: #9a6700;
   --warnbg: #fff8e6; --goodbg: #eef7ee;
+  --chart1: #1a56db; --chart2: #0e9f6e; --chart3: #c27803;
+  --pillbg: #eef2ff; --pillfg: #1a56db;
 }
 [data-theme="dark"] {
   --bg: #0d1117; --fg: #e6edf3; --muted: #8d96a0; --line: #30363d;
   --head: #161b22; --row2: #111820; --accent: #4493f8; --warn: #d29922;
   --warnbg: rgba(187,128,9,.15); --goodbg: rgba(63,185,80,.15);
+  --chart1: #79b8ff; --chart2: #56d364; --chart3: #e3b341;
+  --pillbg: #1c2b4a; --pillfg: #79b8ff;
 }
 * { box-sizing: border-box; }
 body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
@@ -66,6 +70,24 @@ th[data-sort]:focus-visible, th[data-tip]:focus-visible {
 pre { background: var(--head); padding: .6rem .8rem; overflow-x: auto; font-size: .78rem; }
 .theme-btn { background: var(--head); color: var(--fg); border: 1px solid var(--line);
   border-radius: 4px; padding: .25rem .6rem; cursor: pointer; font-size: .8rem; }
+/* 1-click provider/status filters: theme-aware pills, keyboard-focusable */
+.pills { display: flex; flex-wrap: wrap; gap: .35rem; margin: .6rem 0 .2rem; }
+.pill { background: var(--head); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 999px; padding: .15rem .7rem; cursor: pointer; font-size: .78rem; }
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill.on { background: var(--pillbg); color: var(--pillfg); border-color: var(--accent); font-weight: 600; }
+.pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* collapsed reference sections + personality drawer (P4 declutter) */
+details.ref { border: 1px solid var(--line); border-radius: 6px; margin: .6rem 0; background: var(--bg); }
+details.ref > summary { cursor: pointer; padding: .4rem .7rem; list-style: none; }
+details.ref > summary::-webkit-details-marker { display: none; }
+details.ref > summary::before { content: "▸ "; color: var(--accent); }
+details.ref[open] > summary::before { content: "▾ "; }
+details.ref > summary h2, details.ref > summary h3 { display: inline; border: 0; margin: 0; padding: 0; }
+details.ref > summary:hover h2, details.ref > summary:hover h3 { color: var(--accent); }
+details.ref > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.ref > :not(summary) { padding: 0 .7rem; }
+details.ref table { margin-left: 0; margin-right: 0; }
 @media (max-width: 760px) {
   .wrap { padding: .8rem .6rem 3rem; }
   table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }

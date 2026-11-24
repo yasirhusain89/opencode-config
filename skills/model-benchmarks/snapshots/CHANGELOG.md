@@ -1,5 +1,90 @@
 # model-benchmarks — changelog (run-log lives here, not in the guide)
 
+## 2026-11-22 — 2-stage mini-eval funnel (`mini_eval.mjs`) + 10-model stealth/launch scorecard
+- **Harness:** `scripts/mini_eval.mjs` + `scripts/mini_eval.test.mjs` (39/39 unit
+  assertions) implement a 2-stage funnel:
+  - **Stage 1 (`probe`, 0–100 deterministic composite, 4 tasks):** P1 Code
+    Synthesis (35 pts, 10 unit test cases in `vm`), P2 BugHunt (35 pts, 3
+    planted bugs + 1 clean decoy with −10 FP penalty), P3 Constraint Logic (15
+    pts, exact lock schedule + peak write buffer), P4 Agentic Tool Discipline
+    (15 pts, workspace-internal fixture `snapshots/evals/.p4-fixture/` to avoid
+    headless `external_directory` auto-reject).
+  - **Stage 2 (`corpus`, hardened §16 blind 10-diff reviewer eval):** strips
+    `model` and identity tokens from `runs/*.json`, requires `--judge` in
+    `key.json`, pauses routes after 2 consecutive DNFs, and enforces
+    mathematical futility (`checkSequentialStopping`) after core-6 diffs.
+  - **Isolation:** `OPENCODE_MODEL_FALLBACK=off`, `--archived --title`,
+    `agents.title.model` pinned to candidate (zero paid-Go title leak on free
+    routes), tool-deny config on standalone tasks P1–P3.
+- **2026-11-22 live Stage 1 scorecard (`snapshots/evals/2026-11-22/probe-scorecard.md`):**
+  1. `opencode/iceman-free`: **100/100** (Apex, 4/4, p50 43.3s, 55.6 tps, 91% reas)
+  2. `opencode-go/glm-5.3-flash`: **100/100** (Apex, 4/4, p50 7.7s, 89.2 tps, 78% reas)
+  3. `opencode/big-pickle`: **98/100** (Apex, 4/4, p50 28.3s, 90.4 tps, 93% reas)
+  4. `opencode-go/iceman-contributor-free`: **96/100** (Apex, 4/4, p50 47.1s, 60 tps, 90% reas — matches `opencode/iceman-free`)
+  5. `opencode/hy4-flash-free`: **96/100** (Apex, 4/4, p50 22.7s, 163.9 tps, 94% reas)
+  6. `opencode-go/kimi-k3.1-pro`: **90/100** (Apex, 4/4, p50 23.3s, 89.9 tps, 90% reas; caught all 3 P2 bugs, −10 FP on decoy)
+  7. `opencode/mimo-v2.6-flash-free`: **86/100** (Apex, 4/4, p50 23.7s, 94.5 tps, 86% reas)
+  8. `opencode/flint-40b-free`: **72/100** (Workhorse, 3/4, p50 61.4s, 0% reas; P3 timeout, P4 41-step XML tool thrash)
+  9. `opencode/longcat-2.5-free`: **71/100** (Workhorse, 3/4, p50 30.8s, 60.4 tps, 89% reas; P3 timeout)
+  10. `opencode/tidepool-alpha-free`: **61/100** (Workhorse, 2/4, p50 76.4s, 130.2 tps, 96% reas; P1 35/35, P2 26/35, P3/P4 upstream stalls >120s)
+- **Guide integration:** `guide_data.mjs` joins `probe-summary.json` into §1
+  freshness, §4 free routes, §6 Go catalog (`Mini-eval ⇅` column + `EVAL`
+  badges), and §16 live scorecard table (expanded by default, `Evaluated` filter
+  pill in `Guide.svelte`).
+
+## 2026-11-22 — P0–P4: quota-semantics fixes + guide UX overhaul (Gap/launch/catalog)
+- **P0 quota semantics (user-corrected):** free endpoints (`opencode/*-free`,
+  `opencode-go/*-free`) sit in a separate pool with tighter limits and never
+  burn Go quota; NVIDIA is the slow last resort (per-model p50 ~37s vs ~7s Go).
+  `sr-calc.mjs` excludes `-free` from Go windows/daily/shares (flags
+  `freePool`), `dashboard.mjs` excludes `-free` from SR/cap pacing (free equiv
+  = `$0 (free pool)`), `model-fallback.js` + `dashboard.mjs` route low-stakes
+  through `opencode/mimo-v2.6-flash-free` first with NVIDIA-last chaining.
+  Tests updated (free-exclusion fixtures, chain-advance test, Go-headroom paid-only).
+- **P1 freshness + launch diff:** `guide_data.mjs` joins newest + previous
+  check/coding/access snapshots — §1 now leads with same-vintage Provider gap
+  (Intel 65 vs Go 46, −19 · Eng 58 vs Go 55, −3), What's new (Go +5/−1, AA +7),
+  and a freshness bar (Intel 11-22 partial · Eng 10-24 · CAI 11-21 partial).
+- **P2 Go catalog:** §6 auto-built from the live `opencode-go` catalog — all 33
+  routes tiered (Apex/Workhorse/Free pool) with Eng/Intel/agentic/Go $/1M/cap/
+  pin/action; NEW + PINNED badges; nominal tiers, no dollar runways.
+- **P3 master join:** §2 gains a live Available column (Go $10 / OC Free / NV /
+  OR + PINNED/NEW) on family-key join with short-stem guards.
+- **P4 declutter + dark theme:** 1-click provider pills (All/On Go/Free
+  pool/Frontier/New/Pinned), 8 reference sections + §9b personality matrix in
+  `<details>` drawers (17 h2 / 23 tables intact), theme-aware pill/chart vars.
+  SSR 151K chars, 319 rows, check OK. Standalone preview re-opened.
+
+## 2026-11-22 — guide rebuilt on 11-22 snapshots (eval dashboard live)
+- **New snapshots:** `check-2026-11-22.json` (17 slugs, Intel/pricing fresh;
+  engineering tab timed out 17/17 — Eng stays 10-24 vintage), 
+  `coding-index-2026-11-21.json` (CAI v2.1 partial: DeepSWE/T-Bench tabs failed,
+  SWE-Atlas-QnA only), `access-2026-11-22.json` (424 live routes: 33 Go, 11
+  opencode, 20 nvidia, 3 ollama, 357 openrouter aliases; assembled from
+  oc-models-live.txt — CLI inventory stays V2-broken).
+- **Regenerated:** `dashboard-2026-11-22.json` + `routing-2026-11-22.json`
+  (dashboard.mjs), `data.js` (guide_data.mjs, 17 sections / 283 rows),
+  rebuilt app assets; `npm run check` SSR 143,749 chars, 23 tables / 306 rows.
+- Known staleness: usage $/day in §1/§8 still reads the frozen V1 `message`
+  table (V2 gap); Go §6 caps are the blog-verified 11-02 tiers (dashboard.mjs
+  GO ↔ generate.py GO_ALLOWANCE 32/32 in sync).
+
+## 2026-11-22 — Go price-table mirror resync to 11-02 blog + AA refresh in flight
+- **Blog-verified caps:** `dashboard.mjs` GO + `generate.py` GO_PRICES/GO_ALLOWANCE
+  resynced to atomicbot.ai/blog/opencode-go (checked 2026-11-02):
+  DS V4.1 Flash 80→100, Argon(+contrib) 60→30, MiniMax-M3.1-Flash 30→20,
+  space-bunny 30→20, K2.7-Code/Qwen3.7-Plus/MiniMax-M3 15→60 (were $15 defaults),
+  Qwen3.8-Flash 15→30, Step-5-Preview 60→15. Added missing $60/$30/$15-tier
+  members (glm-5.2, spark-1.2-contrib, mimo-v2.5, mimo-v2.5-pro, grok-4.7,
+  longcat-2.0, hy3, hy4(+preview), qwen4-max unverified-default $15).
+  Fixed mimo-v2.6-pro cached-read 0.0036→0.003625. Mirrors now 32/32 in sync;
+  dashboard suite green (aa_bench inventory 2 pre-existing V2 failures unchanged).
+- **AA refresh running:** `aa_bench.mjs check` 17 slugs (Go shortlist + Qwen4-Max,
+  GLM-5.3, Grok-4.7, MiMo-Pro, DS-Flash, Qwen3.8-Max) → /tmp/aa_check_refresh.json;
+  engineering tab failed 12/12 on 11-21 pull (locator.click timeout) so Eng stays
+  10-24 vintage until the tab selector is fixed; Intel/pricing/highlights refresh
+  from the new pull. Coding Index re-pull still pending (v2.1 partial 11-21).
+
 ## 2026-10-24 — §10 caveats + vintage labels + table a11y
 - **§10 is now real:** six caveats (model×harness, per-section vintage,
   unverified Go caps, free-route privacy, lossy usage metrics, benchmark

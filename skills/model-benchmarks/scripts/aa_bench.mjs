@@ -504,9 +504,22 @@ try {
       const text = await getText(`https://artificialanalysis.ai/models/${slug}`, 6, 5000);
       if (!engDone) {
         try {
+          // 2026-11-21: plain .click() times out (tab present but not clickable
+          // via the actionability checks). Scroll into view, try a short
+          // click, fall back to a JS click which bypasses actionability.
+          const clickTab = async (loc) => {
+            try {
+              await loc.scrollIntoViewIfNeeded({ timeout: 8000 });
+            } catch { /* already visible or no layout box yet */ }
+            try {
+              await loc.click({ timeout: 10000 });
+            } catch {
+              await loc.evaluate((el) => el.click());
+            }
+          };
           const roleTab = page.getByRole('tab', { name: /engineering/i }).first();
-          if (await roleTab.count()) await roleTab.click();
-          else await page.locator('[id$="-trigger-engineering"]').first().click(); // Radix-id fallback
+          if (await roleTab.count()) await clickTab(roleTab);
+          else await clickTab(page.locator('[id$="-trigger-engineering"]').first()); // Radix-id fallback
           await page.waitForTimeout(4000);
           const engText = await page.evaluate(() => document.body.innerText);
           result.engineering = parseEngineering(engText);

@@ -29,6 +29,7 @@ background:var(--soft)}
 .card .s{font-size:12px;color:var(--muted);margin-top:4px}
 table{border-collapse:collapse;width:100%;margin:6px 0 10px}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);font-size:13px}
+.thbtn{background:none;border:0;padding:0;font:inherit;font-weight:700;cursor:pointer;color:inherit;text-align:inherit;white-space:nowrap}
 td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
 .mono{font-family:ui-monospace,SFMono-Regular,monospace;font-size:12px}
 table.rates td{padding:5px 0;border:0;font-size:13px}
@@ -54,6 +55,7 @@ padding:2px 10px;margin-left:8px;color:inherit;vertical-align:middle;text-transf
 details{border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin:14px 0;background:var(--soft)}
 summary{cursor:pointer;font-size:13px}
 .s{font-size:12px;color:var(--muted);margin:2px 0 8px}
+.hnote{font-size:12px;color:var(--muted);font-weight:400}
 .note{font-size:12px;color:var(--muted)}
 b{font-weight:650}
 a{color:#4c9aff;text-decoration:none}

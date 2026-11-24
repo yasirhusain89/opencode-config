@@ -31,6 +31,93 @@ SESS_DIR = OUT_DIR / "sessions"
 QUOTA_FILE = OUT_DIR / "quota.json"
 # Provider credit snapshot written by scripts/provider_credits.mjs.
 CREDITS_FILE = OUT_DIR / "credits.json"
+# Live Go allowance snapshot kept fresh by plugins/cost-tracker.js (schema 4,
+# console-anchored account-wide request counts; absent = unknown).
+SR_LIVE_FILE = DB.parent / "sr-live.json"
+
+# OpenCode Go reference (atomicbot.ai/blog/opencode-go, checked 2026-11-02,
+# re-verified 2026-11-22): per-1M token prices (input, output, cached read)
+# for the published models, and per-model dollar allowances (monthly,
+# per-5h, per-week) from the blog's limit tiers. Mirrors dashboard.mjs GO.
+# Recorded per-message costs in opencode.db match these prices to the 4th
+# decimal on GLM-5.3-Flash, Muse Spark 1.3 Contributor, DeepSeek V4.1 Flash
+# (off-peak) and MiMo-V2.6-Pro — so this table prices the rows whose
+# recorded cost was lost in the V2 migration (cost=0 after ~Nov 12).
+# Caps: $100 DS V4.1 Flash; $60 GLM-Flash/GLM-5.2/K2.7-Code/MiMo-Flash/
+# MiMo-V2.5/MiniMax-M3/Spark-1.3+1.2/Qwen3.7-Plus/LongCat-2.0/Hy3; $30
+# Qwen3.8-Flash/Argon/Hy4-preview(+Hy4); $20 MiniMax-M3.1-Flash(+space-bunny
+# historic); $15 everything else. Qwen4-Max postdates the blog (tier
+# unverified, default $15). Prices marked verify need a Go-console check.
+GO_PRICES = {
+    "glm-5.3-flash": (0.15, 0.50, 0.03),
+    "glm-5.3": (1.40, 4.40, 0.26),
+    "glm-5.2": (1.40, 4.40, 0.26),  # blog $60 tier; price = GLM-5.3 list — verify
+    "muse-spark-1.3-contributor": (0.10, 0.20, 0.002),
+    "muse-spark-1.2-contributor": (0.10, 0.20, 0.002),
+    "deepseek-v4.1-flash": (0.15, 0.60, 0.003),
+    "deepseek-v4-pro": (0.66, 1.98, 0.022),
+    "mimo-v2.6-pro": (0.435, 0.87, 0.003625),
+    "mimo-v2.5-pro": (0.435, 0.87, 0.003625),  # blog $15 tier; price = V2.6-Pro — verify
+    "mimo-v2.6-flash": (0.14, 0.28, 0.0028),
+    "mimo-v2.5": (0.14, 0.28, 0.0028),
+    "minimax-m3.1-flash": (0.15, 0.60, 0.015),
+    "minimax-m3": (0.30, 1.20, 0.06),  # blog $60 tier (was $15 default)
+    "space-bunny": (0.15, 0.60, 0.015),  # historic = M3.1 early build; tier follows $20
+    "gpt-6-luna": (0.10, 0.50, 0.01),
+    "gpt-5.6-luna": (0.20, 1.20, 0.02),
+    "claude-haiku-5.5": (0.10, 0.50, 0.01),
+    "kimi-k3.1-pro": (2.00, 10.00, 0.20),
+    "kimi-k3": (3.00, 15.00, 0.30),
+    "kimi-k2.7-code": (0.95, 4.00, 0.19),  # blog $60 tier (was $15 default)
+    "qwen3.8-flash": (0.15, 0.47, 0.016),  # blog $30 tier (was 15)
+    "qwen3.7-plus": (0.40, 1.60, 0.04),  # blog $60 tier (was $15 default)
+    "qwen3.8-max": (2.00, 6.00, 0.25),
+    "qwen4-max": (1.50, 4.50, 0.18),  # postdates blog; price = AA 11-21 — verify
+    "gemini-4-argon": (2.00, 10.00, 0.10),  # blog $30 tier (was 60)
+    "grok-4.7": (2.00, 6.00, 0.50),  # blog $15 tier; price = AA 10-24 — verify
+    "longcat-2.0": (0.30, 1.20, 0.06),  # blog $60 tier; price placeholder — verify
+    "hy3": (0.30, 1.20, 0.06),  # blog $60 tier; price placeholder — verify
+    "hy4-preview": (0.83, 2.50, 0.08),  # blog $30 tier; price = AA tencent-hy4 — verify
+    "hy4": (0.83, 2.50, 0.08),  # tier follows Hy4-preview $30 — verify
+    "step-5-preview": (1.00, 2.70, 0.10),  # blog $15 tier (was 60)
+}
+# (monthly $ allowance, per-5h $, per-week $) — blog limit tiers. None = not
+# published in the blog reference (e.g. the Gemini 4 Argon Contributor
+# variant's tier is not listed).
+GO_ALLOWANCE = {
+    "glm-5.3-flash": (60, 12, 30),
+    "glm-5.3": (15, 3, 7.5),
+    "glm-5.2": (60, 12, 30),
+    "muse-spark-1.3-contributor": (60, 12, 30),
+    "muse-spark-1.2-contributor": (60, 12, 30),
+    "mimo-v2.6-flash": (60, 12, 30),
+    "mimo-v2.5": (60, 12, 30),
+    "mimo-v2.6-pro": (15, 3, 7.5),
+    "mimo-v2.5-pro": (15, 3, 7.5),
+    "gemini-4-argon": (30, 6, 15),
+    "gemini-4-argon-contributor": (30, 6, 15),
+    "kimi-k3.1-pro": (15, 3, 7.5),
+    "kimi-k3": (15, 3, 7.5),
+    "kimi-k2.7-code": (60, 12, 30),
+    "deepseek-v4.1-flash": (100, 20, 50),
+    "deepseek-v4-pro": (15, 3, 7.5),
+    "minimax-m3.1-flash": (20, 4, 10),
+    "minimax-m3": (60, 12, 30),
+    "space-bunny": (20, 4, 10),
+    "gpt-6-luna": (15, 3, 7.5),
+    "gpt-5.6-luna": (15, 3, 7.5),
+    "claude-haiku-5.5": (15, 3, 7.5),
+    "qwen3.8-flash": (30, 6, 15),
+    "qwen3.7-plus": (60, 12, 30),
+    "qwen3.8-max": (15, 3, 7.5),
+    "qwen4-max": (15, 3, 7.5),
+    "grok-4.7": (15, 3, 7.5),
+    "longcat-2.0": (60, 12, 30),
+    "hy3": (60, 12, 30),
+    "hy4-preview": (30, 6, 15),
+    "hy4": (30, 6, 15),
+    "step-5-preview": (15, 3, 7.5),
+}
 
 # Claude Opus 5.5 standard pricing (2026-10-07 rate card; was Opus 5 $5/$25)
 PRICE_IN = 4.00 / 1_000_000       # $/token input
@@ -609,19 +696,21 @@ def main():
     cache_hit = (100.0 * total["cache_read"] / denom) if denom else 0.0
 
     # --- latency: turn durations + tokens/sec from message timestamps,
-    #     grouped per provider (opencode timestamps are ms) ---
+    #     grouped per provider+model (opencode timestamps are ms) ---
     cur.execute("""SELECT json_extract(data,'$.providerID'),
+        json_extract(data,'$.modelID'),
         json_extract(data,'$.time.created'),
         json_extract(data,'$.time.completed'),
         json_extract(data,'$.tokens.output') + json_extract(data,'$.tokens.reasoning')
         FROM message WHERE json_extract(data,'$.role')='assistant'
         AND json_extract(data,'$.time.completed') IS NOT NULL""")
     prov_lat = {}
-    for provider, created, completed, out_tok in cur.fetchall():
+    for provider, model, created, completed, out_tok in cur.fetchall():
         if not (created and completed and completed > created):
             continue
         secs = (completed - created) / 1000.0
-        p = prov_lat.setdefault(provider or "?", {"msgs": 0, "durs": [], "tps": []})
+        key = ((provider or "?"), (model or "?"))
+        p = prov_lat.setdefault(key, {"msgs": 0, "durs": [], "tps": []})
         p["msgs"] += 1
         p["durs"].append(secs)
         if out_tok and secs > 0:
@@ -633,11 +722,11 @@ def main():
         return vals[min(int(len(vals) * p), len(vals) - 1)]
 
     prov_lat_list = []
-    for p, d in sorted(prov_lat.items(), key=lambda kv: -kv[1]["msgs"]):
+    for (p, m), d in sorted(prov_lat.items(), key=lambda kv: -kv[1]["msgs"]):
         durs = sorted(d["durs"])
         tps = sorted(d["tps"])
         prov_lat_list.append({
-            "provider": p, "msgs": d["msgs"],
+            "provider": p, "model": m, "msgs": d["msgs"],
             "p50": durs[len(durs) // 2] if durs else 0.0,
             "p95": pctiles(durs, 0.95),
             "tps_p50": tps[len(tps) // 2] if tps else 0.0,
@@ -653,29 +742,69 @@ def main():
                    "tps_p50": allt[len(allt) // 2] if allt else 0.0,
                    "tps_p10": pctiles(allt, 0.10)}
 
-    # --- tool calls + errors per provider (part joins message on message_id) ---
-    cur.execute("""SELECT json_extract(m.data,'$.providerID'), count(*),
+    # --- tool calls + errors per provider+model (part joins message) ---
+    # provider rollup (prov_rel) is kept for backward compat; model_rel
+    # powers the per-model reliability table.
+    cur.execute("""SELECT json_extract(m.data,'$.providerID'),
+        json_extract(m.data,'$.modelID'), count(*),
         sum(CASE WHEN json_extract(p.data,'$.state.status')='error'
             THEN 1 ELSE 0 END)
         FROM part p JOIN message m ON p.message_id = m.id
         WHERE json_extract(p.data,'$.type')='tool'
-        GROUP BY 1 ORDER BY 2 DESC""")
+        GROUP BY 1, 2 ORDER BY 3 DESC""")
     prov_err = {}
-    for provider, n, errs in cur.fetchall():
-        prov_err[provider or "?"] = {"calls": n, "errors": errs or 0}
+    for provider, model, n, errs in cur.fetchall():
+        prov_err[((provider or "?"), (model or "?"))] = {
+            "calls": n, "errors": errs or 0}
+    by_prov_err = {}
+    for (provider, _model), er in prov_err.items():
+        b = by_prov_err.setdefault(provider, {"calls": 0, "errors": 0})
+        b["calls"] += er["calls"]
+        b["errors"] += er["errors"]
 
-    prov_rel = []
+    model_rel = []
     for e in prov_lat_list:
-        er = prov_err.get(e["provider"], {"calls": 0, "errors": 0})
+        er = prov_err.get((e["provider"], e["model"]),
+                          {"calls": 0, "errors": 0})
         e2 = dict(e)
         e2["calls"] = er["calls"]
         e2["errors"] = er["errors"]
-        prov_rel.append(e2)
-    for p in sorted(prov_err):
+        model_rel.append(e2)
+    for key in sorted(prov_err):
+        if not any(e["provider"] == key[0] and e["model"] == key[1]
+                   for e in model_rel):
+            er = prov_err[key]
+            model_rel.append({"provider": key[0], "model": key[1],
+                              "msgs": 0, "p50": 0.0, "p95": 0.0,
+                              "tps_p50": 0.0, "total_min": 0.0,
+                              "calls": er["calls"], "errors": er["errors"]})
+
+    # provider p50/p95 need durations: re-aggregate from prov_lat directly
+    prov_roll = {}
+    for (provider, _model), d in prov_lat.items():
+        b = prov_roll.setdefault(provider, {"msgs": 0, "durs": [],
+                                            "tps": []})
+        b["msgs"] += d["msgs"]
+        b["durs"].extend(d["durs"])
+        b["tps"].extend(d["tps"])
+    prov_rel = []
+    for p, d in sorted(prov_roll.items(),
+                       key=lambda kv: -kv[1]["msgs"]):
+        durs = sorted(d["durs"])
+        tps = sorted(d["tps"])
+        er = by_prov_err.get(p, {"calls": 0, "errors": 0})
+        prov_rel.append({
+            "provider": p, "msgs": d["msgs"],
+            "p50": durs[len(durs) // 2] if durs else 0.0,
+            "p95": pctiles(durs, 0.95),
+            "tps_p50": tps[len(tps) // 2] if tps else 0.0,
+            "total_min": sum(durs) / 60.0,
+            "calls": er["calls"], "errors": er["errors"]})
+    for p in sorted(by_prov_err):
         if not any(e["provider"] == p for e in prov_rel):
-            er = prov_err[p]
-            prov_rel.append({"provider": p, "msgs": 0, "p50": 0.0, "p95": 0.0,
-                             "tps_p50": 0.0, "total_min": 0.0,
+            er = by_prov_err[p]
+            prov_rel.append({"provider": p, "msgs": 0, "p50": 0.0,
+                             "p95": 0.0, "tps_p50": 0.0, "total_min": 0.0,
                              "calls": er["calls"], "errors": er["errors"]})
 
     # --- per-session rollup (sessions table + message msg/duration + tool calls) ---
@@ -780,6 +909,23 @@ def main():
         cur, [s["id"] for s in session_rows_data])
     for sd in session_rows_data:
         sd["q"] = sess_q.get(sd["id"])
+
+    # --- human vs model time split ---
+    # engaged wall per session = wall span minus idle gaps (>15m, away from
+    # keyboard); human ≈ engaged wall minus assistant turn time. Gaps keep
+    # lunch/afternoon-away out of the human number.
+    human_by_day = {}
+    human_min = 0.0
+    for sd in session_rows_data:
+        q = sd.get("q") or {}
+        engaged = max(0.0, (q.get("wall_min") or 0.0)
+                      - (q.get("gap_ms") or 0) / 60000.0)
+        h = max(0.0, engaged - (q.get("active_min") or 0.0))
+        human_min += h
+        if sd.get("day"):
+            human_by_day[sd["day"]] = human_by_day.get(sd["day"], 0.0) + h
+    for d in days:
+        d["human"] = human_by_day.get(d["day"], 0.0)
 
     # --- featured sessions: costliest + most errors + most turns ---
     feat_ids = set(s["id"] for s in session_rows_data[:12])
@@ -979,6 +1125,173 @@ def main():
                    "providers": cj.get("providers")}
     except (OSError, ValueError):
         credits = None
+    # --- OpenCode Go: billing-cycle actuals vs the blog reference ---
+    # Cycles = 19th–19th UTC billing months (mirrors sr-calc.mjs). Requests
+    # count Go-product rows only (providerID='opencode-go', error rows
+    # excluded — matches the console-verified meter). Cost is priced at
+    # GO_PRICES (blog-validated) so the V2-migration cost loss is recovered;
+    # models without published prices fall back to recorded cost.
+    # Account-wide request caps (sr-calc.mjs): month 18,000, week 15,700.
+    GO_MONTH_CAP = 18000
+    GO_WEEK_CAP = 15700
+    GO_SOURCE = ("atomicbot.ai/blog/opencode-go, checked 2026-11-02; "
+                 "caps $100/$60/$30/$20/$15 per model, account-wide "
+                 "18,000 req/mo + 15,700 req/wk")
+
+    def go_cycle_for(start, end, live, u):
+        t0 = int(start.timestamp() * 1000)
+        t1 = int(end.timestamp() * 1000)
+        try:
+            con = sqlite3.connect("file:" + str(DB) + "?mode=ro", uri=True)
+            cur = con.cursor()
+            cur.execute("SELECT COUNT(*) FROM sqlite_master "
+                        "WHERE type='table' AND name='session_message'")
+            if cur.fetchone()[0]:
+                frm = "session_message WHERE type='assistant'"
+                prov = "COALESCE(json_extract(data,'$.model.providerID'),'?')"
+                mdl = "COALESCE(json_extract(data,'$.model.id'),'?')"
+            else:
+                frm = "message WHERE json_extract(data,'$.role')='assistant'"
+                prov = "COALESCE(json_extract(data,'$.providerID'),'?')"
+                mdl = "COALESCE(json_extract(data,'$.modelID'),'?')"
+            cur.execute(
+                "SELECT " + mdl + ", COUNT(*), "
+                "COALESCE(SUM(json_extract(data,'$.tokens.input')),0), "
+                "COALESCE(SUM(json_extract(data,'$.tokens.output')),0), "
+                "COALESCE(SUM(json_extract(data,'$.tokens.reasoning')),0), "
+                "COALESCE(SUM(json_extract(data,'$.tokens.cache.read')),0), "
+                "COALESCE(SUM(json_extract(data,'$.tokens.cache.write')),0), "
+                "COALESCE(SUM(json_extract(data,'$.cost')),0) "
+                "FROM " + frm + " AND time_created>=" + str(t0) +
+                " AND time_created<" + str(t1) +
+                " AND " + prov + "='opencode-go'"
+                " AND json_extract(data,'$.error') IS NULL GROUP BY 1")
+            rows = cur.fetchall()
+            con.close()
+        except sqlite3.Error:
+            return None
+        if not rows:
+            return None
+        models = []
+        tot_req = 0
+        tot_usd = 0.0
+        for r in sorted(rows, key=lambda r: -r[7]):
+            mid = r[0]
+            pr = GO_PRICES.get(mid)
+            rec = round(r[7], 4)
+            if pr:
+                # cache-write price is unpublished in the blog reference; it is
+                # 0 for every Go row this cycle, so it is excluded from est.
+                est = round((r[2] * pr[0] + (r[3] + r[4]) * pr[1]
+                             + r[5] * pr[2]) / 1e6, 4)
+                priced = True
+            else:
+                est = rec
+                priced = False
+            allow = GO_ALLOWANCE.get(mid)
+            models.append({"model": mid, "reqs": r[1],
+                           "tin": r[2], "tout": r[3] + r[4],
+                           "tcr": r[5], "tcw": r[6],
+                           "rec": rec, "est": est, "priced": priced,
+                           "allow": allow,
+                           "pct": (round(100.0 * est / allow[0], 1)
+                                   if allow and est else None)})
+            tot_req += r[1]
+            tot_usd += est
+        span_s = (end - start).total_seconds() or 1
+        if u < start:
+            elapsed = 0.0
+        elif u >= end:
+            elapsed = 1.0
+        else:
+            elapsed = (u - start).total_seconds() / span_s
+        days = max(1, round(span_s / 86400.0))
+        day = days if u >= end else max(1, int((u - start).total_seconds() // 86400) + 1)
+        expected_req = int(round(GO_MONTH_CAP * elapsed))
+        pace = (round(100.0 * tot_req / expected_req, 1)
+                if expected_req > 0 else None)
+        return {"start": start.strftime("%b %d"),
+                "end": end.strftime("%b %d"),
+                "start_iso": start.strftime("%Y-%m-%d"),
+                "end_iso": end.strftime("%Y-%m-%d"),
+                "live": live, "models": models,
+                "reqs": tot_req, "usd": round(tot_usd, 2),
+                "source": GO_SOURCE, "capReq": GO_MONTH_CAP,
+                "weekCapReq": GO_WEEK_CAP,
+                "elapsed": round(elapsed, 4), "day": day, "days": days,
+                "expected_req": expected_req, "pace": pace,
+                "pct": round(100.0 * tot_req / GO_MONTH_CAP, 1)}
+
+    def go_cycles():
+        u = now.astimezone(datetime.timezone.utc)
+        cur = datetime.datetime(u.year, u.month, 19,
+                                tzinfo=datetime.timezone.utc)
+        if u.day < 19:
+            prev = (datetime.datetime(u.year, u.month, 1,
+                                      tzinfo=datetime.timezone.utc)
+                    - datetime.timedelta(days=1))
+            cur = datetime.datetime(prev.year, prev.month, 19,
+                                    tzinfo=datetime.timezone.utc)
+        live = None
+        try:
+            lj = json.loads(SR_LIVE_FILE.read_text())
+            if lj.get("schema") == 4:
+                live = {"as_of": (lj.get("fullRecomputeAt")
+                                  or lj.get("generated_at")),
+                        "windows": {k: v for k, v
+                                    in (lj.get("windows") or {}).items()
+                                    if k in ("month", "week", "rolling")}}
+        except (OSError, ValueError):
+            live = None
+        # current + 3 prior 19th–19th cycles, newest first
+        out = []
+        s = cur
+        for i in range(3, -1, -1):
+            ss = s
+            for _ in range(i):
+                ss = datetime.datetime(
+                    ss.year - (1 if ss.month == 1 else 0),
+                    12 if ss.month == 1 else ss.month - 1, 19,
+                    tzinfo=datetime.timezone.utc)
+            ee = datetime.datetime(
+                ss.year + (1 if ss.month == 12 else 0),
+                1 if ss.month == 12 else ss.month + 1, 19,
+                tzinfo=datetime.timezone.utc)
+            c = go_cycle_for(ss, ee, live if i == 0 else None, u)
+            if c:
+                out.append(c)
+        out.sort(key=lambda c: c["start_iso"], reverse=True)
+        for c in out:
+            c.pop("_s", None)
+        return out
+
+    go_list = go_cycles()
+    go = go_list[0] if go_list else None
+
+    # --- Go requests per day (daily usage trend: % of monthly request cap) ---
+    try:
+        con2 = sqlite3.connect("file:" + str(DB) + "?mode=ro", uri=True)
+        cur2 = con2.cursor()
+        cur2.execute("SELECT COUNT(*) FROM sqlite_master "
+                     "WHERE type='table' AND name='session_message'")
+        if cur2.fetchone()[0]:
+            gfrm = "session_message WHERE type='assistant'"
+            gprov = "COALESCE(json_extract(data,'$.model.providerID'),'?')"
+        else:
+            gfrm = "message WHERE json_extract(data,'$.role')='assistant'"
+            gprov = "COALESCE(json_extract(data,'$.providerID'),'?')"
+        cutoff_ms = int(now.timestamp() * 1000) - 90 * 86400000
+        cur2.execute(
+            "SELECT date(time_created/1000,'unixepoch','localtime'), COUNT(*) "
+            "FROM " + gfrm + " AND time_created>=" + str(cutoff_ms) +
+            " AND " + gprov + "='opencode-go'"
+            " AND json_extract(data,'$.error') IS NULL GROUP BY 1 ORDER BY 1")
+        go_daily = [{"day": r[0], "reqs": r[1],
+                     "pct": round(100.0 * r[1] / GO_MONTH_CAP, 2)}
+                    for r in cur2.fetchall()]
+        con2.close()
+    except sqlite3.Error:
+        go_daily = []
     primary = models[0] if models else {"model": "?", "provider": "?",
                                         "messages": 0, "actual": 0.0, "cost": 0.0}
     equiv = []
@@ -1145,7 +1458,11 @@ def main():
             "err_rate": err_rate, "calls_err": calls_err,
             "calls_total": calls_total, "overall_min": overall_min,
             "sum_min": sum_min, "active_min": total_active,
+            "human_min": human_min,
         },
+        "go": go,
+        "go_cycles": go_list,
+        "go_daily": go_daily,
         "compare_opts": [{
             "name": short_model_name(e["model"]["name"]),
             "aa": e["model"]["aa"], "cpt": e["model"]["cpt"],
@@ -1169,7 +1486,8 @@ def main():
             "day": d["day"], "sessions": d["sessions"],
             "tokens": d["input"] + d["output"] + d["reasoning"]
                       + d["cache_read"] + d["cache_write"],
-            "cost": d["cost"], "active": d["active"]} for d in days],
+            "cost": d["cost"], "active": d["active"],
+            "human": d.get("human", 0.0)} for d in days],
         "cats": [{"cat": c, "n": n} for c, n in cat_counts.items() if n],
         "mapping": [{"tool": t, "cat": c, "n": n}
                     for t, c, n in mapping],
@@ -1201,6 +1519,12 @@ def main():
             "calls": e.get("calls", 0), "errors": e.get("errors", 0),
             "p50": e["p50"], "p95": e["p95"], "tps": e["tps_p50"],
             "total_min": e["total_min"]} for e in prov_rel],
+        "model_rel": [{
+            "provider": e["provider"],
+            "model": short_model(e["model"]), "msgs": e["msgs"],
+            "calls": e.get("calls", 0), "errors": e.get("errors", 0),
+            "p50": e["p50"], "p95": e["p95"], "tps": e["tps_p50"],
+            "total_min": e["total_min"]} for e in model_rel],
         "latency": (({
             "msgs": latency["msgs"], "p50": latency["p50"],
             "p95": latency["p95"], "tps": latency["tps_p50"],

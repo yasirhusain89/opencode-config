@@ -1,0 +1,16 @@
+{
+  "scraped_at": "2026-11-22",
+  "bin": "/Users/yasihusain/.opencode/bin/opencode",
+  "providers": {
+    "opencode": {
+      "error": "Command failed: /Users/yasihusain/.opencode/bin/opencode models opencode"
+    },
+    "nvidia": {
+      "error": "Command failed: /Users/yasihusain/.opencode/bin/opencode models nvidia"
+    },
+    "ollama": {
+      "error": "Command failed: /Users/yasihusain/.opencode/bin/opencode models ollama"
+    }
+  },
+  "partial": true
+}

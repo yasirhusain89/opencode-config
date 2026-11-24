@@ -91,8 +91,8 @@ if (j) {
   eq(j.errors429.count, 2, 'two 429s in window (17th excluded)');
   eq(j.errors429.models, ['z-ai/glm-5.3-flash'], '429 model attributed');
   eq(j.goHeadroom.family, 'glm-5.3-flash', 'go headroom family');
-  eq(j.goHeadroom.msgs, 4, 'go headroom msgs (family incl. -free + Go route)');
-  ok(j.goHeadroom.costPerDay > 0 && j.goHeadroom.cap === 60, 'go $/day + cap');
+  eq(j.goHeadroom.msgs, 1, 'go headroom msgs (paid Go only; free pool excluded)');
+  ok(j.goHeadroom.costPerDay >= 0 && j.goHeadroom.cap === 60, 'go $/day + cap (paid-Go mix only)');
   eq(j.standardReq.routes.length, 1, 'standardReq covers the Go route');
   eq(j.standardReq.routes[0].usedSR, 35, 'standardReq usedSR = $0.35/$0.01');
   eq(j.standardReq.routes[0].allowedSR, 6000, 'standardReq allowedSR = $60/$0.01');
@@ -150,7 +150,7 @@ const handoffs = JSON.parse(fs.readFileSync(handoffPath, 'utf8')).routing;
 eq(handoffs.small_model.fallback, null, 'even a mapped Go small_model has no session prompt handoff');
 for (const [agent, primary] of Object.entries(handoffModels)) {
   const lowStakes = ['brainstorm', 'docs-writer', 'domain-companion'].includes(agent);
-  const fallback = lowStakes ? 'nvidia/z-ai/glm-5.3-flash'
+  const fallback = lowStakes ? 'opencode/mimo-v2.6-flash-free'
     : primary === 'opencode-go/glm-5.3-flash' ? 'opencode-go/minimax-m3.1-flash' : 'opencode-go/glm-5.3-flash';
   eq(handoffs[agent]?.primary, primary, `${agent} primary follows configured pin`);
   eq(handoffs[agent]?.fallback, fallback, `${agent} availability fallback matches policy`);

@@ -44,41 +44,65 @@ function newestSnap(prefix) {
 const CHECK = has('--check') ? arg('--check') : newestSnap('check-');
 const OUT = arg('--out', path.join(SNAP, `dashboard-${DATE}.json`));
 
-// Go plan prices ($/1M in/out/cached) + monthly caps — mirror of guide §6 catalog, update together.
+// Go plan prices ($/1M in/out/cached) + monthly caps — blog-verified 2026-11-02
+// (atomicbot.ai/blog/opencode-go). Caps: $100 DS V4.1 Flash; $60 GLM-Flash/
+// GLM-5.2/K2.7-Code/MiMo-Flash/MiMo-V2.5/MiniMax-M3/Spark-1.3+1.2/Qwen3.7-Plus/
+// LongCat-2.0/Hy3; $30 Qwen3.8-Flash/Argon/Hy4-preview; $20 MiniMax-M3.1-Flash;
+// $15 everything else (Kimi-K3.1-Pro/K3/GLM-5.3/GPT-Lunas/Haiku/Grok/Qwen3.8-Max/
+// DS-Pro/MiMo-Pro/MiMo-V2.5-Pro/Step-5). 5h = 1/5 monthly, week = 1/2.
+// Qwen4-Max postdates the blog (live, tier unverified — default $15).
 const GO = {
   'glm-5.3-flash':            { p: [0.15, 0.50, 0.03], cap: 60 },
   'glm-5.3':                  { p: [1.40, 4.40, 0.26], cap: 15 },
+  'glm-5.2':                  { p: [1.40, 4.40, 0.26], cap: 60 }, // blog $60 tier; price = GLM-5.3 list — verify
   'muse-spark-1.3-contributor': { p: [0.10, 0.20, 0.002], cap: 60 },
-  'deepseek-v4.1-flash':      { p: [0.15, 0.60, 0.003], cap: 80 },
+  'muse-spark-1.2-contributor': { p: [0.10, 0.20, 0.002], cap: 60 }, // blog $60 tier (was missing)
+  'deepseek-v4.1-flash':      { p: [0.15, 0.60, 0.003], cap: 100 }, // blog raised $80 -> $100 early Nov
   'deepseek-v4-pro':          { p: [0.66, 1.98, 0.022], cap: 15 },
   'gpt-6-luna':               { p: [0.10, 0.50, 0.01], cap: 15 },
   'claude-haiku-5.5':         { p: [0.10, 0.50, 0.01], cap: 15 },
-  'mimo-v2.6-pro':            { p: [0.435, 0.87, 0.0036], cap: 15 },
+  'mimo-v2.6-pro':            { p: [0.435, 0.87, 0.003625], cap: 15 }, // blog cached-read $0.003625 (was rounded 0.0036)
+  'mimo-v2.5-pro':            { p: [0.435, 0.87, 0.003625], cap: 15 }, // blog $15 tier; price = V2.6-Pro — verify
   'mimo-v2.6-flash':          { p: [0.14, 0.28, 0.0028], cap: 60 },
-  'step-5-preview':           { p: [1.00, 2.70, 0.10], cap: 60 },
-  'space-bunny':              { p: [0.15, 0.60, 0.015], cap: 30 }, // historic ID; AA 10-20 confirms = M3.1 Flash early build, 90% cache discount
-  'minimax-m3.1-flash':       { p: [0.15, 0.60, 0.015], cap: 30 }, // ex-space-bunny (live 10-20); cap inherits $30 — verify in Go console
-  'gemini-4-argon-contributor': { p: [2.00, 10.00, 0.10], cap: 60 }, // CLI cost metadata 10-24; DB spend confirms list price
-  'gpt-5.6-luna':             { p: [0.20, 1.20, 0.02], cap: 15 }, // Zen docs 10-20 (≤272K); cap = $15-tier default — verify
-  'kimi-k2.7-code':           { p: [0.95, 4.00, 0.19], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
-  'qwen3.8-flash':            { p: [0.15, 0.47, 0.016], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
-  'qwen3.7-plus':             { p: [0.40, 1.60, 0.04], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
-  'minimax-m3':               { p: [0.30, 1.20, 0.06], cap: 15 }, // Zen docs 10-20; cap = $15-tier default — verify
+  'mimo-v2.5':                { p: [0.14, 0.28, 0.0028], cap: 60 }, // blog $60 tier (was missing)
+  'step-5-preview':           { p: [1.00, 2.70, 0.10], cap: 15 }, // blog $15 tier (was 60)
+  'space-bunny':              { p: [0.15, 0.60, 0.015], cap: 20 }, // historic ID = M3.1 Flash early build; tier follows $20
+  'minimax-m3.1-flash':       { p: [0.15, 0.60, 0.015], cap: 20 }, // blog $20 tier (was 30)
+  'minimax-m3':               { p: [0.30, 1.20, 0.06], cap: 60 }, // blog $60 tier (was $15 default)
+  'gemini-4-argon-contributor': { p: [2.00, 10.00, 0.10], cap: 30 }, // renamed route; tier follows Argon $30 (was 60)
+  'gpt-5.6-luna':             { p: [0.20, 1.20, 0.02], cap: 15 }, // Zen docs 10-20 (≤272K); blog $15 tier confirmed
+  'kimi-k2.7-code':           { p: [0.95, 4.00, 0.19], cap: 60 }, // blog $60 tier (was $15 default)
+  'qwen3.8-flash':            { p: [0.15, 0.47, 0.016], cap: 30 }, // blog $30 tier (was 15)
+  'qwen3.7-plus':             { p: [0.40, 1.60, 0.04], cap: 60 }, // blog $60 tier (was $15 default)
   'qwen3.8-max':              { p: [2.00, 6.00, 0.25], cap: 15 },
   'kimi-k3':                  { p: [3.00, 15.00, 0.30], cap: 15 },
-  'kimi-k3-1-pro':            { p: [2.00, 10.00, 0.20], cap: 15 }, // CLI 10-24 confirms Go price = AA first-party ($2/$10, 90% cache); cap $15-tier default — verify in Go console
-  'gemini-4-argon':           { p: [2.00, 10.00, 0.10], cap: 60 }, // renamed route live 10-24 (was gemini-4-argon-contributor); list price
+  'kimi-k3.1-pro':            { p: [2.00, 10.00, 0.20], cap: 15 }, // CLI 10-24 confirms Go price = AA first-party ($2/$10, 90% cache); blog $15 tier confirmed
+  'gemini-4-argon':           { p: [2.00, 10.00, 0.10], cap: 30 }, // blog $30 tier (was 60); renamed route live 10-24
+  'grok-4.7':                 { p: [2.00, 6.00, 0.50], cap: 15 }, // blog $15 tier; price = AA 10-24 ($2/$6, 75% cache) — verify in Go console
+  'longcat-2.0':              { p: [0.30, 1.20, 0.06], cap: 60 }, // blog $60 tier; price = MiniMax-M3 placeholder — verify
+  'hy3':                      { p: [0.30, 1.20, 0.06], cap: 60 }, // blog $60 tier; price placeholder — verify
+  'hy4-preview':              { p: [0.83, 2.50, 0.08], cap: 30 }, // blog $30 tier; price = AA tencent-hy4 — verify
+  'hy4':                      { p: [0.83, 2.50, 0.08], cap: 30 }, // tier follows Hy4-preview $30 — verify
+  'qwen4-max':                { p: [1.50, 4.50, 0.18], cap: 15 }, // postdates 11-02 blog (live, tier unverified — default $15); price = AA 11-21 $1.5/$4.5 — verify
 };
 // Live model IDs that differ from the AA slug (dots vs hyphens in version
 // numbers). Keep the family maps keyed by the ID the DB actually stores.
 GO['claude-haiku-5-5'] = GO['claude-haiku-5.5'];
-GO['kimi-k3.1-pro'] = GO['kimi-k3-1-pro'];
+GO['kimi-k3-1-pro'] = GO['kimi-k3.1-pro'];
+GO['muse-spark-1-3-contributor'] = GO['muse-spark-1.3-contributor'];
+GO['muse-spark-1-2-contributor'] = GO['muse-spark-1.2-contributor'];
 // family key: strip provider + date pins + free suffixes
 function fam(modelId) {
   let s = String(modelId || '').split('/').pop().toLowerCase();
   for (const suf of ['-contributor-free', '-free', '-nightly', '-exp']) if (s.endsWith(suf)) s = s.slice(0, -suf.length);
   const d = s.match(/^(.*)-\d{4}$/); if (d) s = d[1];
   return s;
+}
+// Free-pool rows never burn Go quota or per-model caps: they sit in a separate
+// pool with their own tighter limits. Exclude them from every $-cap / SR math
+// path (srRoutes, goTop, flash pacing, metered) and price them at $0.
+function isFreeId(modelId) {
+  return /-free$/i.test(String(modelId || '').split('/').pop());
 }
 
 function q(sql) {
@@ -100,7 +124,7 @@ for (const r of perRoute) {
   const a = (byModel[r.model] || []).sort((x, y) => x - y);
   r.p50s = a.length ? +(a[Math.floor(a.length / 2)]).toFixed(1) : null;
 }
-const meteredGoUsd = +perRoute.filter(r => r.provider === 'opencode-go').reduce((a, r) => a + r.usd, 0).toFixed(2);
+const meteredGoUsd = +perRoute.filter(r => r.provider === 'opencode-go' && !isFreeId(r.model)).reduce((a, r) => a + r.usd, 0).toFixed(2);
 const tot = perRoute.reduce((a, r) => ({ msgs: a.msgs + r.msgs, inM: a.inM + r.inM, outM: a.outM + r.outM, cacheM: a.cacheM + r.cacheM }), { msgs: 0, inM: 0, outM: 0, cacheM: 0 });
 const peak = q(`SELECT substr(datetime(time_created/1000,'unixepoch'),1,13), COUNT(*) FROM message WHERE json_extract(data,'$.role')='assistant' AND datetime(time_created/1000,'unixepoch') BETWEEN '${dayStart}' AND '${dayEnd}' GROUP BY 1 ORDER BY 2 DESC LIMIT 1;`)[0] || [];
 
@@ -185,14 +209,15 @@ function goCost(family, inM, outM, cacheM) {
   const cost = inM * pi + (outM) * po + cacheM * pc;
   return { cost, cap: g.cap, pct: cost / g.cap };
 }
-const flash = perRoute.filter(r => fam(r.model) === 'glm-5.3-flash');
+const flash = perRoute.filter(r => r.provider === 'opencode-go' && fam(r.model) === 'glm-5.3-flash' && !isFreeId(r.model));
 const flashIn = flash.reduce((a, r) => a + r.inM, 0), flashOut = flash.reduce((a, r) => a + r.outM + r.reasM, 0), flashCache = flash.reduce((a, r) => a + r.cacheM, 0);
 const flashMsgs = flash.reduce((a, r) => a + r.msgs, 0);
 const flashGo = goCost('glm-5.3-flash', flashIn, flashOut, flashCache);
 // Top Go consumer by cap burn — the reviewer loop is no longer the only Go
 // route (Spark is the global main model), so GLM-only headroom under-reports.
+// Free-pool `-free` rows are excluded: they never burn per-model caps.
 const goTop = perRoute
-  .filter(r => r.provider === 'opencode-go' && GO[fam(r.model)])
+  .filter(r => r.provider === 'opencode-go' && !isFreeId(r.model) && GO[fam(r.model)])
   .map(r => {
     const g = goCost(fam(r.model), r.inM, r.outM + r.reasM, r.cacheM);
     return { family: fam(r.model), model: r.model, msgs: r.msgs, costPerDay: +g.cost.toFixed(2), cap: g.cap, capPct: +(g.pct * 100).toFixed(2) };
@@ -218,6 +243,8 @@ const pacing = flashGo ? { family: 'glm-5.3-flash', perDay: +flashGo.cost.toFixe
 const metered = { goUsd: meteredGoUsd, projectedGoLoopUsd: flashGo ? +flashGo.cost.toFixed(2) : null };
 // Availability policy mirrors model-fallback; primaries always come from config.
 // Legacy runners cannot safely change the model of an in-flight retry.
+// Free pool sits outside Go quota (own tighter limits); NVIDIA is the slow
+// last resort (per-model table: p50 ~37s vs ~7s on Go).
 const GO_FALLBACK = {
   'opencode-go/glm-5.3-flash': 'opencode-go/minimax-m3.1-flash',
   'opencode-go/minimax-m3.1-flash': 'opencode-go/glm-5.3-flash',
@@ -226,7 +253,8 @@ const GO_FALLBACK = {
   'opencode-go/claude-haiku-5.5': 'opencode-go/glm-5.3-flash',
 };
 const LOW_STAKES = new Set(['brainstorm', 'docs-writer', 'domain-companion']);
-const FREE_FALLBACK = 'nvidia/z-ai/glm-5.3-flash';
+const FREE_FALLBACK = 'opencode/mimo-v2.6-flash-free';
+const NVIDIA_LAST = 'nvidia/z-ai/glm-5.3-flash';
 const ROUTES = Object.fromEntries(Object.entries(agentModels).map(([agent, primary]) => {
   const fallback = agent === 'small_model' || !GO_FALLBACK[primary] ? null
     : LOW_STAKES.has(agent) ? FREE_FALLBACK : GO_FALLBACK[primary];
@@ -243,8 +271,9 @@ const ROUTES = Object.fromEntries(Object.entries(agentModels).map(([agent, prima
 // console-mix request). Converts per-model caps + burn into one currency:
 // allowedMsgs = cap / observed $/msg (runway in own-mix requests),
 // usedSR/allowedSR = spend/cap in SR. Day-window only, like perRoute.
+// Free-pool rows excluded — they draw from the free pool, not Go caps.
 const SR = 0.01;
-const srRoutes = perRoute.filter(r => r.provider === 'opencode-go' && GO[fam(r.model)]).map(r => {
+const srRoutes = perRoute.filter(r => r.provider === 'opencode-go' && !isFreeId(r.model) && GO[fam(r.model)]).map(r => {
   const g = GO[fam(r.model)];
   const costPerMsg = r.msgs ? r.usd / r.msgs : 0;
   return {
@@ -314,8 +343,8 @@ const dashTbody = `<tbody>
 // §8 usage tbody (top routes by msgs)
 const roleOf = (m) => /glm-5.3-flash-free/.test(m) ? 'capped free route' : /space-bunny|minimax-m3.1-flash|glm-5.3-flash/.test(m) ? 'reviewer' : /nemotron-3.5-super/.test(m) ? 'researcher fallback' : 'mixed';
 const usageRows = [...perRoute].sort((a, b) => b.msgs - a.msgs).slice(0, 6).map(r => {
-  const g = GO[fam(r.model)];
-  const equiv = g ? `~$${(r.inM * g.p[0] + (r.outM + r.reasM) * g.p[1] + r.cacheM * g.p[2]).toFixed(1)} on Go` : '$0';
+  const g = isFreeId(r.model) ? null : GO[fam(r.model)];
+  const equiv = isFreeId(r.model) ? '$0 (free pool)' : g ? `~$${(r.inM * g.p[0] + (r.outM + r.reasM) * g.p[1] + r.cacheM * g.p[2]).toFixed(1)} on Go` : '$0';
   return `<tr><td><code>${esc(r.model)}</code></td><td class="num">${r.msgs}</td><td class="num">${fmtM(r.inM)}</td><td class="num">${fmtM(r.cacheM)}</td><td class="num">${equiv}</td><td class="num">${r.failPct}%</td><td class="num">${r.p50s ?? '—'}</td><td>${roleOf(r.model)}</td></tr>`;
 }).join('\n');
 const usageTbody = `<tbody>\n${usageRows}\n</tbody>`;

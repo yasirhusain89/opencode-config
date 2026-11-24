@@ -259,6 +259,20 @@ distilled, still-true conclusions.
   called BFCL "void/stale"; V4 (2026-04-12, 83 configs) verified live with 0
   direct entries for our finalists. Family signal favored GLM/Kimi,
   consistent with §16. Evidence: CHANGELOG 2026-10-19 entries.
+- **2026-11-22 — Two-stage mini-eval isolation rules (`scripts/mini_eval.mjs`).**
+  Headless `opencode run` evals MUST set `OPENCODE_MODEL_FALLBACK=off` (so a
+  429 never silently hands off to a fallback model mid-eval), pass `--archived
+  --title`, and override `OPENCODE_CONFIG_CONTENT` with `agents.title.model`
+  pinned to the candidate (otherwise background title gen burns paid Go quota
+  even when testing free models) plus `compaction:{auto:false}` and all tools
+  denied on standalone tasks (eliminating the 2026-10-18 exploration-wander
+  DNFs). For tool-calling probes (P4), the fixture directory MUST live inside
+  the workspace (`snapshots/evals/.p4-fixture/`), not `os.tmpdir()`, because
+  headless `opencode run` auto-rejects `external_directory` prompts on
+  `/private/var/folders/*`. Stage 2 blind run files (`runs/<code-dXX>.json`)
+  must omit `model` and scrub self-identifying tokens. Evidence:
+  `skills/model-benchmarks/scripts/mini_eval.mjs`, `mini_eval.test.mjs` (39
+  assertions), `snapshots/evals/2026-11-22/probe-scorecard.md`.
 
 ## 7. Cost visibility (SR layers)
 
@@ -468,6 +482,71 @@ distilled, still-true conclusions.
   post-restart: `service.json` has a new pid, sr-live `dbCount` matches
   `session_message` counts and advances monotonically across two reads 70s
   apart, zero WARN/ERROR in the log.
+
+- **2026-11-16 — bar said BLOCKED at 101.2% while the console said 99%: two
+  gaps, both resolved by re-anchoring + re-deriving.** (1) Monthly: DB
+  overcounts the console by ~440 (anchored 18,218 vs console 17,784). The
+  openrouter BYOK lane explains nearly all of it — 584 month rows ($24.87 on
+  the user's own key, last used Nov 1), 264 before the Oct-26 anchor (baked
+  into the offset) + 320 after; ex-openrouter DB 17,875 vs console 17,784 =
+  0.5%. Rule: the console counts opencode-infra routes (Go + free + nvidia
+  trial) and excludes BYOK keys. If BYOK resumes, exclude that provider in
+  sr-calc instead of re-anchoring around it. (2) Weekly: not a count gap but
+  a wrong cap — DB week ~2,050 genuine requests (22 sessions, normal
+  tokens/row) vs 13% console implies cap ≈ 15.7k, so WEEK_CAP 8,000 →
+  15,700 (single reading, confirm next sighting). The Oct-25 "7.8k block"
+  inference is superseded. Also: since ~Nov 14 ALL cost fields read 0.0
+  (session_message AND session_v2, tokens still flow) — usedUsd is blind for
+  recent days; requests (the cap unit) are unaffected. And the console DOES
+  show a rolling % (13% this reading → implied rolling cap ~9.8k) — sr-calc
+  still models rolling as capless; revisit if rolling ever binds.
+  Evidence: console screenshot 2026-11-16 (99/13/13%, 17,784 reqs, 3.154B
+  tok), `sr-anchors.json` (month 17784 / week 2041 @ 2026-11-16),
+  `sr-calc.mjs:WEEK_CAP`, month tokens DB 3.24B vs console 3.15B.
+
+- **2026-11-17 — local BLOCKED ~5.5h before the real Go block: the quota
+  counts Go-product requests only, and the anchor paired a console reading
+  with a dbCount from a different instant.** The console request-log CSV
+  (1,000 rows, 22:06→05:32Z) matches DB `opencode-go` rows ±2/hour; free,
+  BYOK and nvidia rows never appear in it. The console blocked at 05:32:42Z
+  (last success, then 429 `Account.GoUsageLimit`); 463 Go successes since
+  the 23:44Z anchor imply the console was at 17,537 there, but the anchor
+  recorded 17,784 (+247), so the bar crossed 18k at 00:04Z vs the real
+  05:32Z. Offset check: console − DB Go-successes = 995 at the anchor and
+  999 at the block (stable) → the count model is right; the anchor
+  timestamp was not. Fix: month/week/rolling count only
+  `providerID='opencode-go'` with `error` rows excluded; anchors carry a
+  `basis`; `--anchor --at <ISO>` measures dbCount at the reading instant;
+  the cost-tracker incremental patch increments only Go turns. Re-anchored
+  month 18,000 @ 05:32:43Z (Go dbCount 17,001) and week 2,041 @ 23:44:11Z
+  (Go dbCount 2,012). Month resets at UTC midnight on the 19th
+  (`sr-calc.mjs:66` uses `Date.UTC`), so Nov 19 00:00 UTC stands — the
+  console's "resets in 1d 17h" at 05:33Z is just lag/rounding against that
+  fixed boundary.
+  Evidence: `request-logs-2026-11-17.csv`, `sr-anchors.json`,
+  `sr-calc.mjs:dbCountSince`, `cost-tracker.js:isGoTurn`,
+  `sr-calc.test.mjs` (43 assertions), `cost-tracker.v2.test.mjs` (4 tests).
+
+- **2026-11-18 — the atomicbot.ai Go-blog token prices are exactly what the
+  DB records, and pricing tokens recovers the V2 cost loss.** Blog
+  (atomicbot.ai/blog/opencode-go, checked 2026-11-02) prices match recorded
+  per-message costs to the 4th decimal on every row that carries cost:
+  GLM-5.3-Flash $0.15/$0.50/$0.03 (rec $11.3562 = recomputed $11.356),
+  Muse Spark 1.3 Contributor $0.10/$0.20/$0.002 ($9.4095 exact), DeepSeek
+  V4.1 Flash off-peak $0.15/$0.60/$0.003 ($0.6812 exact — all 290 rows
+  off-peak, no weekday-peak doubling seen), MiMo-V2.6-Pro $0.435/$0.87/
+  $0.003625 ($0.1726 ≈ $0.1724). V2 `session_message` rows carry cost=0 on
+  4,224/8,686 Go rows (legacy `message` froze ~Nov 12 05:20Z; V2 rows are
+  costless even when copied), so cycle Go dollars are now computed from
+  tokens: Oct 19–Nov 18 cycle = 17,001 Go requests (matches anchor exactly),
+  $41.45 est at blog prices vs $34.45 recorded. Gemini 4 Argon (+Contributor)
+  and Kimi K3.1 Pro prices are not published in the blog → recorded-cost
+  fallback (flagged `*` in the UI). Console enforces account-wide REQUEST
+  caps (month 18,000 · week 15,700), so the blog's per-model dollar table is
+  nominal; its own text agrees ("switched between models … still hit the
+  weekly limit before any single model reached its own").
+  Evidence: `skills/usage-dashboard/generate.py` (GO_PRICES/GO_ALLOWANCE/
+  go_cycle), dashboard "OpenCode Go" card, sr-anchors.json month 18,000.
 
 ## 5. How to add a lesson
 Append under the right section (or add one): `**YYYY-MM-DD — one-line
