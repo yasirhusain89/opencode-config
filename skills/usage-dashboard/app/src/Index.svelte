@@ -1,6 +1,7 @@
 <script>
   import Theme from "./Theme.svelte";
   import { fmt, money, hrs, catColor } from "./lib/format.js";
+import { scosClass, ncrClass } from "./lib/tips.js";
 
   let { data } = $props();
 
@@ -503,6 +504,7 @@
       <th>Msgs</th><th>In+Cache</th><th>Out+reas</th>
       <th style="text-align:right">Opus 5.5</th><th>Calls</th>
       <th style="text-align:right">Err</th><th></th>
+      <th style="text-align:right">SCOS</th><th style="text-align:right">NCR</th>
     </tr>
     {#each sessRows as s}
       <tr>
@@ -524,15 +526,42 @@
           {#if s.landed === true}<span class="ok-flag">✓</span>
           {:else if s.landed === false}<span class="bad-flag">✗</span>{/if}
         </td>
+        <td class="r"><span class={scosClass(s.scos)}>{s.scos ?? "–"}</span></td>
+        <td class="r"><span class={ncrClass(s.ncr)}>{s.ncr != null ? s.ncr + "%" : "–"}</span></td>
       </tr>
     {/each}
   </tbody></table>
   <div class="s">
     Times are local. Landing check matches git log in the session's project dir.
-    Click a session id for its own page (effectiveness / efficiency detail).
+    SCOS = Session Context Optimality Score, NCR = Needed Context Ratio —
+    scored for post-Nov-14 sessions only (older rows predate tracking).
+    Click a session id for its own page (effectiveness / efficiency / context detail).
   </div>
   {@render pager(sessPage, sessPages, data.sessions.length, sessPrev, sessNext)}
 </details>
+
+{#if data.ctxagg}
+<details>
+  <summary><b>Context health by project</b> (live sessions with SCOS/NCR scores; lower SCOS first)</summary>
+  <table><tbody>
+    <tr><th>Project</th><th>Sessions</th><th style="text-align:right">SCOS</th><th style="text-align:right">NCR</th><th>Semantic search</th></tr>
+    {#each data.ctx_projects as p}
+      <tr>
+        <td class="mono">{p.project}</td>
+        <td>{p.n}</td>
+        <td class="r"><span class={scosClass(p.scos)}>{p.scos}</span></td>
+        <td class="r"><span class={ncrClass(p.ncr)}>{p.ncr}%</span></td>
+        <td class="r">{p.used_sem}/{p.need_sem} used when needed{p.need_sem > p.used_sem ? " — run semantic:q / gitnexus before broad reads" : ""}</td>
+      </tr>
+    {/each}
+  </tbody></table>
+  <div class="s">
+    Mean SCOS {data.ctxagg.scos} · mean NCR {data.ctxagg.ncr}% · {data.ctxagg.mean_dup}% duplicate read lines across {data.ctxagg.n} scored sessions.
+    Semantic search used in {data.ctxagg.used_sem} of {data.ctxagg.need_sem} sessions that needed it.
+    Per-project guidance: lowest-SCOS project first — check its sessions' context cards for the dominant waste driver.
+  </div>
+</details>
+{/if}
 
 <details>
   <summary><b>Session habits</b> (aggregates across all {data.habits.n} prompted sessions)</summary>

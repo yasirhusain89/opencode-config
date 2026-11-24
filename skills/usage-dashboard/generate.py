@@ -581,6 +581,703 @@ def collect_session_metrics(cur, ids):
     return q
 
 
+# --- V2 session source + context scoring (post-Nov-14 migration). ---
+# When session_v2 holds rows it is the canonical session list (migrated
+# history + new sessions); the V1 session/message/part aggregates above stay
+# frozen as the spend baseline. scripts/context_eval.mjs is the reference
+# implementation for the deterministic scoring below — thresholds are
+# intentionally identical (no LLM calls, no network, stdlib only).
+CTX_ORIENTATION = ("AGENTS.md", "EXPERIENCE.md", "README.md",
+                   "package.json", "Cargo.toml", "opencode.jsonc",
+                   "tsconfig.json")
+CTX_OVERT_LINES = 400     # a single read past this is an oversized dump
+CTX_ORIENT_MAX = 220      # bounded orientation read (AGENTS.md etc.)
+CTX_PER_SITE = 250        # credited lines per edit/citation site
+CTX_GREP_BUDGET = 4000    # chars credited per grep/glob output
+CTX_SHELL_BUDGET = 4000   # chars credited per verification command
+CTX_SHELL_BLOAT = 8000    # shell output past this is unfiltered bloat
+CTX_EARLY_TURNS = 10      # first-N-turn window for cache amplification
+CTX_EARLY_SPIKE = 80000   # context tokens in early window = spike
+CTX_PEAK_CAP = 180000     # soft ceiling before compaction pressure
+CTX_DELEG_CHARS = 80000   # main-session read volume needing delegation
+CTX_SEMINDEX_DAYS = 7     # .semindex older than this is stale
+
+
+def v2_has_rows(cur):
+    try:
+        cur.execute("SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type='table' AND name='session_v2'")
+        if not cur.fetchone()[0]:
+            return False
+        cur.execute("SELECT COUNT(*) FROM session_v2")
+        return cur.fetchone()[0] > 0
+    except sqlite3.Error:
+        return False
+
+
+def v2_repo_index(directory):
+    """Retrieval-index readiness for a project dir (fresh/stale/missing)."""
+    sem = os.path.join(directory, ".semindex", "index.db") \
+        if directory else None
+    gn = os.path.join(directory, ".gitnexus") if directory else None
+    out = {"sem": "missing", "gitnexus": "missing"}
+    try:
+        if sem and os.path.exists(sem):
+            age = (datetime.datetime.now().timestamp()
+                   - os.path.getmtime(sem)) / 86400.0
+            out["sem"] = ("fresh" if age <= CTX_SEMINDEX_DAYS else "stale")
+        if gn and os.path.isdir(gn):
+            out["gitnexus"] = "fresh"
+    except OSError:
+        pass
+    return out
+
+
+def build_v2_session_rows(cur):
+    """Session rollup from session_v2 (+ message/part counts). Same sd keys
+    as the V1 branch so everything downstream keeps working."""
+    cur.execute("""SELECT s.id, s.directory, s.time_created, s.time_updated,
+        s.tokens_input, s.tokens_output, s.tokens_reasoning,
+        s.tokens_cache_read, s.tokens_cache_write, s.title,
+        s.summary_additions, s.summary_deletions, s.summary_files,
+        s.agent, s.model, s.parent_id,
+        (SELECT count(*) FROM session_message m WHERE m.session_id = s.id),
+        (SELECT count(*) FROM session_part p WHERE p.session_id = s.id
+            AND json_extract(p.data,'$.type')='tool'),
+        (SELECT count(*) FROM session_part p WHERE p.session_id = s.id
+            AND json_extract(p.data,'$.type')='tool'
+            AND json_extract(p.data,'$.state.status')='error'),
+        (SELECT count(DISTINCT json_extract(m2.data,'$.model.variant'))
+            FROM session_message m2 WHERE m2.session_id = s.id
+            AND m2.type = 'assistant'
+            AND json_extract(m2.data,'$.model.variant') IS NOT NULL)
+        FROM session_v2 s ORDER BY s.time_created""")
+    rows = []
+    for r in cur.fetchall():
+        (sid, directory, tc, tu, i, o, reas, cr, cw, title, sadd, sdel,
+         sfiles, agent, smodel, parent) = r[:16]
+        msgs, calls, errs, nvar = r[16], r[17], r[18], r[19]
+        sd = {"id": sid, "directory": directory or "", "msgs": msgs,
+              "calls": calls, "errors": errs,
+              "input": i or 0, "output": o or 0, "reasoning": reas or 0,
+              "cache_read": cr or 0, "cache_write": cw or 0,
+              "variants": nvar or 0, "title": title or "",
+              "add": sadd or 0, "delete": sdel or 0,
+              "sum_files": sfiles or 0, "agent": agent or "",
+              "model": smodel or "", "parent": parent or ""}
+        sd["cost"] = cost(sd)["total"]
+        rows.append(sd)
+    for sd in rows:
+        f_l = cur.execute(
+            """SELECT min(time_created), max(time_updated)
+            FROM session_message WHERE session_id = ?""",
+            (sd["id"],)).fetchone()
+        first, last = f_l
+        sd["dur_min"] = ((last - first) / 60000.0
+                         if (first and last and last > first) else 0.0)
+        sd["first"], sd["last"] = first, last
+        arow = cur.execute(
+            """SELECT coalesce(sum(
+                CASE WHEN CAST(json_extract(data,'$.time.completed') AS INTEGER)
+                          > CAST(json_extract(data,'$.time.created') AS INTEGER)
+                THEN (CAST(json_extract(data,'$.time.completed') AS INTEGER)
+                    - CAST(json_extract(data,'$.time.created') AS INTEGER))
+                ELSE 0 END), 0) FROM session_message
+            WHERE session_id = ? AND type = 'assistant'""",
+            (sd["id"],)).fetchone()
+        sd["active_min"] = (arow[0] or 0) / 60000.0
+        try:
+            day = datetime.datetime.fromtimestamp(
+                sd["first"] / 1000.0).strftime("%Y-%m-%d") \
+                if sd.get("first") else ""
+        except (OSError, OverflowError, TypeError, ValueError):
+            day = ""
+        sd["day"] = day
+    rows.sort(key=lambda s: -s["cost"])
+    # dominant variant + model label (mirrors the V1 branch)
+    for sd in rows:
+        cur.execute(
+            """SELECT json_extract(data,'$.model.variant'), count(*)
+            FROM session_message WHERE session_id = ? AND type = 'assistant'
+            GROUP BY 1""", (sd["id"],))
+        best, bestn = "unset", 0
+        for v, n in cur.fetchall():
+            if (v or "unset") and n > bestn:
+                best, bestn = (v or "unset"), n
+        sd["dom_var"] = best
+        try:
+            sm = json.loads(sd["model"]) if sd["model"] else {}
+        except ValueError:
+            sm = {}
+        sd["model_label"] = ((sm.get("providerID") or "?") + " / "
+                             + short_model(sm.get("id"))) if sm else "?"
+    return rows
+
+
+def v2_code_intent(cur):
+    """Session ids with edit/write tool calls in session_part."""
+    try:
+        cur.execute("""SELECT DISTINCT session_id FROM session_part WHERE
+            json_extract(data,'$.type')='tool'
+            AND json_extract(data,'$.name') IN ('edit','write')""")
+        return {r[0] for r in cur.fetchall()}
+    except sqlite3.Error:
+        return set()
+
+
+def _v2_text_of(content):
+    """Assistant text from session_message content[] (cite detection)."""
+    bits = []
+    for c in content or []:
+        if isinstance(c, dict) and c.get("type") == "text" and c.get("text"):
+            bits.append(c["text"])
+    return "\n".join(bits)
+
+
+def _v2_tool_events(content, mid, ts, seq):
+    """Tool events from an assistant message's content[]: (ts, mid, seq,
+    name, input, out_text, status). content[] is the complete record —
+    session_part only mirrors a subset, so it is not used here.
+    Mirrors context_eval.mjs tool parsing."""
+    evts = []
+    for d in content or []:
+        if not isinstance(d, dict) or d.get("type") != "tool":
+            continue
+        st = d.get("state") or {}
+        inp = st.get("input") or {}
+        outs = st.get("content") or []
+        if not isinstance(outs, list):
+            outs = []
+        text = "\n".join(x.get("text", "") for x in outs
+                         if isinstance(x, dict))
+        tm = st.get("time") or {}
+        evts.append({"ts": ts, "mid": mid, "seq": seq,
+                     "name": d.get("name"),
+                     "input": inp, "out": text,
+                     "status": st.get("status"),
+                     "t_start": tm.get("start"), "t_end": tm.get("end")})
+    return evts
+
+
+def _v2_read_span(name, inp, out):
+    """(start, end) line span of a read output; falls back to input."""
+    m = re.match(r"^Read (?:file|directory) .+?, (?:lines|entries) (\d+)-(\d+)",
+                 out or "")
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    start = inp.get("offset") or 1
+    end = start + max(1, (out or "").count("\n") - 1)
+    return start, end
+
+
+def score_v2_context(sid, directory, agent, is_sub, turns, compactions,
+                     turn_ctx, events, edited, asst_text, comp_seqs=()):
+    """Deterministic SCOS/NCR port of context_eval.mjs evaluateSession
+    (no embeddings: rescue thresholds stay server-side in that script).
+    Single chronological pass over tool events so post-edit re-reads
+    credit correctly. edited: {path: count}. asst_text: joined assistant
+    text for citation detection."""
+    total_out = sum(len(e["out"]) for e in events)
+    # per-file line state across compaction epochs (fresh/dirty)
+    line_state = {}
+    recs = []  # read records in time order, with dup/post overlap counts
+    unmod_dup_calls = 0
+    unmod_dup_lines = 0
+    unmod_dup_chars = 0
+    post_dup_lines = 0
+    post_dup_chars = 0
+    oversized_calls = 0
+    oversized_excess = 0
+    grep_calls = empty_grep = max_streak = streak = 0
+    grep_chars = grep_needed = 0
+    shell_calls = shell_chars = shell_needed = 0
+    shell_anti = shell_anti_chars = shell_bloat = 0
+    sem_calls = graph_calls = sub_calls = 0
+    other_chars = other_needed = 0
+    skill_chars = 0
+    resets = sorted(comp_seqs)
+    for e in events:
+        # compaction epoch boundary: drop pre-compaction line state,
+        # exactly like the reference implementation
+        if resets and resets[0] <= e.get("seq", -1):
+            line_state = {}
+            while resets and resets[0] <= e.get("seq", -1):
+                resets.pop(0)
+        name, out, inp = e["name"], e["out"], e["input"]
+        n = len(out)
+        if name in ("grep", "glob"):
+            grep_calls += 1
+            grep_chars += n
+            streak += 1
+            max_streak = max(max_streak, streak)
+            t = out.strip()
+            if not t or re.search(r"(?i)No files found|No matches found",
+                                 t):
+                empty_grep += 1
+            else:
+                grep_needed += min(n, CTX_GREP_BUDGET)
+        elif name in ("shell", "bash"):
+            shell_calls += 1
+            shell_chars += n
+            cmd = (inp.get("command") or "")
+            if re.search(r"semantic:q|semantic_index", cmd):
+                sem_calls += 1
+                streak = 0
+                shell_needed += min(n, CTX_GREP_BUDGET)
+            elif re.match(r"^\s*(cat|sed\s+-n|head\b|tail\b|grep\b|rg\b|"
+                           r"find\b|awk\b|wc\s+-l)\b", cmd):
+                shell_anti += 1
+                shell_anti_chars += n
+                shell_needed += round(min(n, 2000) * 0.25)
+            else:
+                if n > CTX_SHELL_BLOAT:
+                    shell_bloat += 1
+                shell_needed += min(n, CTX_SHELL_BUDGET)
+                streak = 0
+        elif name == "execute":
+            code = inp.get("code") or ""
+            other_chars += n
+            if re.search(r"gitnexus[._](query|context|trace|impact|"
+                         r"api_impact|cypher|pdg_query|explain)", code):
+                graph_calls += 1
+                streak = 0
+                other_needed += min(n, CTX_GREP_BUDGET)
+            else:
+                other_needed += min(n, CTX_SHELL_BUDGET)
+                streak = 0
+        elif (name or "").startswith("gitnexus_"):
+            other_chars += n
+            other_needed += min(n, CTX_GREP_BUDGET)
+            if re.search(r"query|context|trace|impact|cypher",
+                         name.replace("gitnexus_", "")):
+                graph_calls += 1
+            streak = 0
+        elif name in ("subagent", "task"):
+            sub_calls += 1
+            other_chars += n
+            other_needed += min(n, 8000)
+            streak = 0
+        elif name == "skill":
+            skill_chars += n
+            other_chars += n
+            other_needed += min(n, 15000)
+            streak = 0
+        elif name in ("edit", "write", "apply_patch"):
+            other_chars += n
+            other_needed += min(n, 2000)
+            streak = 0
+            st = line_state.get((inp.get("path") or ""))
+            if st:
+                for k in st:
+                    st[k] = "dirty"
+        elif name == "read":
+            streak = 0
+            path = inp.get("path") or ""
+            start, end = _v2_read_span(name, inp, out)
+            span = max(1, end - start + 1)
+            st = line_state.setdefault(path, {})
+            fresh = dirty = 0
+            for ln in range(start, end + 1):
+                prev = st.get(ln)
+                if prev == "fresh":
+                    fresh += 1
+                elif prev == "dirty":
+                    dirty += 1
+                st[ln] = "fresh"
+            if fresh:
+                unmod_dup_calls += 1
+            unmod_dup_lines += fresh
+            post_dup_lines += dirty
+            unmod_dup_chars += round(n * fresh / span)
+            post_dup_chars += round(n * dirty / span)
+            if span > CTX_OVERT_LINES:
+                oversized_calls += 1
+            recs.append({"path": path, "start": start, "end": end,
+                         "out": n, "dup": fresh, "post": dirty})
+        else:
+            other_chars += n
+            other_needed += min(n, 3000)
+            streak = 0
+    # classify read files: used (edited/cited/orientation) vs dead
+    total_read_calls = len(recs)
+    total_read_chars = sum(r["out"] for r in recs)
+    total_lines = sum(max(1, r["end"] - r["start"] + 1) for r in recs)
+    needed_read = dead_chars = 0
+    dead_files = used_files = 0
+    base_hits = {}
+    for r in recs:
+        base = r["path"].rsplit("/", 1)[-1]
+        base_hits[base] = base_hits.get(base, 0) + 1
+    cites = {}
+    for r in recs:
+        base = r["path"].rsplit("/", 1)[-1]
+        if base not in cites:
+            cites[base] = (asst_text.count(base)
+                           if len(base) > 2 else 0)
+
+    def _used(r):
+        base = r["path"].rsplit("/", 1)[-1]
+        if edited.get(r["path"]) or cites.get(base, 0) > 0:
+            return True
+        return (base in CTX_ORIENTATION and base_hits.get(base, 0) == 1
+                and (r["end"] - r["start"] + 1) <= CTX_ORIENT_MAX)
+
+    for r in recs:
+        if not _used(r):
+            dead_chars += r["out"]
+    dead_files = len({r["path"] for r in recs if not _used(r)})
+    used_files = len({r["path"] for r in recs}) - dead_files
+    for r in recs:
+        if not _used(r):
+            continue
+        base = r["path"].rsplit("/", 1)[-1]
+        sites = max(1, edited.get(r["path"], 0)
+                    + min(4, cites.get(base, 0)))
+        cap_lines = max(CTX_OVERT_LINES, sites * CTX_PER_SITE)
+        span = max(1, r["end"] - r["start"] + 1)
+        # unique-fresh chars approximated via the non-duplicate line
+        # share of the output (both dup kinds excluded, like the
+        # reference: post-edit lines earn only the 50% re-read credit)
+        fresh_share = max(0.0, 1.0 - ((r.get("dup", 0)
+                                       + r.get("post", 0)) / span))
+        fresh_chars = round(r["out"] * fresh_share)
+        factor = cap_lines / span if span > cap_lines else 1.0
+        credited = round(fresh_chars * factor)
+        oversized_excess += fresh_chars - credited
+        post_credit = 0
+        if span <= 80:
+            post_credit = round(r["out"] * (r.get("post", 0) / span) * 0.5)
+        needed_read += credited + post_credit
+    total_needed = (needed_read + grep_needed + shell_needed + other_needed)
+    ncr = round(100.0 * total_needed / total_out, 1) if total_out else 100.0
+    had_thrash = (max_streak >= 4 or empty_grep >= 2
+                  or (grep_calls >= 3 and empty_grep >= 1
+                      and empty_grep / grep_calls >= 0.25))
+    had_blind = dead_files >= 4
+    had_brute = oversized_calls >= 3 and grep_calls < 2
+    sem_needed = bool(had_thrash or had_blind or had_brute)
+    used_sem = bool(sem_calls or graph_calls)
+    ctx_vals = [t for t in turn_ctx if t > 0]
+    peak = max(ctx_vals) if ctx_vals else 0
+    early = [t for i, t in enumerate(turn_ctx)
+             if i < CTX_EARLY_TURNS and t > 0]
+    early_peak = max(early) if early else 0
+    early_spike = early_peak > CTX_EARLY_SPIKE
+    main_sess = (not is_sub and agent not in
+                 ("researcher", "explore", "reviewer"))
+    need_deleg = bool(main_sess and turns >= 15
+                      and total_read_chars > CTX_DELEG_CHARS
+                      and len({r["path"] for r in recs}) >= 6)
+    used_deleg = sub_calls > 0
+    s1 = 25 * min(1.0, ncr / 80.0)
+    dup_rate = (unmod_dup_lines / total_lines) if total_lines else 0.0
+    over_rate = ((oversized_calls / total_read_calls)
+                 if total_read_calls else 0.0)
+    s2 = (12 * max(0.0, 1 - dup_rate / 0.5)
+          + 8 * max(0.0, 1 - over_rate / 0.5))
+    s3 = 20.0
+    if sem_needed and not used_sem:
+        if had_thrash:
+            s3 -= 7
+        if had_blind:
+            s3 -= 6
+        if had_brute:
+            s3 -= 5
+    elif sem_needed and used_sem and dead_files >= 8:
+        s3 -= 3
+    repo = v2_repo_index(directory)
+    if repo["sem"] == "missing" and repo["gitnexus"] == "missing":
+        s3 -= 4
+    elif repo["sem"] == "stale":
+        s3 -= 2
+    s3 = max(0.0, min(20.0, s3))
+    s4 = 20.0
+    if early_spike:
+        s4 -= max(2.0, min(7.0, ((early_peak - CTX_EARLY_SPIKE)
+                                 / 120000.0) * 7))
+    if peak > CTX_PEAK_CAP:
+        s4 -= max(1.0, min(6.0, ((peak - CTX_PEAK_CAP)
+                                 / 150000.0) * 6))
+    s4 -= min(4.0, compactions * 2.0)
+    if need_deleg and not used_deleg:
+        s4 -= 5
+    s4 = max(0.0, min(20.0, s4))
+    s5 = 15.0
+    if shell_anti:
+        s5 -= min(6.0, shell_anti * 1.5)
+    if shell_bloat:
+        s5 -= min(5.0, shell_bloat * 1.5)
+    if turn_ctx and turn_ctx[0] > 12500 and 0 < turns < 8:
+        s5 -= 2
+    s5 = max(0.0, min(15.0, s5))
+    scos = round(s1 + s2 + s3 + s4 + s5, 1)
+    dup_pct = round(100.0 * unmod_dup_lines / total_lines, 1) \
+        if total_lines else 0.0
+    return {
+        "scos": scos, "ncr": ncr,
+        "s1": round(s1, 2), "s2": round(s2, 2), "s3": round(s3, 2),
+        "s4": round(s4, 2), "s5": round(s5, 2),
+        "dup_pct": dup_pct, "read_kb": round(total_read_chars / 1024.0, 1),
+        "needed_kb": round(needed_read / 1024.0, 1),
+        "dead_kb": round(dead_chars / 1024.0, 1),
+        "dead_files": dead_files,
+        "oversized_calls": oversized_calls,
+        "semantic_needed": sem_needed, "used_semantic": used_sem,
+        "had_thrash": had_thrash, "had_blind": had_blind,
+        "early_spike": early_spike, "peak_k": round(peak / 1000.0, 1),
+        "shell_anti": shell_anti, "shell_bloat": shell_bloat,
+        "need_deleg": need_deleg, "used_deleg": used_deleg,
+        "turns": turns, "compactions": compactions,
+    }
+
+
+def collect_v2_metrics(cur, ids, meta):
+    """Per-session metrics + context scores from V2 tables. meta maps
+    sid -> {directory, agent, parent}. Returns {sid: {"q": q, "ctx": ctx}}
+    with q shaped exactly like collect_session_metrics output."""
+    out = {}
+    if not ids:
+        return out
+    ph = ",".join(["?"] * len(ids))
+    users = {}
+    cur.execute("SELECT session_id, seq, time_created, data "
+                "FROM session_message WHERE session_id IN (" + ph + ") "
+                "AND type='user' ORDER BY session_id, seq", ids)
+    for sid, seq, ts, data in cur.fetchall():
+        try:
+            d = json.loads(data) if data else {}
+        except ValueError:
+            d = {}
+        tm = ((d.get("time") or {}).get("created")) or ts or 0
+        text = d.get("text") or ((d.get("metadata") or {}).get(
+            "displayText")) or ""
+        users.setdefault(sid, []).append(
+            {"seq": seq, "ts": tm, "text": text})
+    assts = {}
+    cur.execute("SELECT id, session_id, seq, time_created, data "
+                "FROM session_message WHERE session_id IN (" + ph + ") "
+                "AND type='assistant' ORDER BY session_id, seq", ids)
+    for mid, sid, seq, ts, data in cur.fetchall():
+        try:
+            d = json.loads(data) if data else {}
+        except ValueError:
+            d = {}
+        tm = d.get("time") or {}
+        toks = d.get("tokens") or {}
+        cache = toks.get("cache") or {}
+        model = d.get("model") or {}
+        assts.setdefault(sid, []).append({
+            "mid": mid, "seq": seq, "ts": tm.get("created") or ts or 0,
+            "te": tm.get("completed") or 0,
+            "out": toks.get("output") or 0,
+            "reas": toks.get("reasoning") or 0,
+            "tin": toks.get("input") or 0, "cr": cache.get("read") or 0,
+            "cw": cache.get("write") or 0,
+            "var": model.get("variant") or "unset",
+            "prov": model.get("providerID") or "?",
+            "fin": d.get("finish"),
+            "text": _v2_text_of(d.get("content")),
+            "tools": _v2_tool_events(d.get("content"), mid,
+                                     tm.get("created") or ts or 0, seq)})
+    cur.execute("SELECT session_id, seq FROM session_message "
+                "WHERE session_id IN (" + ph + ") AND type='compaction' "
+                "ORDER BY session_id, seq", ids)
+    comp_seqs = {}
+    for sid, seq in cur.fetchall():
+        comp_seqs.setdefault(sid, []).append(seq)
+    compactions = {sid: len(v) for sid, v in comp_seqs.items()}
+
+    def excerpt(text, limit=140):
+        return re.sub(r"\s+", " ", text or "").strip()[:limit]
+
+    for sid in ids:
+        u = users.get(sid, [])
+        a = assts.get(sid, [])
+        evts = [e for m in a for e in m.get("tools", [])]
+        calls = len(evts)
+        errors = sum(1 for e in evts if e["status"] == "error")
+        err_rate = (errors / calls) if calls else None
+        eb_tool = {}
+        for e in evts:
+            if e["status"] == "error":
+                eb_tool[e["name"]] = eb_tool.get(e["name"], 0) + 1
+        err_by_tool = sorted(eb_tool.items(), key=lambda kv: -kv[1])
+        streak = ("", 0)
+        run_tool, run_n = "", 0
+        for e in evts:
+            if e["status"] == "error" and (not run_tool
+                                           or e["name"] == run_tool):
+                run_tool = e["name"]
+                run_n += 1
+                if run_n > streak[1]:
+                    streak = (run_tool, run_n)
+            else:
+                run_tool = e["name"] if e["status"] == "error" else ""
+                run_n = 1 if e["status"] == "error" else 0
+        err_ts = sorted(e["ts"] for e in evts if e["status"] == "error")
+        after_err = 0
+        for i in range(1, len(u)):
+            prev, now = u[i - 1]["ts"], u[i]["ts"]
+            if any(prev < x <= now and (now - x) <= AFTER_ERR_S * 1000
+                   for x in err_ts):
+                after_err += 1
+        gaps, gap_ms = 0, 0
+        for i in range(1, len(u)):
+            g = u[i]["ts"] - u[i - 1]["ts"]
+            if g > GAP_MIN * 60000:
+                gaps += 1
+                gap_ms += g
+        asst_dur = [max(0.0, (m["te"] - m["ts"]) / 1000.0)
+                    for m in a if m["te"] and m["ts"]]
+        active_s = sum(asst_dur)
+        out_tot = sum(m["out"] + m["reas"] for m in a)
+        reas_tot = sum(m["reas"] for m in a)
+        reason_share = (reas_tot / out_tot) if out_tot else None
+        tps_num = sum(m["out"] + m["reas"] for m in a
+                      if m["te"] > m["ts"])
+        tps_den = sum((m["te"] - m["ts"]) / 1000.0 for m in a
+                      if m["te"] > m["ts"])
+        tps = (tps_num / tps_den) if tps_den else None
+        var_c = {}
+        provs = set()
+        for m in a:
+            var_c[m["var"]] = var_c.get(m["var"], 0) + 1
+            provs.add(m["prov"])
+        variants = sorted(var_c.items(), key=lambda kv: -kv[1])
+        last_fin = a[-1]["fin"] if a else None
+        msgs_per_turn = (len(a) / len(u)) if u else None
+        first_prompt = len(u[0]["text"]) if u else 0
+        stamps = [x["ts"] for x in u] + [m["ts"] for m in a] \
+            + [m["te"] for m in a if m["te"]] \
+            + [e["ts"] for e in evts]
+        stamps = [x for x in stamps if x]
+        wall_s = ((max(stamps) - min(stamps)) / 1000.0) \
+            if len(stamps) > 1 else 0.0
+        idle_pct = ((wall_s - active_s) / wall_s * 100.0) \
+            if wall_s > 0 else None
+        mid_turn = {}  # assistant mid -> turn index (seq windows)
+        for i, um in enumerate(u):
+            hi = u[i + 1]["seq"] if i + 1 < len(u) else None
+            for m in a:
+                if m["seq"] > um["seq"] and (hi is None or m["seq"] < hi):
+                    mid_turn[m["mid"]] = i
+        tl = []
+        interrupted = 0
+        edited_paths = set()
+        for i, um in enumerate(u):
+            ma = [m for m in a if mid_turn.get(m["mid"]) == i]
+            mt = [e for e in evts
+                  if mid_turn.get(e["mid"]) == i]
+            last_te = max([m["te"] for m in ma if m["te"]] or [0])
+            cut = bool(ma) and not any(m["fin"] == "stop" for m in ma) \
+                and i + 1 < len(u) and last_te \
+                and u[i + 1]["ts"] < last_te
+            if cut:
+                interrupted += 1
+            pfiles = set()
+            for e in mt:
+                if e["name"] in ("edit", "write", "apply_patch"):
+                    p = (e["input"].get("path") or "").rsplit("/", 1)[-1]
+                    if p:
+                        pfiles.add(p)
+                        edited_paths.add(e["input"].get("path") or "")
+            n_err = sum(1 for e in mt if e["status"] == "error")
+            if not ma and not mt:
+                outcome, tsum = "queued", "queued"
+            else:
+                mix, emix = {}, {}
+                for e in mt:
+                    mix[e["name"]] = mix.get(e["name"], 0) + 1
+                    if e["status"] == "error":
+                        emix[e["name"]] = emix.get(e["name"], 0) + 1
+                if cut:
+                    outcome = "cut short"
+                elif pfiles:
+                    outcome = "edited"
+                elif n_err >= 3 or (n_err and n_err / max(len(mt), 1)
+                                    >= 0.5):
+                    outcome = "stuck"
+                elif mt:
+                    outcome = "explored"
+                else:
+                    outcome = "answered"
+                if not mt:
+                    tsum = "answered directly"
+                else:
+                    top = sorted(mix.items(), key=lambda kv: -kv[1])
+                    tsum = ", ".join("%s×%d" % (tn, n)
+                                     for tn, n in top[:3])
+                    if len(top) > 3:
+                        tsum += " +%d more" % (len(top) - 3)
+                    if pfiles:
+                        if len(pfiles) == 1:
+                            tsum += (" · edited "
+                                     + next(iter(pfiles)))
+                        else:
+                            tsum += " · edited %d files" % len(pfiles)
+                    if emix:
+                        et = max(emix.items(),
+                                 key=lambda kv: kv[1])[0]
+                        tsum += (" · %d error%s (%s)"
+                                 % (n_err,
+                                    "" if n_err == 1 else "s", et))
+            tl.append({
+                "start": um["ts"], "pex": excerpt(um["text"]),
+                "sum": tsum, "outcome": outcome,
+                "asst": len(ma), "calls": len(mt), "err": n_err,
+                "out": sum(m["out"] + m["reas"] for m in ma),
+                "active": sum(max(0.0, (m["te"] - m["ts"]) / 1000.0)
+                              for m in ma if m["te"] and m["ts"]),
+                "var": ma[-1]["var"] if ma else None})
+        cm = {}
+        for e in evts:
+            if (e["name"] or "") in ("bash", "shell"):
+                cat = classify_bash(e["input"].get("command") or "")
+            else:
+                cat = classify_tool(e["name"] or "")
+            cell = cm.setdefault(cat, [0, 0])
+            cell[1] += 1
+            if e["t_start"] and e["t_end"] and e["t_end"] > e["t_start"]:
+                cell[0] += e["t_end"] - e["t_start"]
+        tool_cats = [{"cat": c, "ms": cm[c][0], "calls": cm[c][1]}
+                     for c in cm]
+        tool_cats.sort(key=lambda r: -r["ms"])
+        edited = {}
+        for e in evts:
+            if e["name"] in ("edit", "write", "apply_patch"):
+                p = e["input"].get("path") or ""
+                if p:
+                    edited[p] = edited.get(p, 0) + 1
+        asst_text = "\n".join(m["text"] for m in a if m["text"])
+        turn_ctx = [m["tin"] + m["cr"] + m["cw"] for m in a]
+        m = meta.get(sid, {})
+        ctx = score_v2_context(
+            sid, m.get("directory", ""), m.get("agent", ""),
+            bool(m.get("parent")), len(u), compactions.get(sid, 0),
+            turn_ctx, evts, edited, asst_text,
+            comp_seqs.get(sid, ()))
+        q = {
+            "turns": len(u), "asst": len(a), "calls": calls,
+            "errors": errors, "err_rate": err_rate,
+            "err_by_tool": err_by_tool, "streak": streak,
+            "interrupted": interrupted,
+            "gaps": gaps, "gap_ms": gap_ms, "after_err": after_err,
+            "first_prompt": first_prompt,
+            "active_min": active_s / 60.0, "idle_pct": idle_pct,
+            "wall_min": wall_s / 60.0,
+            "turn_p50": med(asst_dur), "tps": tps,
+            "reason_share": reason_share, "out_tot": out_tot,
+            "variants": variants, "providers": sorted(provs),
+            "msgs_per_turn": msgs_per_turn, "last_fin": last_fin,
+            "files": len(edited_paths),
+            "tool_cats": tool_cats,
+            "tool_ms": sum(r["ms"] for r in tool_cats),
+            "tl": tl[:TL_MAX], "tl_truncated": len(tl) > TL_MAX,
+        }
+        out[sid] = {"q": q, "ctx": ctx}
+    return out
+
+
 def main():
     if not DB.exists():
         sys.exit("db not found: " + str(DB))
@@ -910,6 +1607,27 @@ def main():
         cur, [s["id"] for s in session_rows_data])
     for sd in session_rows_data:
         sd["q"] = sess_q.get(sd["id"])
+    for sd in session_rows_data:
+        sd["ctx"] = None
+    # --- V2 overlay: live sessions + context scores (superset; V2 wins) ---
+    # V1 tables froze at the Nov-14 migration; session_v2/session_message/
+    # session_part carry everything since. V2 rows replace same-id V1 rows.
+    if v2_has_rows(cur):
+        v2_rows = build_v2_session_rows(cur)
+        v2m = collect_v2_metrics(
+            cur, [s["id"] for s in v2_rows],
+            {s["id"]: {"directory": s["directory"], "agent": s["agent"],
+                       "parent": s.get("parent", "")}
+             for s in v2_rows})
+        for s in v2_rows:
+            m = v2m.get(s["id"], {})
+            s["q"] = m.get("q")
+            s["ctx"] = m.get("ctx")
+        have = {s["id"] for s in v2_rows}
+        session_rows_data = ([s for s in session_rows_data
+                              if s["id"] not in have] + v2_rows)
+        session_rows_data.sort(key=lambda s: -s["cost"])
+        code_intent = code_intent | v2_code_intent(cur)
 
     # --- human vs model time split ---
     # engaged wall per session = wall span minus idle gaps (>15m, away from
@@ -939,6 +1657,39 @@ def main():
                     if (s["q"] or {}).get("turns", 0) >= 8)
     featured = [s for s in session_rows_data if s["id"] in feat_ids]
 
+    # --- context health aggregates (live V2-scored sessions only) ---
+    call = [s["ctx"] for s in session_rows_data if s.get("ctx")]
+    need_sem = [c for c in call if c.get("semantic_needed")]
+    ctxagg = ({
+        "n": len(call),
+        "scos": round(sum(c["scos"] for c in call) / len(call), 1),
+        "ncr": round(sum(c["ncr"] for c in call) / len(call), 1),
+        "need_sem": len(need_sem),
+        "used_sem": sum(1 for c in need_sem if c.get("used_semantic")),
+        "mean_dup": round(sum(c["dup_pct"] for c in call) / len(call), 1),
+    } if call else None)
+    ctx_by_proj = {}
+    for s in session_rows_data:
+        c = s.get("ctx")
+        if not c:
+            continue
+        p = (s.get("directory") or "").rstrip("/").split("/")[-1] or "?"
+        e = ctx_by_proj.setdefault(p, {"n": 0, "scos": 0.0, "ncr": 0.0,
+                                       "need": 0, "used": 0})
+        e["n"] += 1
+        e["scos"] += c["scos"]
+        e["ncr"] += c["ncr"]
+        if c.get("semantic_needed"):
+            e["need"] += 1
+            if c.get("used_semantic"):
+                e["used"] += 1
+    ctx_projects = [{
+        "project": p, "n": e["n"],
+        "scos": round(e["scos"] / e["n"], 1),
+        "ncr": round(e["ncr"] / e["n"], 1),
+        "need_sem": e["need"], "used_sem": e["used"],
+    } for p, e in sorted(ctx_by_proj.items(),
+                         key=lambda kv: (kv[1]["scos"], -kv[1]["n"]))]
     # --- aggregate prompt/session habits (training lens, all sessions) ---
     qall = [s["q"] for s in session_rows_data if s.get("q")]
     t1 = [q["turns"] for q in qall if q["turns"] >= 1]
@@ -1543,9 +2294,13 @@ def main():
             "out_r": s["output"] + s["reasoning"], "cost": s["cost"],
             "calls": s["calls"],
             "errors": s["errors"] if s["calls"] else None,
-            "landed": s["landed"], "intent": s["intent"]}
+            "landed": s["landed"], "intent": s["intent"],
+            "scos": (s.get("ctx") or {}).get("scos"),
+            "ncr": (s.get("ctx") or {}).get("ncr")}
             for s in featured],
         "habits": habits,
+        "ctxagg": ctxagg,
+        "ctx_projects": ctx_projects,
         "variants": [{
             "name": name, "msgs": n, "out": out_tok + reas_tok}
             for name, n, out_tok, reas_tok in variants],
@@ -1644,6 +2399,7 @@ def build_session_payload(s):
             "asst": tr["asst"], "calls": tr["calls"], "err": tr["err"],
             "out": tr["out"], "active_s": tr["active"]} for tr in q.get("tl", [])],
         "tl_truncated": q.get("tl_truncated", False),
+        "ctx": s.get("ctx"),
     }
 
 if __name__ == "__main__":

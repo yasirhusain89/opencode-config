@@ -12,7 +12,9 @@ Data and presentation are split:
   (`data.js` + `sessions/*.js`, as `window.__OCUD__` / `window.__OCUD_SESSION__`
   globals so pages work from `file://` with no fetch). Never generate HTML here.
 - `app/src/` holds the **Svelte templates** (`Index`, `Session`, shared
-  formatting in `lib/format.js`, improvement-tip rules in `lib/tips.js`).
+  formatting in `lib/format.js`, improvement-tip rules in `lib/tips.js`
+  — `userTips`/`modelTips` plus `contextTips` driven by the `ctx` block,
+  with `scosClass`/`ncrClass` flag classes).
   Build with `npm run build` in `app/`; verify with `npm run check`
   (SSR-renders both pages against the real generated data).
 
@@ -40,10 +42,18 @@ Data and presentation are split:
   `PYTHON=/opt/homebrew/bin/python3 node scripts/generate.test.mjs` and
   `PYTHON=/usr/bin/python3 node scripts/generate.test.mjs` (3.9 gate).
 - `~/Library/LaunchAgents/ai.opencode.usage-dashboard.plist` — launchd, daily 08:00 + RunAtLoad.
-- Source DB (read-only): `~/.local/share/opencode/opencode.db`. Tables: `session`
-  (tokens/cost columns), `message` (JSON data: providerID, modelID, variant, tokens,
+- Source DB (read-only): `~/.local/share/opencode/opencode.db`. Spend
+  aggregates read the frozen V1 tables `session` (tokens/cost columns),
+  `message` (JSON data: providerID, modelID, variant, tokens,
   time.created/completed in **ms**), `part` (tool calls, state.status,
-  state.time.start/end in **ms** for the per-session tool-time split).
+  state.time.start/end in **ms**). The live session layer (session list,
+  featured pages, SCOS/NCR) reads V2 instead — `session_v2`,
+  `session_message` (assistant `content[]` carries the complete tool-call
+  record; `session_part` is only a sparse mirror, never the scoring source),
+  `session_part` — when `session_v2` holds rows, V2 rows supersede same-id V1
+  rows. `data.js` session rows carry `scos`/`ncr`; session payloads carry
+  the full `ctx` driver block; `habits` carries `ctxagg`, and the payload
+  root carries `ctx_projects` (per-project context health).
   Git commit timestamps are **seconds** — convert ms/s when joining (see `landed()`).
 
 ## Regenerate (data only; daily path)
@@ -143,6 +153,19 @@ Notes:
   excerpts (DuckDuckGo html endpoint works; Google blocks).
 - AA slugs: spaces and dots become dashes, drop effort suffixes:
   `Claude Fable 5.1 (max ...)` → `claude-fable-5-1`, `GLM-5.3-Flash` → `glm-5-3-flash`.
+
+## Context scoring (SCOS/NCR)
+
+`score_v2_context` in generate.py is a deterministic Python port of
+`scripts/context_eval.mjs` (`evaluateSession`) — same thresholds, same
+compaction-epoch line-state semantics (verified field-by-field against the
+reference on a live session during development). Keep the two in sync when
+either changes: the V2 fixture in `scripts/generate.test.mjs` (surgical vs
+bloated sessions) pins the port's behavior. The embedding-rescue layer
+(`--ollama-embed` cosine thresholds, calibration log) stays in
+context_eval.mjs only — the dashboard shows the deterministic score. To check for drift after touching
+either scorer, compare payload `ctxagg` against a fresh `context_eval.mjs`
+run over the same DB.
 
 ## Conventions
 

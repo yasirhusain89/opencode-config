@@ -99,12 +99,14 @@ const sess = JSON.parse(sessJS);
 
 await check(entrySession, [
   sess.title.split(" ")[0],
-  "Tool time by category",
+  "Tool calls by category",
   "Turn timeline",
   "Action",
   "Outcome",
   "Effectiveness",
   "Improve — user side",
+  "Context health",
+  "Improve — context loading",
 ], "session");
 
 // …plus a shape sweep over every session file (catches per-session variance:
@@ -121,8 +123,11 @@ for (const f of sessFiles) {
       `export const body = render(App).body;\n`
   );
   const s = JSON.parse(raw);
-  const wants = ["Turn timeline", (s.title || s.id8).split(" ")[0]];
-  wants.push(s.tool_ms > 0 ? 'class="tbar"' : "No tool calls in this session");
+  const wants = ["Turn timeline", (s.title || s.id8).split(" ")[0],
+    "Context health", "Improve — context loading"];
+  wants.push(s.tool_ms > 0 ? 'class="tbar"'
+    : (s.calls > 0 ? "per-call timing not recorded"
+      : "No tool calls in this session"));
   await check(entry, wants, "session " + s.id8);
 }
 

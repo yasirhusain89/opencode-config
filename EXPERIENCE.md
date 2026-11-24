@@ -229,6 +229,20 @@ distilled, still-true conclusions.
   sessions. Evidence: `scripts/context_eval.mjs` (`--self-test` green),
   `scripts/semantic_index.py:load_scan_config`, 4 fresh indexes
   (mw5-advisor 922 chunks, opencode 796, fotoflow 587, monartha 699).
+- **2026-11-24 — dashboard session layer reads V2; session_part is a sparse
+  tool mirror.** The usage-dashboard per-session pages were silently frozen at
+  Nov 2–3 (V1 `session`/`message`/`part` tables stop at the V2 migration):
+  all post-migration sessions were invisible. The session list, featured
+  pages, and new SCOS/NCR scoring now read `session_v2`/`session_message`
+  (V2 rows supersede same-id V1 rows; spend aggregates stay on frozen V1).
+  Anyone scoring tool usage must parse assistant `content[]` tool items —
+  `session_part` holds only a subset (26 vs 627 tool calls on one audited
+  session). The dashboard SCOS port (`score_v2_context`) is verified
+  field-by-field against `context_eval.mjs` on a live session (all byte
+  counters identical; V1 fixture suite pins the frozen path). Evidence:
+  `skills/usage-dashboard/generate.py:build_v2_session_rows` /
+  `collect_v2_metrics`, `scripts/generate.test.mjs` V2 fixture (surgical
+  scos=96 vs bloated low with `semantic_needed`), `npm run check` green.
 
 ## 4. Eval & benchmark hygiene
 

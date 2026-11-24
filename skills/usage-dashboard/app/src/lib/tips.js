@@ -17,6 +17,13 @@ export const T = {
   ERR_CALLS_MIN: 10,
   AFTER_ERR_S: 120,
   INTERRUPT_MIN: 3,
+  // context-health thresholds mirror generate.py CTX_* constants
+  SCOS_GOOD: 85,
+  SCOS_OK: 60,
+  NCR_GOOD: 80,
+  DUP_PCT_HIGH: 20,
+  DEAD_KB_HIGH: 50,
+  OVERSIZED_MANY: 3,
 };
 
 export function userTips(s) {
@@ -98,6 +105,81 @@ export function modelTips(s) {
   }
   if (!tips.length) {
     tips.push("no loops or effort mismatch detected.");
+  }
+  return tips;
+}
+
+export function scosClass(scos) {
+  if (scos == null) return "note";
+  if (scos >= T.SCOS_GOOD) return "ok-flag";
+  if (scos >= T.SCOS_OK) return "";
+  return "bad-flag";
+}
+
+export function ncrClass(ncr) {
+  if (ncr == null) return "note";
+  if (ncr >= T.NCR_GOOD) return "ok-flag";
+  if (ncr >= 50) return "";
+  return "bad-flag";
+}
+
+// Context-loading guidance, computed from the deterministic SCOS/NCR
+// drivers in sessions/<id>.js (generate.py score_v2_context). Raw numbers
+// only in the payload; the advice lives here.
+export function contextTips(s) {
+  const tips = [];
+  const c = s.ctx;
+  if (!c) {
+    return ["context not scored (pre-Nov-14 session, before context tracking)."];
+  }
+  if (c.dup_pct >= T.DUP_PCT_HIGH) {
+    tips.push(
+      `${c.dup_pct}% of lines read were unmodified re-reads — never re-read lines already loaded this session; use targeted offset/limit slices around grep hits instead of paging whole files.`
+    );
+  }
+  if (c.dead_kb >= T.DEAD_KB_HIGH) {
+    tips.push(
+      `${c.dead_kb} KB loaded from ${c.dead_files} file(s) never edited or cited — orient with a semantic query or delegate broad exploration to a subagent so dead reads stay out of the main session's cache.`
+    );
+  }
+  if (c.oversized_calls >= T.OVERSIZED_MANY) {
+    tips.push(
+      `${c.oversized_calls} full-file (>400-line) dumps — read the slice around each hit instead of paging top-to-bottom in main; each early full read amplifies across every later turn.`
+    );
+  }
+  if (c.semantic_needed && !c.used_semantic) {
+    const why = [
+      c.had_thrash ? "lexical search thrashed" : null,
+      c.had_blind ? "broad blind file reads" : null,
+    ].filter(Boolean).join(" + ") || "exploration pattern";
+    tips.push(
+      `semantic/graph search was needed (${why}) but never used — escalate after 2 empty greps: semantic:q for meaning/unknown-vocabulary, gitnexus query/context for callers and flows.`
+    );
+  }
+  if (c.early_spike) {
+    tips.push(
+      `context spiked past 80K tokens within the first 10 turns (peak ${c.peak_k}K) — that early bloat re-bills every turn; land the file list with grep/semantic first, then read slices.`
+    );
+  }
+  if (c.need_deleg && !c.used_deleg) {
+    tips.push(
+      `heavy multi-file exploration in the main session with no subagent — fan out to explore/researcher so discovery reads stay out of the main KV cache.`
+    );
+  }
+  if (c.shell_anti) {
+    tips.push(
+      `${c.shell_anti} shell call(s) used for file reads (cat/sed/head/grep) — native read/grep tools keep output bounded and attributable; shell dumps bypass slice budgets.`
+    );
+  }
+  if (c.compactions) {
+    tips.push(
+      `${c.compactions} compaction(s) — context pressure forced a summary; smaller slices and earlier delegation delay the cliff.`
+    );
+  }
+  if (!tips.length) {
+    tips.push(
+      `context loading looks healthy (SCOS ${c.scos}, NCR ${c.ncr}%) — keep the slice discipline.`
+    );
   }
   return tips;
 }

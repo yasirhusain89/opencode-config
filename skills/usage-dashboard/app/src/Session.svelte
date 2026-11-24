@@ -1,7 +1,7 @@
 <script>
   import Theme from "./Theme.svelte";
   import { fmt, money, hrs, fmtDT, fmtDay, durShort, catColor } from "./lib/format.js";
-  import { userTips, modelTips } from "./lib/tips.js";
+  import { userTips, modelTips, contextTips, scosClass, ncrClass } from "./lib/tips.js";
 
   const sid = globalThis.__OCUD_SESSION_ID__ ?? "";
   const s = globalThis.__OCUD_SESSION__ ?? null;
@@ -29,6 +29,8 @@
 
   const utips = $derived(s ? userTips(s) : []);
   const mtips = $derived(s ? modelTips(s) : []);
+  const ctips = $derived(s ? contextTips(s) : []);
+  const ctx = $derived(s?.ctx ?? null);
 </script>
 
 <div class="top">
@@ -96,27 +98,58 @@
       {#each mtips as t}<li>{t}</li>{/each}
     </ul>
   </div>
+  <div class="card" style="margin-top:12px">
+    <div class="k">Context health — SCOS / NCR</div>
+    {#if ctx}
+      <table class="rates"><tbody>
+        <tr><td>Session Context Optimality Score</td><td class="r"><span class={scosClass(ctx.scos)}>{ctx.scos} / 100</span></td></tr>
+        <tr><td>Needed Context Ratio</td><td class="r"><span class={ncrClass(ctx.ncr)}>{ctx.ncr}% needed</span> <span class="note">({ctx.needed_kb} of {ctx.read_kb} KB read)</span></td></tr>
+        <tr>
+          <td>Sub-scores</td>
+          <td class="r">precision {ctx.s1}/25 · dedup/slice {ctx.s2}/20 · retrieval {ctx.s3}/20 · KV-cache {ctx.s4}/20 · hygiene {ctx.s5}/15</td>
+        </tr>
+        <tr>
+          <td>Waste drivers</td>
+          <td class="r">{ctx.dup_pct}% dup lines · {ctx.dead_kb} KB dead reads ({ctx.dead_files} files) · {ctx.oversized_calls} oversized dumps{ctx.semantic_needed ? (ctx.used_semantic ? " · semantic search used ✓" : " · semantic search missed ✗") : ""}{ctx.early_spike ? ` · early spike (peak ${ctx.peak_k}K)` : ""}{ctx.shell_anti ? ` · ${ctx.shell_anti} shell-for-read` : ""}{ctx.compactions ? ` · ${ctx.compactions} compaction(s)` : ""}</td>
+        </tr>
+      </tbody></table>
+    {:else}
+      <div class="s">Not scored — context tracking covers post-Nov-14 sessions only.</div>
+    {/if}
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="k">Improve — context loading</div>
+    <ul class="tips">
+      {#each ctips as t}<li>{t}</li>{/each}
+    </ul>
+  </div>
 
-  <h2>Tool time by category</h2>
-  {#if s.tool_ms > 0}
-    <div class="tbar">
-      {#each s.tool_cats as c}
-        {#if c.ms > 0}
-          <span
-            title={`${c.cat}: ${(100 * c.ms / s.tool_ms).toFixed(1)}% · ${durShort(c.ms)} · ${c.calls} calls`}
-            style={`width:${(100 * c.ms / s.tool_ms).toFixed(2)}%;background:${catColor(c.cat)}`}>
-          </span>
-        {/if}
-      {/each}
-    </div>
-    <div class="tbar-legend">{num(s.calls)} tool calls · {durShort(s.tool_ms)} active tool time</div>
+  <h2>Tool calls by category</h2>
+  {#if s.calls > 0}
+    {#if s.tool_ms > 0}
+      <div class="tbar">
+        {#each s.tool_cats as c}
+          {#if c.ms > 0}
+            <span
+              title={`${c.cat}: ${(100 * c.ms / s.tool_ms).toFixed(1)}% · ${durShort(c.ms)} · ${c.calls} calls`}
+              style={`width:${(100 * c.ms / s.tool_ms).toFixed(2)}%;background:${catColor(c.cat)}`}>
+            </span>
+          {/if}
+        {/each}
+      </div>
+      <div class="tbar-legend">{num(s.calls)} tool calls · {durShort(s.tool_ms)} active tool time</div>
+    {:else}
+      <div class="tbar-legend">{num(s.calls)} tool calls · per-call timing not recorded for this session</div>
+    {/if}
     <table><tbody>
-      <tr><th>Category</th><th style="text-align:right">Share</th><th style="text-align:right">Time</th><th>Calls</th></tr>
+      <tr><th>Category</th>{#if s.tool_ms > 0}<th style="text-align:right">Share</th><th style="text-align:right">Time</th>{/if}<th>Calls</th></tr>
       {#each s.tool_cats as c}
         <tr>
           <td><span class="swatch" style={`background:${catColor(c.cat)}`}></span>{c.cat}</td>
-          <td class="r">{(100 * c.ms / s.tool_ms).toFixed(1)}%</td>
-          <td class="r">{durShort(c.ms)}</td>
+          {#if s.tool_ms > 0}
+            <td class="r">{(100 * c.ms / s.tool_ms).toFixed(1)}%</td>
+            <td class="r">{durShort(c.ms)}</td>
+          {/if}
           <td>{num(c.calls)}</td>
         </tr>
       {/each}

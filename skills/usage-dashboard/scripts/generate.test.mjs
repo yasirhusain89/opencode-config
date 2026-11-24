@@ -315,6 +315,93 @@ eq(j2.rate429.count, 0, 'missing log tolerates to zero 429s');
 eq(j2.hero.quota, null, 'missing quota snapshot is null');
 eq(j2.credits, null, 'missing credits snapshot is null');
 
+// V2 session layer: session_v2/session_message/session_part drive the live
+// session list + SCOS/NCR scoring (V1 tables stay frozen). Surgical session
+// (targeted grep -> slice read -> edit -> cite) scores high; bloated session
+// (empty greps + dead full reads + shell-for-read, no semantic search)
+// scores low with semantic_needed set.
+const tmp3 = fs.mkdtempSync(path.join(os.tmpdir(), 'ocud-test3-'));
+const share3 = path.join(tmp3, 'out', '.local', 'share', 'opencode');
+fs.mkdirSync(share3, { recursive: true });
+const BUILD3 = `
+import json, sqlite3, sys, time
+tmp, r1x, db = sys.argv[1:4]
+t0 = int(time.time() * 1000) - 5 * 86400000
+con = sqlite3.connect(db)
+c = con.cursor()
+c.execute("CREATE TABLE session (id TEXT PRIMARY KEY, project_id TEXT, directory TEXT, time_created INTEGER, time_updated INTEGER, tokens_input INTEGER, tokens_output INTEGER, tokens_reasoning INTEGER, tokens_cache_read INTEGER, tokens_cache_write INTEGER, title TEXT, summary_additions INTEGER, summary_deletions INTEGER, summary_files INTEGER, agent TEXT, model TEXT, cost REAL)")
+c.execute("CREATE TABLE message (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, time_created INTEGER, time_updated INTEGER, data TEXT)")
+c.execute("CREATE TABLE part (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, message_id INTEGER, time_created INTEGER, data TEXT)")
+c.execute("CREATE TABLE session_v2 (id TEXT PRIMARY KEY, project_id TEXT, directory TEXT, time_created INTEGER, time_updated INTEGER, tokens_input INTEGER, tokens_output INTEGER, tokens_reasoning INTEGER, tokens_cache_read INTEGER, tokens_cache_write INTEGER, title TEXT, summary_additions INTEGER, summary_deletions INTEGER, summary_files INTEGER, agent TEXT, model TEXT, cost REAL, parent_id TEXT)")
+c.execute("CREATE TABLE session_message (id TEXT PRIMARY KEY, session_id TEXT, type TEXT, seq INTEGER, time_created INTEGER, time_updated INTEGER, data TEXT)")
+c.execute("CREATE TABLE session_part (message_id TEXT, session_id TEXT, ordinal INTEGER, type TEXT, time_created INTEGER, time_updated INTEGER, data TEXT)")
+M = {"id": "spark", "providerID": "opencode", "variant": "xhigh"}
+# V1 baseline: one quiet session (frozen-layer sanity)
+c.execute("INSERT INTO session VALUES ('fixV1001', 'p1', ?, %d, %d, 5000, 50, 0, 0, 0, 'v1 quiet', 0, 0, 0, 'main', '%s', 0.0)" % (t0, t0 + 60000, json.dumps({"id": "s", "providerID": "opencode"})), (r1x,))
+# V2-A surgical: 1 turn, grep hit -> 30-line slice read -> edit -> cite
+eA = t0
+c.execute("INSERT INTO session_v2 VALUES ('v2surg01', 'p1', ?, %d, %d, 9000, 100, 0, 0, 0, 'v2 surgical', 0, 0, 0, 'main', '%s', 0.0, '')" % (eA, eA + 120000, json.dumps(M)), (r1x,))
+c.execute("INSERT INTO session_message VALUES ('uA', 'v2surg01', 'user', 1, %d, %d, '%s')" % (eA, eA, json.dumps({"text": "fix rounding in math", "time": {"created": eA}})))
+toolsA = [
+    ("read", {"path": "src/math.ts", "offset": 35, "limit": 30}, "Read file src/math.ts, lines 35-64\\n" + ("x = 1\\n" * 30)),
+    ("edit", {"path": "src/math.ts", "oldString": "a", "newString": "b"}, "Edited src/math.ts"),
+]
+contentA = [{"type": "tool", "name": n, "state": {"input": i, "content": [{"type": "text", "text": o[:200]}]}} for n, i, o in toolsA]
+contentA.append({"type": "text", "text": "Fixed the rounding bug in src/math.ts."})
+c.execute("INSERT INTO session_message VALUES ('aA', 'v2surg01', 'assistant', 2, %d, %d, '%s')" % (eA + 5000, eA + 15000, json.dumps({"agent": "main", "model": M, "content": contentA, "tokens": {"input": 9000, "output": 80, "reasoning": 0, "cache": {"read": 0, "write": 0}}, "time": {"created": eA + 5000, "completed": eA + 15000}, "finish": "stop"}).replace("'", "''")))
+for k, (n, i, o) in enumerate(toolsA):
+    st = {"input": i, "content": [{"type": "text", "text": o}], "status": "completed"}
+    c.execute("INSERT INTO session_part VALUES ('aA', 'v2surg01', %d, 'tool', %d, %d, '%s')" % (k, eA + 6000 + k * 1000, eA + 7000 + k * 1000, json.dumps({"type": "tool", "name": n, "state": st}).replace("'", "''")))
+# V2-B bloated: 8 turns, empty greps + dead 600-line reads + shell cat
+eB = t0
+c.execute("INSERT INTO session_v2 VALUES ('v2bloat1', 'p1', ?, %d, %d, 40000, 800, 0, 0, 0, 'v2 bloated', 0, 0, 0, 'main', '%s', 0.0, '')" % (eB, eB + 480000, json.dumps(M)), (r1x,))
+seq = 1
+for i in range(8):
+    ts = eB + i * 60000
+    c.execute("INSERT INTO session_message VALUES ('uB%d', 'v2bloat1', 'user', %d, %d, %d, '%s')" % (i, seq, ts, ts, json.dumps({"text": "z" * 50, "time": {"created": ts}})))
+    seq += 1
+    toolsB = []
+    if i < 4:
+        toolsB.append(("grep", {"pattern": "nope%d" % i, "path": "."}, ""))
+    if i < 5:
+        toolsB.append(("read", {"path": "src/dead_%d.ts" % i}, "Read file src/dead_%d.ts, lines 1-600\\n" % i + ("y = 2\\n" * 20)))
+    if i == 0:
+        toolsB.append(("shell", {"command": "cat src/dead_0.ts"}, "y\\n" * 500))
+    contentB = [{"type": "tool", "name": n, "state": {"input": inp, "content": [{"type": "text", "text": out[:200]}]}} for n, inp, out in toolsB]
+    c.execute("INSERT INTO session_message VALUES ('aB%d', 'v2bloat1', 'assistant', %d, %d, %d, '%s')" % (i, seq, ts + 5000, ts + 15000, json.dumps({"agent": "main", "model": M, "content": contentB, "tokens": {"input": 40000, "output": 80, "reasoning": 0, "cache": {"read": 0, "write": 0}}, "time": {"created": ts + 5000, "completed": ts + 15000}, "finish": "stop"}).replace("'", "''")))
+    seq += 1
+    for k, (n, inp, out) in enumerate(toolsB):
+        st = {"input": inp, "content": [{"type": "text", "text": out}], "status": "completed"}
+        c.execute("INSERT INTO session_part VALUES ('aB%d', 'v2bloat1', %d, 'tool', %d, %d, '%s')" % (i, k, ts + 6000, ts + 7000, json.dumps({"type": "tool", "name": n, "state": st}).replace("'", "''")))
+con.commit()
+print("v2 fixture ready")
+`;
+execFileSync(PY, ['-', tmp3, r1, path.join(share3, 'opencode.db')], { input: BUILD3, encoding: 'utf8' });
+execFileSync(PY, [GEN], { env: { ...process.env, OCUD_HOME: path.join(tmp3, 'out') }, encoding: 'utf8' });
+const raw3 = fs.readFileSync(path.join(tmp3, 'out', '.opencode', 'usage-dashboard', 'data.js'), 'utf8');
+const j3 = JSON.parse(raw3.slice(raw3.indexOf('{'), raw3.lastIndexOf('}') + 1));
+const ids3 = new Set(j3.sessions.map(s => s.id8));
+ok(ids3.has('v2surg01') && ids3.has('v2bloat1'), 'V2 sessions listed');
+const sA = j3.sessions.find(s => s.id8 === 'v2surg01');
+const sB = j3.sessions.find(s => s.id8 === 'v2bloat1');
+ok(sA.scos >= 85 && sA.ncr >= 80, 'surgical session scores high (scos=' + sA.scos + ' ncr=' + sA.ncr + ')');
+ok(sB.scos < 65 && sB.ctx === undefined, 'bloated session scores low, no ctx leak in index rows');
+const sessFile = (id8) => {
+  const raw = fs.readFileSync(path.join(tmp3, 'out', '.opencode', 'usage-dashboard', 'sessions', id8 + '.js'), 'utf8');
+  return JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+};
+const pA = sessFile('v2surg01');
+const pB = sessFile('v2bloat1');
+ok(pA.ctx && pA.ctx.scos >= 85, 'surgical payload carries ctx');
+ok(pB.ctx && pB.ctx.semantic_needed === true && pB.ctx.used_semantic === false, 'bloated payload flags unmet semantic need');
+ok(pB.ctx.dup_pct >= 0 && pB.ctx.dead_files >= 4, 'bloated payload counts dead exploratory files');
+eq(j3.ctxagg.n, 2, 'ctxagg covers both scored sessions');
+ok(j3.ctxagg.scos > 0 && j3.ctxagg.ncr > 0, 'ctxagg means present');
+ok(Array.isArray(j3.ctx_projects) && j3.ctx_projects.length >= 1, 'per-project ctx health present');
+eq([j3.landing.landed, j3.landing.checkable], [0, 1], 'v2 landing: surgical checked, bloated no-intent');
+const v2byModel = Object.fromEntries(j3.landing.by_model.map(r => [r.name, [r.landed, r.n]]));
+eq(v2byModel['opencode / spark'], [0, 1], 'v2 spark landing rate');
+
 // quota-status script reads the same OUT dir (no network, exit 0)
 const qs = execFileSync('node', [path.join(HERE, 'quota-status.mjs')],
   { env: { ...process.env, OCUD_OUT: path.join(out, '.opencode', 'usage-dashboard') }, encoding: 'utf8' });
