@@ -500,7 +500,7 @@ import { scosClass, ncrClass } from "./lib/tips.js";
   <summary><b>Per session</b> (featured: 12 costliest + most errors + most turns; ✓ landed · ✗ no commit · blank = no code edit, no git, or window still open)</summary>
   <table><tbody>
     <tr>
-      <th>Session</th><th>Project</th><th>Started</th><th>Ended</th><th>Min</th>
+      <th>Session</th><th>Project</th><th>Started</th><th>Ended</th><th title="Active model minutes (assistant turn time, capped per turn). Hover a value for wall span.">Act min</th>
       <th>Msgs</th><th>In+Cache</th><th>Out+reas</th>
       <th style="text-align:right">Opus 5.5</th><th>Calls</th>
       <th style="text-align:right">Err</th><th></th>

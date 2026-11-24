@@ -454,16 +454,20 @@ def collect_session_metrics(cur, ids):
                 gaps += 1
                 gap_ms += g
 
-        asst_dur = [max(0.0, (m["te"] - m["ts"]) / 1000.0)
-                    for m in a if m["te"] and m["ts"]]
+        zm = zombie_minute([(m["te"], m["te"] - m["ts"]) for m in a
+                              if m["te"] and m["ts"] and m["te"] > m["ts"]])
+        zok = (lambda m: zm is None or (m["te"] or 0) // 60000 != zm)
+        asst_dur = [min(max(0.0, (m["te"] - m["ts"]) / 1000.0),
+                        GAP_MIN * 60.0)
+                    for m in a if m["te"] and m["ts"] and zok(m)]
         active_s = sum(asst_dur)
         out_tot = sum(m["out"] + m["reas"] for m in a)
         reas_tot = sum(m["reas"] for m in a)
         reason_share = (reas_tot / out_tot) if out_tot else None
         tps_num = sum(m["out"] + m["reas"] for m in a
-                      if m["te"] > m["ts"])
+                      if m["te"] > m["ts"] and zok(m))
         tps_den = sum((m["te"] - m["ts"]) / 1000.0 for m in a
-                      if m["te"] > m["ts"])
+                      if m["te"] > m["ts"] and zok(m))
         tps = (tps_num / tps_den) if tps_den else None
         var_c = {}
         provs = set()
@@ -481,6 +485,10 @@ def collect_session_metrics(cur, ids):
         stamps = [x for x in stamps if x]
         wall_s = ((max(stamps) - min(stamps)) / 1000.0) if len(stamps) > 1 \
             else 0.0
+        # physical truth: model-active time cannot exceed wall span
+        # (crash-stamped completions would otherwise bill days as work)
+        if wall_s > 0:
+            active_s = min(active_s, wall_s)
         idle_pct = ((wall_s - active_s) / wall_s * 100.0) if wall_s > 0 \
             else None
 
@@ -551,8 +559,10 @@ def collect_session_metrics(cur, ids):
                 "sum": tsum, "outcome": outcome,
                 "asst": len(ma), "calls": len(mt), "err": n_err,
                 "out": sum(m["out"] + m["reas"] for m in ma),
-                "active": sum(max(0.0, (m["te"] - m["ts"]) / 1000.0)
-                              for m in ma if m["te"] and m["ts"]),
+                "active": sum(min(max(0.0, (m["te"] - m["ts"]) / 1000.0),
+                                            GAP_MIN * 60.0)
+                              for m in ma
+                              if m["te"] and m["ts"] and zok(m)),
                 "var": ma[-1]["var"] if ma else None})
 
         cm = cat_ms.get(sid, {})
@@ -680,12 +690,19 @@ def build_v2_session_rows(cur):
             """SELECT coalesce(sum(
                 CASE WHEN CAST(json_extract(data,'$.time.completed') AS INTEGER)
                           > CAST(json_extract(data,'$.time.created') AS INTEGER)
-                THEN (CAST(json_extract(data,'$.time.completed') AS INTEGER)
-                    - CAST(json_extract(data,'$.time.created') AS INTEGER))
+                THEN min(CAST(json_extract(data,'$.time.completed') AS INTEGER)
+                    - CAST(json_extract(data,'$.time.created') AS INTEGER),
+                    """ + str(GAP_MIN * 60000) + """)
                 ELSE 0 END), 0) FROM session_message
             WHERE session_id = ? AND type = 'assistant'""",
             (sd["id"],)).fetchone()
         sd["active_min"] = (arow[0] or 0) / 60000.0
+    vzadj = zombie_adjust(cur, "session_message", "type='assistant'")
+    for sd in rows:
+        sd["active_min"] = max(
+            0.0, sd["active_min"] - vzadj.get(sd["id"], 0) / 60000.0)
+        if sd.get("dur_min"):
+            sd["active_min"] = min(sd["active_min"], sd["dur_min"])
         try:
             day = datetime.datetime.fromtimestamp(
                 sd["first"] / 1000.0).strftime("%Y-%m-%d") \
@@ -723,6 +740,49 @@ def v2_code_intent(cur):
         return {r[0] for r in cur.fetchall()}
     except sqlite3.Error:
         return set()
+
+
+def zombie_minute(pairs):
+    """Modal completed-minute shared by >=20 turns at >=50% share whose
+    median duration exceeds GAP_MIN: backfilled crash/migration stamps
+    (Oct-18 reboots), not measurements. Returns the minute or None."""
+    if len(pairs) < 20:
+        return None
+    counts = {}
+    for c, _d in pairs:
+        m = c // 60000
+        counts[m] = counts.get(m, 0) + 1
+    mode, n = max(counts.items(), key=lambda kv: kv[1])
+    if n < 20 or n / len(pairs) < 0.5:
+        return None
+    durs = sorted(d for c, d in pairs if c // 60000 == mode)
+    if durs[len(durs) // 2] <= GAP_MIN * 60000:
+        return None
+    return mode
+
+
+def zombie_adjust(cur, table, pred):
+    """{sid: zombie-bucket active ms to subtract} for a message table."""
+    try:
+        cur.execute(
+            "SELECT session_id, "
+            "CAST(json_extract(data,'$.time.completed') AS INTEGER), "
+            "CAST(json_extract(data,'$.time.created') AS INTEGER) "
+            "FROM " + table + " WHERE " + pred)
+        by_sid = {}
+        for sid, te, ts in cur.fetchall():
+            if te and ts and te > ts:
+                by_sid.setdefault(sid, []).append((te, te - ts))
+    except sqlite3.Error:
+        return {}
+    out = {}
+    for sid, pairs in by_sid.items():
+        zm = zombie_minute(pairs)
+        if zm is not None:
+            # same per-turn cap as the session active sums being adjusted
+            out[sid] = sum(min(d, GAP_MIN * 60000)
+                           for c, d in pairs if c // 60000 == zm)
+    return out
 
 
 def _v2_text_of(content):
@@ -1127,16 +1187,20 @@ def collect_v2_metrics(cur, ids, meta):
             if g > GAP_MIN * 60000:
                 gaps += 1
                 gap_ms += g
-        asst_dur = [max(0.0, (m["te"] - m["ts"]) / 1000.0)
-                    for m in a if m["te"] and m["ts"]]
+        zm = zombie_minute([(m["te"], m["te"] - m["ts"]) for m in a
+                              if m["te"] and m["ts"] and m["te"] > m["ts"]])
+        zok = (lambda m: zm is None or (m["te"] or 0) // 60000 != zm)
+        asst_dur = [min(max(0.0, (m["te"] - m["ts"]) / 1000.0),
+                        GAP_MIN * 60.0)
+                    for m in a if m["te"] and m["ts"] and zok(m)]
         active_s = sum(asst_dur)
         out_tot = sum(m["out"] + m["reas"] for m in a)
         reas_tot = sum(m["reas"] for m in a)
         reason_share = (reas_tot / out_tot) if out_tot else None
         tps_num = sum(m["out"] + m["reas"] for m in a
-                      if m["te"] > m["ts"])
+                      if m["te"] > m["ts"] and zok(m))
         tps_den = sum((m["te"] - m["ts"]) / 1000.0 for m in a
-                      if m["te"] > m["ts"])
+                      if m["te"] > m["ts"] and zok(m))
         tps = (tps_num / tps_den) if tps_den else None
         var_c = {}
         provs = set()
@@ -1153,6 +1217,10 @@ def collect_v2_metrics(cur, ids, meta):
         stamps = [x for x in stamps if x]
         wall_s = ((max(stamps) - min(stamps)) / 1000.0) \
             if len(stamps) > 1 else 0.0
+        # physical truth: model-active time cannot exceed wall span
+        # (crash-stamped completions would otherwise bill days as work)
+        if wall_s > 0:
+            active_s = min(active_s, wall_s)
         idle_pct = ((wall_s - active_s) / wall_s * 100.0) \
             if wall_s > 0 else None
         mid_turn = {}  # assistant mid -> turn index (seq windows)
@@ -1226,8 +1294,10 @@ def collect_v2_metrics(cur, ids, meta):
                 "sum": tsum, "outcome": outcome,
                 "asst": len(ma), "calls": len(mt), "err": n_err,
                 "out": sum(m["out"] + m["reas"] for m in ma),
-                "active": sum(max(0.0, (m["te"] - m["ts"]) / 1000.0)
-                              for m in ma if m["te"] and m["ts"]),
+                "active": sum(min(max(0.0, (m["te"] - m["ts"]) / 1000.0),
+                                            GAP_MIN * 60.0)
+                              for m in ma
+                              if m["te"] and m["ts"] and zok(m)),
                 "var": ma[-1]["var"] if ma else None})
         cm = {}
         for e in evts:
@@ -1547,11 +1617,15 @@ def main():
 
     # --- active assistant time per session (turn durations, all sessions).
     # Wall spans (dur_min) include idle days; this is the honest work clock.
+    # Per-turn cap (GAP_MIN): crash-stamped completions (e.g. the Oct-18 hard
+    # reboots left thousands of ~2-day "turns" on two sessions) must not
+    # bill as work; no single message is 15 min of continuous generation.
     cur.execute("""SELECT session_id, coalesce(sum(
         CASE WHEN CAST(json_extract(data,'$.time.completed') AS INTEGER)
                   > CAST(json_extract(data,'$.time.created') AS INTEGER)
-        THEN (CAST(json_extract(data,'$.time.completed') AS INTEGER)
-            - CAST(json_extract(data,'$.time.created') AS INTEGER))
+        THEN min(CAST(json_extract(data,'$.time.completed') AS INTEGER)
+            - CAST(json_extract(data,'$.time.created') AS INTEGER),
+            """ + str(GAP_MIN * 60000) + """)
         ELSE 0 END), 0) FROM message
         WHERE json_extract(data,'$.role')='assistant'
         GROUP BY session_id""")
@@ -1559,8 +1633,14 @@ def main():
     cur.execute("""SELECT id, date(time_created/1000,'unixepoch','localtime')
         FROM session""")
     day_by_session = {sid: day for sid, day in cur.fetchall()}
+    zadj = zombie_adjust(cur, "message",
+                         "json_extract(data,'$.role')='assistant'")
     for sd in session_rows_data:
-        sd["active_min"] = active_by_session.get(sd["id"], 0.0)
+        sd["active_min"] = max(
+            0.0, active_by_session.get(sd["id"], 0.0)
+            - zadj.get(sd["id"], 0) / 60000.0)
+        if sd.get("dur_min"):
+            sd["active_min"] = min(sd["active_min"], sd["dur_min"])
         sd["day"] = day_by_session.get(sd["id"], "")
     total_active = sum(sd["active_min"] for sd in session_rows_data)
     active_by_dir = {}

@@ -163,9 +163,15 @@ reference on a live session during development). Keep the two in sync when
 either changes: the V2 fixture in `scripts/generate.test.mjs` (surgical vs
 bloated sessions) pins the port's behavior. The embedding-rescue layer
 (`--ollama-embed` cosine thresholds, calibration log) stays in
-context_eval.mjs only — the dashboard shows the deterministic score. To check for drift after touching
-either scorer, compare payload `ctxagg` against a fresh `context_eval.mjs`
-run over the same DB.
+context_eval.mjs only — the dashboard shows the deterministic score. To
+check for drift after touching either scorer, compare payload `ctxagg`
+against a fresh `context_eval.mjs` run over the same DB.
+Active minutes are guarded two ways (both collectors, both rollups):
+per-turn cap at `GAP_MIN` (no single message bills 15+ min) and a session
+clamp to wall span, plus zombie-stamp exclusion — turns sharing one
+completed minute at >=20 turns / >=50% share with median duration >15 min
+are backfilled crash/migration stamps (Oct-18 reboots), counted as 0.
+Without this, two sessions alone billed 8.6 years of "model time".
 
 ## Conventions
 

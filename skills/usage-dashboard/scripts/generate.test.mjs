@@ -230,7 +230,11 @@ const months = (y2 - y1) * 12 + (m2 - m1) + 1;
 eq(j.hero.sessions, 18, 'hero sessions');
 eq(j.hero.actual, months * 10, 'paid = flat Go sub (metered covered, not added)');
 eq(j.hero.metered_covered, 0.5, 'metered go usage recorded as covered');
-approx(j.hero.active_min, 2100 / 60, 0.01, 'hero active minutes');
+// S1's fixture turns overlap (37 x 10s msgs 1s apart = 1100s billed in a
+// ~641s wall span); the wall clamp bills at most wall time. Real sessions
+// are sequential per session row, so the clamp only binds on impossible
+// data (e.g. crash-stamped completions).
+approx(j.hero.active_min, 26.65, 0.01, 'hero active minutes (wall-clamped)');
 ok(j.hero.mix[0].name.includes('muse-spark-1.3-contributor-free'), 'mix top is spark-free');
 approx(j.hero.mix[0].pct, 92.5, 0.05, 'mix top share');
 
