@@ -1,0 +1,71 @@
+{
+  "model": "opencode/hy4-flash-free",
+  "task": "P1-coding",
+  "wall_ms": 14047,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seen = new Set();\n  const qualifying = [];\n\n  for (const ev of events) {\n    if (!ev) continue;\n\n    // Dedupe raw events by non-empty string id, keeping the first occurrence\n    // in input order. This happens BEFORE filtering, so a first occurrence\n    // that is out-of-window or filtered still consumes the id.\n    if (typeof ev.id === 'string' && ev.id.length > 0) {\n      if (seen.has(ev.id)) continue;\n      seen.add(ev.id);\n    }\n\n    if (typeof ev.ts !== 'number' || !Number.isFinite(ev.ts)) continue;\n    if (ev.ts < nowMs - windowMs || ev.ts > nowMs) continue;\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue;\n    if (typeof ev.model !== 'string') continue;\n    if (ev.model.toLowerCase().endsWith('-free')) continue;\n\n    qualifying.push(ev);\n  }\n\n  const used = qualifying.length;\n  const remaining = Math.max(0, cap - used);\n  const pct = Math.round((used / cap) * 1000) / 10;\n  const overCap = used > cap;\n\n  let minTs = Infinity;\n  const counts = new Map();\n  const prefix = 'opencode-go/';\n\n  for (const ev of qualifying) {\n    if (ev.ts < minTs) minTs = ev.ts;\n\n    let name = ev.model.toLowerCase();\n    if (name.startsWith(prefix)) name = name.slice(prefix.length);\n    counts.set(name, (counts.get(name) || 0) + 1);\n  }\n\n  const oldestExpiresAt = used === 0 ? null : minTs + windowMs;\n\n  const byModel = {};\n  for (const key of Array.from(counts.keys()).sort()) {\n    Object.defineProperty(byModel, key, {\n      value: counts.get(key),\n      enumerable: true,\n      writable: true,\n      configurable: true,\n    });\n  }\n\n  return { used, remaining, pct, overCap, oldestExpiresAt, byModel };\n}\n```",
+  "tokens": {
+    "input": 10475,
+    "output": 491,
+    "reasoning": 1630,
+    "cache": {
+      "read": 1792,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795317309281,
+      "sessionID": "ses_dfebfec3bffeQmb9CsXSWvcPsn",
+      "part": {
+        "id": "prt_201401f61001UaKHLE1jZsnV93",
+        "sessionID": "ses_dfebfec3bffeQmb9CsXSWvcPsn",
+        "messageID": "msg_2014013d20019kqs8peoBy8hn8",
+        "type": "step-start",
+        "snapshot": "f6539a8309db95854c337808e6f1283d167fea6e"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795317318440,
+      "sessionID": "ses_dfebfec3bffeQmb9CsXSWvcPsn",
+      "part": {
+        "id": "prt_201403d5d002vw3gjmH67hfjmf",
+        "sessionID": "ses_dfebfec3bffeQmb9CsXSWvcPsn",
+        "messageID": "msg_2014013d20019kqs8peoBy8hn8",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seen = new Set();\n  const qualifying = [];\n\n  for (const ev of events) {\n    if (!ev) continue;\n\n    // Dedupe raw events by non-empty string id, keeping the first occurrence\n    // in input order. This happens BEFORE filtering, so a first occurrence\n    // that is out-of-window or filtered still consumes the id.\n    if (typeof ev.id === 'string' && ev.id.length > 0) {\n      if (seen.has(ev.id)) continue;\n      seen.add(ev.id);\n    }\n\n    if (typeof ev.ts !== 'number' || !Number.isFinite(ev.ts)) continue;\n    if (ev.ts < nowMs - windowMs || ev.ts > nowMs) continue;\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue;\n    if (typeof ev.model !== 'string') continue;\n    if (ev.model.toLowerCase().endsWith('-free')) continue;\n\n    qualifying.push(ev);\n  }\n\n  const used = qualifying.length;\n  const remaining = Math.max(0, cap - used);\n  const pct = Math.round((used / cap) * 1000) / 10;\n  const overCap = used > cap;\n\n  let minTs = Infinity;\n  const counts = new Map();\n  const prefix = 'opencode-go/';\n\n  for (const ev of qualifying) {\n    if (ev.ts < minTs) minTs = ev.ts;\n\n    let name = ev.model.toLowerCase();\n    if (name.startsWith(prefix)) name = name.slice(prefix.length);\n    counts.set(name, (counts.get(name) || 0) + 1);\n  }\n\n  const oldestExpiresAt = used === 0 ? null : minTs + windowMs;\n\n  const byModel = {};\n  for (const key of Array.from(counts.keys()).sort()) {\n    Object.defineProperty(byModel, key, {\n      value: counts.get(key),\n      enumerable: true,\n      writable: true,\n      configurable: true,\n    });\n  }\n\n  return { used, remaining, pct, overCap, oldestExpiresAt, byModel };\n}\n```",
+        "time": {
+          "start": 1795317316957,
+          "end": 1795317318440
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795317318454,
+      "sessionID": "ses_dfebfec3bffeQmb9CsXSWvcPsn",
+      "part": {
+        "id": "prt_201404336001wjCKmLpOXgh1mV",
+        "sessionID": "ses_dfebfec3bffeQmb9CsXSWvcPsn",
+        "messageID": "msg_2014013d20019kqs8peoBy8hn8",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "f6539a8309db95854c337808e6f1283d167fea6e",
+        "cost": 0,
+        "tokens": {
+          "input": 10475,
+          "output": 491,
+          "reasoning": 1630,
+          "cache": {
+            "read": 1792,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

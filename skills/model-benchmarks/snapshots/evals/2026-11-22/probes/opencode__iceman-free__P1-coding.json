@@ -1,0 +1,71 @@
+{
+  "model": "opencode/iceman-free",
+  "task": "P1-coding",
+  "wall_ms": 39227,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seenIds = new Set();\n  const deduped = [];\n  const input = Array.isArray(events) ? events : [];\n\n  for (let i = 0; i < input.length; i++) {\n    const ev = input[i];\n    const id = ev && typeof ev === \"object\" ? ev.id : undefined;\n    if (typeof id === \"string\" && id !== \"\") {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n    deduped.push(ev);\n  }\n\n  const windowStart = nowMs - windowMs;\n  let used = 0;\n  let minTs = Infinity;\n  const counts = Object.create(null);\n\n  for (let i = 0; i < deduped.length; i++) {\n    const ev = deduped[i];\n    if (!ev || typeof ev !== \"object\") continue;\n\n    const ts = ev.ts;\n    if (typeof ts !== \"number\" || !Number.isFinite(ts)) continue;\n    if (ts < windowStart || ts > nowMs) continue;\n\n    if (ev.provider !== \"opencode-go\") continue;\n    if (ev.error) continue;\n\n    if (typeof ev.model !== \"string\") continue;\n    if (ev.model.toLowerCase().endsWith(\"-free\")) continue;\n\n    used += 1;\n    if (ts < minTs) minTs = ts;\n\n    let name = ev.model;\n    if (name.toLowerCase().startsWith(\"opencode-go/\")) {\n      name = name.slice(\"opencode-go/\".length);\n    }\n    name = name.toLowerCase();\n\n    counts[name] = (counts[name] || 0) + 1;\n  }\n\n  const byModel = {};\n  const keys = Object.keys(counts).sort();\n  for (let i = 0; i < keys.length; i++) {\n    const key = keys[i];\n    byModel[key] = counts[key];\n  }\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+  "tokens": {
+    "input": 11202,
+    "output": 510,
+    "reasoning": 1907,
+    "cache": {
+      "read": 0,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795314393917,
+      "sessionID": "ses_dfeec6f2bffev2PQkIeaKF144w",
+      "part": {
+        "id": "prt_20113a33d001prgqEMmtk1AM9F",
+        "sessionID": "ses_dfeec6f2bffev2PQkIeaKF144w",
+        "messageID": "msg_2011390ef001T2nT36ZUdynllA",
+        "type": "step-start",
+        "snapshot": "214c55b0c3096ac73cb875c006c7ce460326cde7"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795314423305,
+      "sessionID": "ses_dfeec6f2bffev2PQkIeaKF144w",
+      "part": {
+        "id": "prt_2011403d2001qZAj8RtgBikkHa",
+        "sessionID": "ses_dfeec6f2bffev2PQkIeaKF144w",
+        "messageID": "msg_2011390ef001T2nT36ZUdynllA",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seenIds = new Set();\n  const deduped = [];\n  const input = Array.isArray(events) ? events : [];\n\n  for (let i = 0; i < input.length; i++) {\n    const ev = input[i];\n    const id = ev && typeof ev === \"object\" ? ev.id : undefined;\n    if (typeof id === \"string\" && id !== \"\") {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n    deduped.push(ev);\n  }\n\n  const windowStart = nowMs - windowMs;\n  let used = 0;\n  let minTs = Infinity;\n  const counts = Object.create(null);\n\n  for (let i = 0; i < deduped.length; i++) {\n    const ev = deduped[i];\n    if (!ev || typeof ev !== \"object\") continue;\n\n    const ts = ev.ts;\n    if (typeof ts !== \"number\" || !Number.isFinite(ts)) continue;\n    if (ts < windowStart || ts > nowMs) continue;\n\n    if (ev.provider !== \"opencode-go\") continue;\n    if (ev.error) continue;\n\n    if (typeof ev.model !== \"string\") continue;\n    if (ev.model.toLowerCase().endsWith(\"-free\")) continue;\n\n    used += 1;\n    if (ts < minTs) minTs = ts;\n\n    let name = ev.model;\n    if (name.toLowerCase().startsWith(\"opencode-go/\")) {\n      name = name.slice(\"opencode-go/\".length);\n    }\n    name = name.toLowerCase();\n\n    counts[name] = (counts[name] || 0) + 1;\n  }\n\n  const byModel = {};\n  const keys = Object.keys(counts).sort();\n  for (let i = 0; i < keys.length; i++) {\n    const key = keys[i];\n    byModel[key] = counts[key];\n  }\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+        "time": {
+          "start": 1795314418642,
+          "end": 1795314423305
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795314423315,
+      "sessionID": "ses_dfeec6f2bffev2PQkIeaKF144w",
+      "part": {
+        "id": "prt_201141613001HQI1qgjufWTWDu",
+        "sessionID": "ses_dfeec6f2bffev2PQkIeaKF144w",
+        "messageID": "msg_2011390ef001T2nT36ZUdynllA",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "214c55b0c3096ac73cb875c006c7ce460326cde7",
+        "cost": 0,
+        "tokens": {
+          "input": 11202,
+          "output": 510,
+          "reasoning": 1907,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "model": "opencode/longcat-2.5-free",
+  "task": "P3-reasoning",
+  "wall_ms": 120033,
+  "exit": 143,
+  "killed": true,
+  "response": "",
+  "tokens": null,
+  "error": "TIMEOUT stderr:",
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795317535684,
+      "sessionID": "ses_dfebc7776ffecdI1VNI60eMnPj",
+      "part": {
+        "id": "prt_2014393c4001P2V65A2ZDf2cZQ",
+        "sessionID": "ses_dfebc7776ffecdI1VNI60eMnPj",
+        "messageID": "msg_201438899001V7uwjXftVSa97K",
+        "type": "step-start",
+        "snapshot": "d87f931be303f6107c70caf9cc508c3b9a0fff4c"
+      }
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "model": "opencode/big-pickle",
+  "task": "P1-coding",
+  "wall_ms": 17866,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seen = new Set();\n  const qualifying = [];\n  const start = nowMs - windowMs;\n  const prefix = 'opencode-go/';\n\n  for (const ev of events) {\n    if (ev === null || typeof ev !== 'object') continue;\n\n    const id = ev.id;\n    if (typeof id === 'string' && id.length > 0) {\n      if (seen.has(id)) continue;\n      seen.add(id);\n    }\n\n    const ts = ev.ts;\n    if (typeof ts !== 'number' || !Number.isFinite(ts)) continue;\n    if (ts < start || ts > nowMs) continue;\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue;\n    if (typeof ev.model !== 'string') continue;\n    if (ev.model.toLowerCase().endsWith('-free')) continue;\n\n    qualifying.push(ev);\n  }\n\n  let minTs = Infinity;\n  const counts = new Map();\n\n  for (const ev of qualifying) {\n    if (ev.ts < minTs) minTs = ev.ts;\n\n    let name = ev.model;\n    if (name.toLowerCase().startsWith(prefix)) {\n      name = name.slice(prefix.length);\n    }\n    name = name.toLowerCase();\n    counts.set(name, (counts.get(name) || 0) + 1);\n  }\n\n  const used = qualifying.length;\n  const byModel = Object.fromEntries(\n    Array.from(counts.keys())\n      .sort()\n      .map((name) => [name, counts.get(name)])\n  );\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+  "tokens": {
+    "input": 10472,
+    "output": 432,
+    "reasoning": 2103,
+    "cache": {
+      "read": 1792,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795316108451,
+      "sessionID": "ses_dfed23d35ffeLPXuyWLIGtzYdd",
+      "part": {
+        "id": "prt_2012dcca3001j1CVqVrgNPMw4x",
+        "sessionID": "ses_dfed23d35ffeLPXuyWLIGtzYdd",
+        "messageID": "msg_2012dc2d9001WVdRhQxAK2Im4z",
+        "type": "step-start",
+        "snapshot": "56fa460b7e51214d15841d587b35d31c6f108873"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795316120566,
+      "sessionID": "ses_dfed23d35ffeLPXuyWLIGtzYdd",
+      "part": {
+        "id": "prt_2012df699001rvptN06gmM2ZDj",
+        "sessionID": "ses_dfed23d35ffeLPXuyWLIGtzYdd",
+        "messageID": "msg_2012dc2d9001WVdRhQxAK2Im4z",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seen = new Set();\n  const qualifying = [];\n  const start = nowMs - windowMs;\n  const prefix = 'opencode-go/';\n\n  for (const ev of events) {\n    if (ev === null || typeof ev !== 'object') continue;\n\n    const id = ev.id;\n    if (typeof id === 'string' && id.length > 0) {\n      if (seen.has(id)) continue;\n      seen.add(id);\n    }\n\n    const ts = ev.ts;\n    if (typeof ts !== 'number' || !Number.isFinite(ts)) continue;\n    if (ts < start || ts > nowMs) continue;\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue;\n    if (typeof ev.model !== 'string') continue;\n    if (ev.model.toLowerCase().endsWith('-free')) continue;\n\n    qualifying.push(ev);\n  }\n\n  let minTs = Infinity;\n  const counts = new Map();\n\n  for (const ev of qualifying) {\n    if (ev.ts < minTs) minTs = ev.ts;\n\n    let name = ev.model;\n    if (name.toLowerCase().startsWith(prefix)) {\n      name = name.slice(prefix.length);\n    }\n    name = name.toLowerCase();\n    counts.set(name, (counts.get(name) || 0) + 1);\n  }\n\n  const used = qualifying.length;\n  const byModel = Object.fromEntries(\n    Array.from(counts.keys())\n      .sort()\n      .map((name) => [name, counts.get(name)])\n  );\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+        "time": {
+          "start": 1795316119193,
+          "end": 1795316120566
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795316120581,
+      "sessionID": "ses_dfed23d35ffeLPXuyWLIGtzYdd",
+      "part": {
+        "id": "prt_2012dfc05001548uZoJy45GqLl",
+        "sessionID": "ses_dfed23d35ffeLPXuyWLIGtzYdd",
+        "messageID": "msg_2012dc2d9001WVdRhQxAK2Im4z",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "56fa460b7e51214d15841d587b35d31c6f108873",
+        "cost": 0,
+        "tokens": {
+          "input": 10472,
+          "output": 432,
+          "reasoning": 2103,
+          "cache": {
+            "read": 1792,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

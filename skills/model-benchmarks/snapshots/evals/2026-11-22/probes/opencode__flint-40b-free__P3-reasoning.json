@@ -1,0 +1,24 @@
+{
+  "model": "opencode/flint-40b-free",
+  "task": "P3-reasoning",
+  "wall_ms": 120031,
+  "exit": 143,
+  "killed": true,
+  "response": "",
+  "tokens": null,
+  "error": "TIMEOUT stderr:",
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795317173286,
+      "sessionID": "ses_dfec21c87ffe2FeBWroEENzi62",
+      "part": {
+        "id": "prt_2013e0c26001cfOXlOWnN0lvg3",
+        "sessionID": "ses_dfec21c87ffe2FeBWroEENzi62",
+        "messageID": "msg_2013de38b0011yci1nWCFlAGVC",
+        "type": "step-start",
+        "snapshot": "4898f133684a5eb54caa132e72df23b8abcdb73a"
+      }
+    }
+  ]
+}

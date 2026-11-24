@@ -1,0 +1,71 @@
+{
+  "model": "opencode-go/kimi-k3.1-pro",
+  "task": "P1-coding",
+  "wall_ms": 23288,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const windowStart = nowMs - windowMs;\n  const seenIds = new Set();\n  const modelCounts = new Map();\n  let used = 0;\n  let minTs = Infinity;\n\n  for (const ev of events) {\n    if (ev == null) continue;\n\n    const id = ev.id;\n    if (typeof id === 'string' && id.length > 0) {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n\n    if (\n      typeof ev.ts !== 'number' ||\n      !Number.isFinite(ev.ts) ||\n      ev.ts < windowStart ||\n      ev.ts > nowMs ||\n      ev.provider !== 'opencode-go' ||\n      ev.error ||\n      typeof ev.model !== 'string' ||\n      ev.model.toLowerCase().endsWith('-free')\n    ) {\n      continue;\n    }\n\n    used += 1;\n    if (ev.ts < minTs) minTs = ev.ts;\n\n    const model = ev.model.replace(/^opencode-go\\//, '').toLowerCase();\n    modelCounts.set(model, (modelCounts.get(model) || 0) + 1);\n  }\n\n  const byModel = Object.fromEntries(\n    [...modelCounts.keys()]\n      .sort()\n      .map((model) => [model, modelCounts.get(model)])\n  );\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+  "tokens": {
+    "input": 11198,
+    "output": 375,
+    "reasoning": 2268,
+    "cache": {
+      "read": 2048,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795317736595,
+      "sessionID": "ses_dfeb95f7dffeqrn5rDFOJ8lsm4",
+      "part": {
+        "id": "prt_20146a493001dPYTgv6rK4dN2N",
+        "sessionID": "ses_dfeb95f7dffeqrn5rDFOJ8lsm4",
+        "messageID": "msg_20146a091001ARtdN89XAwsJ0O",
+        "type": "step-start",
+        "snapshot": "2e693dd35f9886c233c02baf38479a9eac99773a"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795317758757,
+      "sessionID": "ses_dfeb95f7dffeqrn5rDFOJ8lsm4",
+      "part": {
+        "id": "prt_20146f5e3001q7O2VfCg4FMJSD",
+        "sessionID": "ses_dfeb95f7dffeqrn5rDFOJ8lsm4",
+        "messageID": "msg_20146a091001ARtdN89XAwsJ0O",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const windowStart = nowMs - windowMs;\n  const seenIds = new Set();\n  const modelCounts = new Map();\n  let used = 0;\n  let minTs = Infinity;\n\n  for (const ev of events) {\n    if (ev == null) continue;\n\n    const id = ev.id;\n    if (typeof id === 'string' && id.length > 0) {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n\n    if (\n      typeof ev.ts !== 'number' ||\n      !Number.isFinite(ev.ts) ||\n      ev.ts < windowStart ||\n      ev.ts > nowMs ||\n      ev.provider !== 'opencode-go' ||\n      ev.error ||\n      typeof ev.model !== 'string' ||\n      ev.model.toLowerCase().endsWith('-free')\n    ) {\n      continue;\n    }\n\n    used += 1;\n    if (ev.ts < minTs) minTs = ev.ts;\n\n    const model = ev.model.replace(/^opencode-go\\//, '').toLowerCase();\n    modelCounts.set(model, (modelCounts.get(model) || 0) + 1);\n  }\n\n  const byModel = Object.fromEntries(\n    [...modelCounts.keys()]\n      .sort()\n      .map((model) => [model, modelCounts.get(model)])\n  );\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+        "time": {
+          "start": 1795317757411,
+          "end": 1795317758757
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795317758771,
+      "sessionID": "ses_dfeb95f7dffeqrn5rDFOJ8lsm4",
+      "part": {
+        "id": "prt_20146fb33001z2jLfSaMO55r5u",
+        "sessionID": "ses_dfeb95f7dffeqrn5rDFOJ8lsm4",
+        "messageID": "msg_20146a091001ARtdN89XAwsJ0O",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "2e693dd35f9886c233c02baf38479a9eac99773a",
+        "cost": 0,
+        "tokens": {
+          "input": 11198,
+          "output": 375,
+          "reasoning": 2268,
+          "cache": {
+            "read": 2048,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

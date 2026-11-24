@@ -1,0 +1,71 @@
+{
+  "model": "opencode/flint-40b-free",
+  "task": "P1-coding",
+  "wall_ms": 61426,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seenIds = new Set();\n  const qualifying = [];\n  const list = Array.isArray(events) ? events : [];\n\n  for (const ev of list) {\n    if (ev === null || typeof ev !== 'object') continue;\n\n    const id = typeof ev.id === 'string' ? ev.id : '';\n    if (id !== '') {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n\n    if (typeof ev.ts !== 'number' || !Number.isFinite(ev.ts)) continue;\n    if (ev.ts < nowMs - windowMs || ev.ts > nowMs) continue;\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue;\n    if (typeof ev.model !== 'string') continue;\n    if (ev.model.toLowerCase().endsWith('-free')) continue;\n\n    qualifying.push(ev);\n  }\n\n  const used = qualifying.length;\n  let minTs = null;\n  const counts = Object.create(null);\n\n  for (const ev of qualifying) {\n    if (minTs === null || ev.ts < minTs) minTs = ev.ts;\n\n    let model = ev.model;\n    const lower = model.toLowerCase();\n    const prefix = 'opencode-go/';\n    if (lower.startsWith(prefix)) {\n      model = model.slice(prefix.length);\n    }\n    const key = model.toLowerCase();\n    counts[key] = (counts[key] || 0) + 1;\n  }\n\n  const byModel = {};\n  for (const key of Object.keys(counts).sort()) {\n    byModel[key] = counts[key];\n  }\n\n  let oldestExpiresAt = null;\n  if (used > 0) {\n    oldestExpiresAt = minTs + windowMs;\n  }\n\n  return {\n    used: used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: oldestExpiresAt,\n    byModel: byModel,\n  };\n}\n```",
+  "tokens": {
+    "input": 11538,
+    "output": 4611,
+    "reasoning": 0,
+    "cache": {
+      "read": 384,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795316291236,
+      "sessionID": "ses_dfecf6ac2ffe7SzTt9MOANOjUS",
+      "part": {
+        "id": "prt_2013096a4001IdJrKG2hrbyIr9",
+        "sessionID": "ses_dfecf6ac2ffe7SzTt9MOANOjUS",
+        "messageID": "msg_20130954c0014rL1fPcfEwKHZj",
+        "type": "step-start",
+        "snapshot": "33387190a569f445ec6577da5e4f609aac59a7af"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795316347732,
+      "sessionID": "ses_dfecf6ac2ffe7SzTt9MOANOjUS",
+      "part": {
+        "id": "prt_201316111002Tt70IZXymtnQjz",
+        "sessionID": "ses_dfecf6ac2ffe7SzTt9MOANOjUS",
+        "messageID": "msg_20130954c0014rL1fPcfEwKHZj",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seenIds = new Set();\n  const qualifying = [];\n  const list = Array.isArray(events) ? events : [];\n\n  for (const ev of list) {\n    if (ev === null || typeof ev !== 'object') continue;\n\n    const id = typeof ev.id === 'string' ? ev.id : '';\n    if (id !== '') {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n\n    if (typeof ev.ts !== 'number' || !Number.isFinite(ev.ts)) continue;\n    if (ev.ts < nowMs - windowMs || ev.ts > nowMs) continue;\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue;\n    if (typeof ev.model !== 'string') continue;\n    if (ev.model.toLowerCase().endsWith('-free')) continue;\n\n    qualifying.push(ev);\n  }\n\n  const used = qualifying.length;\n  let minTs = null;\n  const counts = Object.create(null);\n\n  for (const ev of qualifying) {\n    if (minTs === null || ev.ts < minTs) minTs = ev.ts;\n\n    let model = ev.model;\n    const lower = model.toLowerCase();\n    const prefix = 'opencode-go/';\n    if (lower.startsWith(prefix)) {\n      model = model.slice(prefix.length);\n    }\n    const key = model.toLowerCase();\n    counts[key] = (counts[key] || 0) + 1;\n  }\n\n  const byModel = {};\n  for (const key of Object.keys(counts).sort()) {\n    byModel[key] = counts[key];\n  }\n\n  let oldestExpiresAt = null;\n  if (used > 0) {\n    oldestExpiresAt = minTs + windowMs;\n  }\n\n  return {\n    used: used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: oldestExpiresAt,\n    byModel: byModel,\n  };\n}\n```",
+        "time": {
+          "start": 1795316343057,
+          "end": 1795316347732
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795316347745,
+      "sessionID": "ses_dfecf6ac2ffe7SzTt9MOANOjUS",
+      "part": {
+        "id": "prt_201317361001e7s5W68O6HsbKV",
+        "sessionID": "ses_dfecf6ac2ffe7SzTt9MOANOjUS",
+        "messageID": "msg_20130954c0014rL1fPcfEwKHZj",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "33387190a569f445ec6577da5e4f609aac59a7af",
+        "cost": 0,
+        "tokens": {
+          "input": 11538,
+          "output": 4611,
+          "reasoning": 0,
+          "cache": {
+            "read": 384,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

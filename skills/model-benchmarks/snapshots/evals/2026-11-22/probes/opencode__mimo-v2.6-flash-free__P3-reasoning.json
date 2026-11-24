@@ -1,0 +1,71 @@
+{
+  "model": "opencode/mimo-v2.6-flash-free",
+  "task": "P3-reasoning",
+  "wall_ms": 48150,
+  "exit": 0,
+  "killed": false,
+  "response": "```json\n{\n  \"minTotalSeconds\": 16,\n  \"commitOrder\": [\"A\", \"B\", \"C\", \"E\", \"D\"],\n  \"minWriteBufferKiB\": 350\n}\n```",
+  "tokens": {
+    "input": 2041,
+    "output": 51,
+    "reasoning": 6131,
+    "cache": {
+      "read": 10240,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795317093898,
+      "sessionID": "ses_dfec3351cffe1CQbzCxopcpHxj",
+      "part": {
+        "id": "prt_2013cd60a001Rzo7pojnRDcmvC",
+        "sessionID": "ses_dfec3351cffe1CQbzCxopcpHxj",
+        "messageID": "msg_2013ccaf1001PDkJeuuOsFVPJs",
+        "type": "step-start",
+        "snapshot": "d7f618083ea678d0c2ab1227ca6e8cdc9dd86da2"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795317139120,
+      "sessionID": "ses_dfec3351cffe1CQbzCxopcpHxj",
+      "part": {
+        "id": "prt_2013d862700232v2rWkjHGGwBp",
+        "sessionID": "ses_dfec3351cffe1CQbzCxopcpHxj",
+        "messageID": "msg_2013ccaf1001PDkJeuuOsFVPJs",
+        "type": "text",
+        "text": "```json\n{\n  \"minTotalSeconds\": 16,\n  \"commitOrder\": [\"A\", \"B\", \"C\", \"E\", \"D\"],\n  \"minWriteBufferKiB\": 350\n}\n```",
+        "time": {
+          "start": 1795317138983,
+          "end": 1795317139120
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795317139134,
+      "sessionID": "ses_dfec3351cffe1CQbzCxopcpHxj",
+      "part": {
+        "id": "prt_2013d86be001pWjtUi4CQ5VVaQ",
+        "sessionID": "ses_dfec3351cffe1CQbzCxopcpHxj",
+        "messageID": "msg_2013ccaf1001PDkJeuuOsFVPJs",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "d7f618083ea678d0c2ab1227ca6e8cdc9dd86da2",
+        "cost": 0,
+        "tokens": {
+          "input": 2041,
+          "output": 51,
+          "reasoning": 6131,
+          "cache": {
+            "read": 10240,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

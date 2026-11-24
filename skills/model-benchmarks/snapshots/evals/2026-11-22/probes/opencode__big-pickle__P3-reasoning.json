@@ -1,0 +1,71 @@
+{
+  "model": "opencode/big-pickle",
+  "task": "P3-reasoning",
+  "wall_ms": 120222,
+  "exit": 0,
+  "killed": false,
+  "response": "```json\n{\n  \"minTotalSeconds\": 16,\n  \"commitOrder\": [\"A\", \"B\", \"C\", \"E\", \"D\"],\n  \"minWriteBufferKiB\": 350\n}\n```",
+  "tokens": {
+    "input": 11178,
+    "output": 57,
+    "reasoning": 6904,
+    "cache": {
+      "read": 0,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795316154445,
+      "sessionID": "ses_dfed188f8ffec8C0WYfOHl1erT",
+      "part": {
+        "id": "prt_2012e804d001N13Ex7UsJA78os",
+        "sessionID": "ses_dfed188f8ffec8C0WYfOHl1erT",
+        "messageID": "msg_2012e7715001NwmSSQ9OCQB6SN",
+        "type": "step-start",
+        "snapshot": "c8b0edbe9389d98cce50eeea4a032a13aee1f0a7"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795316266604,
+      "sessionID": "ses_dfed188f8ffec8C0WYfOHl1erT",
+      "part": {
+        "id": "prt_20130365a001yRRFXkCSSlWg7i",
+        "sessionID": "ses_dfed188f8ffec8C0WYfOHl1erT",
+        "messageID": "msg_2012e7715001NwmSSQ9OCQB6SN",
+        "type": "text",
+        "text": "```json\n{\n  \"minTotalSeconds\": 16,\n  \"commitOrder\": [\"A\", \"B\", \"C\", \"E\", \"D\"],\n  \"minWriteBufferKiB\": 350\n}\n```",
+        "time": {
+          "start": 1795316266586,
+          "end": 1795316266604
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795316266617,
+      "sessionID": "ses_dfed188f8ffec8C0WYfOHl1erT",
+      "part": {
+        "id": "prt_201303679001eiEPfq4icZlUe6",
+        "sessionID": "ses_dfed188f8ffec8C0WYfOHl1erT",
+        "messageID": "msg_2012e7715001NwmSSQ9OCQB6SN",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "c8b0edbe9389d98cce50eeea4a032a13aee1f0a7",
+        "cost": 0,
+        "tokens": {
+          "input": 11178,
+          "output": 57,
+          "reasoning": 6904,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

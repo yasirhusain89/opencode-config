@@ -1,0 +1,71 @@
+{
+  "model": "opencode-go/glm-5.3-flash",
+  "task": "P1-coding",
+  "wall_ms": 5856,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  // Pass 1: deduplicate raw events by non-empty string id, keeping the FIRST\n  // occurrence in input array order. Events without a non-empty string id\n  // are never deduplicated and all flow through.\n  const seen = new Set();\n  const deduped = [];\n  for (const ev of events) {\n    if (ev && typeof ev.id === 'string' && ev.id !== '') {\n      if (seen.has(ev.id)) continue;\n      seen.add(ev.id);\n    }\n    deduped.push(ev);\n  }\n\n  // Pass 2: apply the qualification filter over the deduplicated stream.\n  const windowStart = nowMs - windowMs;\n  const qualifying = [];\n  for (const ev of deduped) {\n    if (!ev) continue;\n    if (typeof ev.ts !== 'number' || !Number.isFinite(ev.ts)) continue;\n    if (!(ev.ts >= windowStart && ev.ts <= nowMs)) continue;\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue; // rejected/unbilled rows are ignored\n    if (typeof ev.model !== 'string') continue;\n    if (ev.model.toLowerCase().endsWith('-free')) continue; // free pool never burns quota\n    qualifying.push(ev);\n  }\n\n  const used = qualifying.length;\n  const remaining = Math.max(0, cap - used);\n  const pct = Math.round((used / cap) * 1000) / 10;\n  const overCap = used > cap;\n\n  let oldestExpiresAt = null;\n  if (used > 0) {\n    let minTs = Infinity;\n    for (const ev of qualifying) {\n      if (ev.ts < minTs) minTs = ev.ts;\n    }\n    oldestExpiresAt = minTs + windowMs;\n  }\n\n  const counts = Object.create(null);\n  for (const ev of qualifying) {\n    let name = ev.model;\n    if (name.startsWith('opencode-go/')) name = name.slice('opencode-go/'.length);\n    name = name.toLowerCase();\n    counts[name] = (counts[name] || 0) + 1;\n  }\n  const byModel = {};\n  for (const key of Object.keys(counts).sort()) {\n    byModel[key] = counts[key];\n  }\n\n  return { used, remaining, pct, overCap, oldestExpiresAt, byModel };\n}\n```",
+  "tokens": {
+    "input": 12099,
+    "output": 525,
+    "reasoning": 74,
+    "cache": {
+      "read": 0,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795317661330,
+      "sessionID": "ses_dfeba84b0ffe60w59xWO3BDknf",
+      "part": {
+        "id": "prt_201457e92001DB5QQSyLhgzpRS",
+        "sessionID": "ses_dfeba84b0ffe60w59xWO3BDknf",
+        "messageID": "msg_201457b5d001gdwQj45pchngiT",
+        "type": "step-start",
+        "snapshot": "d9a3a8750b33c413390774a89992d090a12ba954"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795317666270,
+      "sessionID": "ses_dfeba84b0ffe60w59xWO3BDknf",
+      "part": {
+        "id": "prt_2014581c4002o5TRqsigPSe9pA",
+        "sessionID": "ses_dfeba84b0ffe60w59xWO3BDknf",
+        "messageID": "msg_201457b5d001gdwQj45pchngiT",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  // Pass 1: deduplicate raw events by non-empty string id, keeping the FIRST\n  // occurrence in input array order. Events without a non-empty string id\n  // are never deduplicated and all flow through.\n  const seen = new Set();\n  const deduped = [];\n  for (const ev of events) {\n    if (ev && typeof ev.id === 'string' && ev.id !== '') {\n      if (seen.has(ev.id)) continue;\n      seen.add(ev.id);\n    }\n    deduped.push(ev);\n  }\n\n  // Pass 2: apply the qualification filter over the deduplicated stream.\n  const windowStart = nowMs - windowMs;\n  const qualifying = [];\n  for (const ev of deduped) {\n    if (!ev) continue;\n    if (typeof ev.ts !== 'number' || !Number.isFinite(ev.ts)) continue;\n    if (!(ev.ts >= windowStart && ev.ts <= nowMs)) continue;\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue; // rejected/unbilled rows are ignored\n    if (typeof ev.model !== 'string') continue;\n    if (ev.model.toLowerCase().endsWith('-free')) continue; // free pool never burns quota\n    qualifying.push(ev);\n  }\n\n  const used = qualifying.length;\n  const remaining = Math.max(0, cap - used);\n  const pct = Math.round((used / cap) * 1000) / 10;\n  const overCap = used > cap;\n\n  let oldestExpiresAt = null;\n  if (used > 0) {\n    let minTs = Infinity;\n    for (const ev of qualifying) {\n      if (ev.ts < minTs) minTs = ev.ts;\n    }\n    oldestExpiresAt = minTs + windowMs;\n  }\n\n  const counts = Object.create(null);\n  for (const ev of qualifying) {\n    let name = ev.model;\n    if (name.startsWith('opencode-go/')) name = name.slice('opencode-go/'.length);\n    name = name.toLowerCase();\n    counts[name] = (counts[name] || 0) + 1;\n  }\n  const byModel = {};\n  for (const key of Object.keys(counts).sort()) {\n    byModel[key] = counts[key];\n  }\n\n  return { used, remaining, pct, overCap, oldestExpiresAt, byModel };\n}\n```",
+        "time": {
+          "start": 1795317662148,
+          "end": 1795317666270
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795317666283,
+      "sessionID": "ses_dfeba84b0ffe60w59xWO3BDknf",
+      "part": {
+        "id": "prt_2014591eb001rIJY3tIyUWKSj5",
+        "sessionID": "ses_dfeba84b0ffe60w59xWO3BDknf",
+        "messageID": "msg_201457b5d001gdwQj45pchngiT",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "d9a3a8750b33c413390774a89992d090a12ba954",
+        "cost": 0,
+        "tokens": {
+          "input": 12099,
+          "output": 525,
+          "reasoning": 74,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

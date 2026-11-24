@@ -1,0 +1,71 @@
+{
+  "model": "opencode-go/kimi-k3.1-pro",
+  "task": "P3-reasoning",
+  "wall_ms": 20180,
+  "exit": 0,
+  "killed": false,
+  "response": "```json\n{\n  \"minTotalSeconds\": 16,\n  \"commitOrder\": [\"A\", \"B\", \"C\", \"E\", \"D\"],\n  \"minWriteBufferKiB\": 350\n}\n```",
+  "tokens": {
+    "input": 13255,
+    "output": 59,
+    "reasoning": 1031,
+    "cache": {
+      "read": 0,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795317827556,
+      "sessionID": "ses_dfeb7ffcaffekl72RGUGyZD0ow",
+      "part": {
+        "id": "prt_2014807e4001TodC4uVNcKFswt",
+        "sessionID": "ses_dfeb7ffcaffekl72RGUGyZD0ow",
+        "messageID": "msg_201480054001TUiA7tfft7dfjh",
+        "type": "step-start",
+        "snapshot": "107b395a0c1f3504968b51d79cba794a4c0d8219"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795317845685,
+      "sessionID": "ses_dfeb7ffcaffekl72RGUGyZD0ow",
+      "part": {
+        "id": "prt_201484da5001erMoufLw7CUKKB",
+        "sessionID": "ses_dfeb7ffcaffekl72RGUGyZD0ow",
+        "messageID": "msg_201480054001TUiA7tfft7dfjh",
+        "type": "text",
+        "text": "```json\n{\n  \"minTotalSeconds\": 16,\n  \"commitOrder\": [\"A\", \"B\", \"C\", \"E\", \"D\"],\n  \"minWriteBufferKiB\": 350\n}\n```",
+        "time": {
+          "start": 1795317845413,
+          "end": 1795317845685
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795317845699,
+      "sessionID": "ses_dfeb7ffcaffekl72RGUGyZD0ow",
+      "part": {
+        "id": "prt_201484ec3001ZnXf9Oq5G4JU1V",
+        "sessionID": "ses_dfeb7ffcaffekl72RGUGyZD0ow",
+        "messageID": "msg_201480054001TUiA7tfft7dfjh",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "107b395a0c1f3504968b51d79cba794a4c0d8219",
+        "cost": 0,
+        "tokens": {
+          "input": 13255,
+          "output": 59,
+          "reasoning": 1031,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

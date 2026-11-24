@@ -1,0 +1,24 @@
+{
+  "model": "opencode/tidepool-alpha-free",
+  "task": "P3-reasoning",
+  "wall_ms": 122740,
+  "exit": 143,
+  "killed": true,
+  "response": "",
+  "tokens": null,
+  "error": "TIMEOUT stderr:",
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795316791884,
+      "sessionID": "ses_dfec7c876ffeU18QvkX5wkTIGb",
+      "part": {
+        "id": "prt_201383a4c001EdKSILW8MCBqMn",
+        "sessionID": "ses_dfec7c876ffeU18QvkX5wkTIGb",
+        "messageID": "msg_20138379b001flXnBkegvoizQv",
+        "type": "step-start",
+        "snapshot": "911ba38b8b9425f634f9be06250ab3627fef2690"
+      }
+    }
+  ]
+}

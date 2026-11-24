@@ -1,0 +1,71 @@
+{
+  "model": "opencode/tidepool-alpha-free",
+  "task": "P1-coding",
+  "wall_ms": 68161,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seenIds = new Set();\n  const deduped = [];\n  for (const ev of events) {\n    if (ev && typeof ev.id === 'string' && ev.id !== '') {\n      if (seenIds.has(ev.id)) continue;\n      seenIds.add(ev.id);\n    }\n    deduped.push(ev);\n  }\n\n  const qualifying = deduped.filter(\n    (ev) =>\n      ev &&\n      typeof ev.ts === 'number' &&\n      Number.isFinite(ev.ts) &&\n      ev.ts >= nowMs - windowMs &&\n      ev.ts <= nowMs &&\n      ev.provider === 'opencode-go' &&\n      !ev.error &&\n      typeof ev.model === 'string' &&\n      !/-free$/i.test(ev.model)\n  );\n\n  const used = qualifying.length;\n  const minTs = used > 0 ? Math.min(...qualifying.map((ev) => ev.ts)) : 0;\n\n  const counts = {};\n  for (const ev of qualifying) {\n    const key = ev.model.toLowerCase().replace(/^opencode-go\\//, '');\n    counts[key] = (counts[key] || 0) + 1;\n  }\n  const byModel = {};\n  for (const key of Object.keys(counts).sort()) {\n    byModel[key] = counts[key];\n  }\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+  "tokens": {
+    "input": 17784,
+    "output": 530,
+    "reasoning": 7984,
+    "cache": {
+      "read": 1952,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795314792165,
+      "sessionID": "ses_dfee64bceffeqIQVJ2MOppAbKI",
+      "part": {
+        "id": "prt_20119b6e5001GdprP5E8lZMSm7",
+        "sessionID": "ses_dfee64bceffeqIQVJ2MOppAbKI",
+        "messageID": "msg_20119b43d001VXtEN1od1sKD8M",
+        "type": "step-start",
+        "snapshot": "262a5554971c80849d0de4e48c3af349e5ba33d2"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795314859544,
+      "sessionID": "ses_dfee64bceffeqIQVJ2MOppAbKI",
+      "part": {
+        "id": "prt_2011a9a86002r6Lqey36FCXlUw",
+        "sessionID": "ses_dfee64bceffeqIQVJ2MOppAbKI",
+        "messageID": "msg_20119b43d001VXtEN1od1sKD8M",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seenIds = new Set();\n  const deduped = [];\n  for (const ev of events) {\n    if (ev && typeof ev.id === 'string' && ev.id !== '') {\n      if (seenIds.has(ev.id)) continue;\n      seenIds.add(ev.id);\n    }\n    deduped.push(ev);\n  }\n\n  const qualifying = deduped.filter(\n    (ev) =>\n      ev &&\n      typeof ev.ts === 'number' &&\n      Number.isFinite(ev.ts) &&\n      ev.ts >= nowMs - windowMs &&\n      ev.ts <= nowMs &&\n      ev.provider === 'opencode-go' &&\n      !ev.error &&\n      typeof ev.model === 'string' &&\n      !/-free$/i.test(ev.model)\n  );\n\n  const used = qualifying.length;\n  const minTs = used > 0 ? Math.min(...qualifying.map((ev) => ev.ts)) : 0;\n\n  const counts = {};\n  for (const ev of qualifying) {\n    const key = ev.model.toLowerCase().replace(/^opencode-go\\//, '');\n    counts[key] = (counts[key] || 0) + 1;\n  }\n  const byModel = {};\n  for (const key of Object.keys(counts).sort()) {\n    byModel[key] = counts[key];\n  }\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+        "time": {
+          "start": 1795314850438,
+          "end": 1795314859544
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795314859566,
+      "sessionID": "ses_dfee64bceffeqIQVJ2MOppAbKI",
+      "part": {
+        "id": "prt_2011abe2e001lWIg18RJAvKEE0",
+        "sessionID": "ses_dfee64bceffeqIQVJ2MOppAbKI",
+        "messageID": "msg_20119b43d001VXtEN1od1sKD8M",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "262a5554971c80849d0de4e48c3af349e5ba33d2",
+        "cost": 0,
+        "tokens": {
+          "input": 17784,
+          "output": 530,
+          "reasoning": 7984,
+          "cache": {
+            "read": 1952,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

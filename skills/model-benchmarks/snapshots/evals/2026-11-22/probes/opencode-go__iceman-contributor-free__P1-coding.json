@@ -1,0 +1,71 @@
+{
+  "model": "opencode-go/iceman-contributor-free",
+  "task": "P1-coding",
+  "wall_ms": 36730,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seenIds = new Set();\n  const deduped = [];\n\n  for (const ev of Array.isArray(events) ? events : []) {\n    const id = ev && typeof ev === \"object\" ? ev.id : undefined;\n    if (typeof id === \"string\" && id.length > 0) {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n    deduped.push(ev);\n  }\n\n  const start = nowMs - windowMs;\n  const byModelMap = new Map();\n  let used = 0;\n  let minTs = Infinity;\n\n  for (const ev of deduped) {\n    if (!ev || typeof ev !== \"object\") continue;\n\n    const ts = ev.ts;\n    if (typeof ts !== \"number\" || !Number.isFinite(ts)) continue;\n    if (ts < start || ts > nowMs) continue;\n\n    if (ev.provider !== \"opencode-go\") continue;\n    if (ev.error) continue;\n\n    if (typeof ev.model !== \"string\") continue;\n    if (ev.model.toLowerCase().endsWith(\"-free\")) continue;\n\n    used += 1;\n    if (ts < minTs) minTs = ts;\n\n    let model = ev.model.toLowerCase();\n    while (model.startsWith(\"opencode-go/\")) {\n      model = model.slice(\"opencode-go/\".length);\n    }\n\n    byModelMap.set(model, (byModelMap.get(model) || 0) + 1);\n  }\n\n  const byModel = {};\n  for (const key of Array.from(byModelMap.keys()).sort()) {\n    byModel[key] = byModelMap.get(key);\n  }\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n\nif (typeof module !== \"undefined\" && module.exports) {\n  module.exports = summarizeWindow;\n  module.exports.summarizeWindow = summarizeWindow;\n}\n```",
+  "tokens": {
+    "input": 11206,
+    "output": 486,
+    "reasoning": 1983,
+    "cache": {
+      "read": 0,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795315122673,
+      "sessionID": "ses_dfee157aaffe1L2WtIIZ7ZNKk8",
+      "part": {
+        "id": "prt_2011ec1f1001IYA5gFtpE77Ud7",
+        "sessionID": "ses_dfee157aaffe1L2WtIIZ7ZNKk8",
+        "messageID": "msg_2011ea862001MwmZCUhPL7YZeJ",
+        "type": "step-start",
+        "snapshot": "44e9f397eb800b789e5c1387bcdcba9fdb0c6088"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795315152747,
+      "sessionID": "ses_dfee157aaffe1L2WtIIZ7ZNKk8",
+      "part": {
+        "id": "prt_2011f25ad001LgOVRSOqb9BQtI",
+        "sessionID": "ses_dfee157aaffe1L2WtIIZ7ZNKk8",
+        "messageID": "msg_2011ea862001MwmZCUhPL7YZeJ",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const seenIds = new Set();\n  const deduped = [];\n\n  for (const ev of Array.isArray(events) ? events : []) {\n    const id = ev && typeof ev === \"object\" ? ev.id : undefined;\n    if (typeof id === \"string\" && id.length > 0) {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n    deduped.push(ev);\n  }\n\n  const start = nowMs - windowMs;\n  const byModelMap = new Map();\n  let used = 0;\n  let minTs = Infinity;\n\n  for (const ev of deduped) {\n    if (!ev || typeof ev !== \"object\") continue;\n\n    const ts = ev.ts;\n    if (typeof ts !== \"number\" || !Number.isFinite(ts)) continue;\n    if (ts < start || ts > nowMs) continue;\n\n    if (ev.provider !== \"opencode-go\") continue;\n    if (ev.error) continue;\n\n    if (typeof ev.model !== \"string\") continue;\n    if (ev.model.toLowerCase().endsWith(\"-free\")) continue;\n\n    used += 1;\n    if (ts < minTs) minTs = ts;\n\n    let model = ev.model.toLowerCase();\n    while (model.startsWith(\"opencode-go/\")) {\n      model = model.slice(\"opencode-go/\".length);\n    }\n\n    byModelMap.set(model, (byModelMap.get(model) || 0) + 1);\n  }\n\n  const byModel = {};\n  for (const key of Array.from(byModelMap.keys()).sort()) {\n    byModel[key] = byModelMap.get(key);\n  }\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n\nif (typeof module !== \"undefined\" && module.exports) {\n  module.exports = summarizeWindow;\n  module.exports.summarizeWindow = summarizeWindow;\n}\n```",
+        "time": {
+          "start": 1795315148205,
+          "end": 1795315152747
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795315152775,
+      "sessionID": "ses_dfee157aaffe1L2WtIIZ7ZNKk8",
+      "part": {
+        "id": "prt_2011f3787001a7ImQr690Un4UX",
+        "sessionID": "ses_dfee157aaffe1L2WtIIZ7ZNKk8",
+        "messageID": "msg_2011ea862001MwmZCUhPL7YZeJ",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "44e9f397eb800b789e5c1387bcdcba9fdb0c6088",
+        "cost": 0,
+        "tokens": {
+          "input": 11206,
+          "output": 486,
+          "reasoning": 1983,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

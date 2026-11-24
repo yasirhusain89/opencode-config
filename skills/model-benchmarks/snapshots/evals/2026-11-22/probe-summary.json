@@ -1,0 +1,740 @@
+{
+  "schema": 1,
+  "stage": "probe",
+  "date": "2026-11-22",
+  "generated_at": "2026-11-22T03:25:03.618Z",
+  "models": {
+    "opencode/iceman-free": {
+      "model": "opencode/iceman-free",
+      "evaluated_at": "2026-11-22",
+      "composite": 100,
+      "tier": "Apex",
+      "delivered": 4,
+      "attempted": 4,
+      "p50_s": 43.3,
+      "tok_per_s": 55.6,
+      "reasoning_share_pct": 91,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 39.2,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 43.3,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "PASS caught-truncation-commit (+14)",
+            "PASS caught-sql-injection (+10)",
+            "PASS caught-timeout-unit-mismatch (+5)",
+            "PASS zero-false-positives-on-decoy"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 101.9,
+          "error": null,
+          "details": [
+            "PASS minTotalSeconds=16 (+5)",
+            "PASS commitOrder=A,B,C,E,D (+5)",
+            "PASS minWriteBufferKiB=350 (+5)"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 27.2,
+          "error": null,
+          "details": [
+            "PASS used-read-search-tools (grep, glob, grep, grep, read, read) (+5)",
+            "PASS exact-root-cause (src/reconcile.mjs:23, >= -> >) (+6)",
+            "PASS tool-discipline (6 steps, clean JSON) (+4)"
+          ]
+        }
+      }
+    },
+    "opencode/tidepool-alpha-free": {
+      "model": "opencode/tidepool-alpha-free",
+      "evaluated_at": "2026-11-22",
+      "composite": 61,
+      "tier": "Workhorse",
+      "delivered": 2,
+      "attempted": 4,
+      "p50_s": 76.4,
+      "tok_per_s": 130.2,
+      "reasoning_share_pct": 96,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 68.2,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 26,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 76.4,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "PASS caught-truncation-commit (+10)",
+            "PASS caught-sql-injection (+10)",
+            "MISS timeout-unit-mismatch (0)",
+            "PASS zero-false-positives-on-decoy"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 0,
+          "maxPts": 15,
+          "delivered": false,
+          "wall_s": 122.7,
+          "error": "TIMEOUT stderr:",
+          "details": [
+            "invalid or missing JSON"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 0,
+          "maxPts": 15,
+          "delivered": false,
+          "wall_s": 120,
+          "error": "TIMEOUT stderr:",
+          "details": [
+            "empty response / DNF"
+          ]
+        }
+      }
+    },
+    "opencode-go/iceman-contributor-free": {
+      "model": "opencode-go/iceman-contributor-free",
+      "evaluated_at": "2026-11-22",
+      "composite": 96,
+      "tier": "Apex",
+      "delivered": 4,
+      "attempted": 4,
+      "p50_s": 47.1,
+      "tok_per_s": 60,
+      "reasoning_share_pct": 90,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 36.7,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 31,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 47.1,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "PASS caught-truncation-commit (+10)",
+            "PASS caught-sql-injection (+10)",
+            "PASS caught-timeout-unit-mismatch (+5)",
+            "PASS zero-false-positives-on-decoy"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 57.1,
+          "error": null,
+          "details": [
+            "PASS minTotalSeconds=16 (+5)",
+            "PASS commitOrder=A,B,C,E,D (+5)",
+            "PASS minWriteBufferKiB=350 (+5)"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 24.2,
+          "error": null,
+          "details": [
+            "PASS used-read-search-tools (glob, grep, grep, read) (+5)",
+            "PASS exact-root-cause (src/reconcile.mjs:23, >= -> >) (+6)",
+            "PASS tool-discipline (4 steps, clean JSON) (+4)"
+          ]
+        }
+      }
+    },
+    "opencode/mimo-v2.6-flash-free": {
+      "model": "opencode/mimo-v2.6-flash-free",
+      "evaluated_at": "2026-11-22",
+      "composite": 86,
+      "tier": "Apex",
+      "delivered": 4,
+      "attempted": 4,
+      "p50_s": 23.7,
+      "tok_per_s": 94.5,
+      "reasoning_share_pct": 86,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 10.5,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 21,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 14.8,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "MISS truncation-commit (0)",
+            "PASS caught-sql-injection (+10)",
+            "PASS caught-timeout-unit-mismatch (+5)",
+            "PASS zero-false-positives-on-decoy"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 48.1,
+          "error": null,
+          "details": [
+            "PASS minTotalSeconds=16 (+5)",
+            "PASS commitOrder=A,B,C,E,D (+5)",
+            "PASS minWriteBufferKiB=350 (+5)"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 23.7,
+          "error": null,
+          "details": [
+            "PASS used-read-search-tools (read, grep, glob) (+5)",
+            "PASS exact-root-cause (src/reconcile.mjs:23, >= -> >) (+6)",
+            "PASS tool-discipline (3 steps, clean JSON) (+4)"
+          ]
+        }
+      }
+    },
+    "opencode/big-pickle": {
+      "model": "opencode/big-pickle",
+      "evaluated_at": "2026-11-22",
+      "composite": 98,
+      "tier": "Apex",
+      "delivered": 4,
+      "attempted": 4,
+      "p50_s": 28.3,
+      "tok_per_s": 90.4,
+      "reasoning_share_pct": 93,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 17.9,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 28.3,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "PASS caught-truncation-commit (+14)",
+            "PASS caught-sql-injection (+10)",
+            "PASS caught-timeout-unit-mismatch (+5)",
+            "PASS zero-false-positives-on-decoy"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 120.2,
+          "error": null,
+          "details": [
+            "PASS minTotalSeconds=16 (+5)",
+            "PASS commitOrder=A,B,C,E,D (+5)",
+            "PASS minWriteBufferKiB=350 (+5)"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 13,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 18.6,
+          "error": null,
+          "details": [
+            "PASS used-read-search-tools (read, glob, glob, glob, grep, read, read, glob) (+5)",
+            "PASS exact-root-cause (src/reconcile.mjs:23, >= -> >) (+6)",
+            "PARTIAL tool-discipline (8 steps) (+2)"
+          ]
+        }
+      }
+    },
+    "opencode/flint-40b-free": {
+      "model": "opencode/flint-40b-free",
+      "evaluated_at": "2026-11-22",
+      "composite": 72,
+      "tier": "Workhorse",
+      "delivered": 3,
+      "attempted": 4,
+      "p50_s": 61.4,
+      "tok_per_s": 67.6,
+      "reasoning_share_pct": 0,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 61.4,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 31,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 50.4,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "PASS caught-truncation-commit (+10)",
+            "PASS caught-sql-injection (+10)",
+            "PASS caught-timeout-unit-mismatch (+5)",
+            "PASS zero-false-positives-on-decoy"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 0,
+          "maxPts": 15,
+          "delivered": false,
+          "wall_s": 120,
+          "error": "TIMEOUT stderr:",
+          "details": [
+            "invalid or missing JSON"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 6,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 142.3,
+          "error": null,
+          "details": [
+            "FAIL called-forbidden-or-malformed-tool (grep, glob, glob, shell</arg_key><arg_value>true</arg_value>, read, glob, glob, glob) (0)",
+            "PASS exact-root-cause (src/reconcile.mjs:23, >= -> >) (+6)",
+            "FAIL tool-thrashing (41 steps > 12) (0)"
+          ]
+        }
+      }
+    },
+    "opencode/hy4-flash-free": {
+      "model": "opencode/hy4-flash-free",
+      "evaluated_at": "2026-11-22",
+      "composite": 96,
+      "tier": "Apex",
+      "delivered": 4,
+      "attempted": 4,
+      "p50_s": 22.7,
+      "tok_per_s": 163.9,
+      "reasoning_share_pct": 94,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 14,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 31,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 22.7,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "PASS caught-truncation-commit (+10)",
+            "PASS caught-sql-injection (+10)",
+            "PASS caught-timeout-unit-mismatch (+5)",
+            "PASS zero-false-positives-on-decoy"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 47.5,
+          "error": null,
+          "details": [
+            "PASS minTotalSeconds=16 (+5)",
+            "PASS commitOrder=A,B,C,E,D (+5)",
+            "PASS minWriteBufferKiB=350 (+5)"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 7.3,
+          "error": null,
+          "details": [
+            "PASS used-read-search-tools (read) (+5)",
+            "PASS exact-root-cause (src/reconcile.mjs:23, >= -> >) (+6)",
+            "PASS tool-discipline (1 steps, clean JSON) (+4)"
+          ]
+        }
+      }
+    },
+    "opencode/longcat-2.5-free": {
+      "model": "opencode/longcat-2.5-free",
+      "evaluated_at": "2026-11-22",
+      "composite": 71,
+      "tier": "Workhorse",
+      "delivered": 3,
+      "attempted": 4,
+      "p50_s": 30.8,
+      "tok_per_s": 60.4,
+      "reasoning_share_pct": 89,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 30.8,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 21,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 104.1,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "MISS truncation-commit (0)",
+            "PASS caught-sql-injection (+10)",
+            "PASS caught-timeout-unit-mismatch (+5)",
+            "PASS zero-false-positives-on-decoy"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 0,
+          "maxPts": 15,
+          "delivered": false,
+          "wall_s": 120,
+          "error": "TIMEOUT stderr:",
+          "details": [
+            "invalid or missing JSON"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 7.7,
+          "error": null,
+          "details": [
+            "PASS used-read-search-tools (read) (+5)",
+            "PASS exact-root-cause (src/reconcile.mjs:23, >= -> >) (+6)",
+            "PASS tool-discipline (1 steps, clean JSON) (+4)"
+          ]
+        }
+      }
+    },
+    "opencode-go/glm-5.3-flash": {
+      "model": "opencode-go/glm-5.3-flash",
+      "evaluated_at": "2026-11-22",
+      "composite": 100,
+      "tier": "Apex",
+      "delivered": 4,
+      "attempted": 4,
+      "p50_s": 7.7,
+      "tok_per_s": 89.2,
+      "reasoning_share_pct": 78,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 5.9,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 7.7,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "PASS caught-truncation-commit (+14)",
+            "PASS caught-sql-injection (+10)",
+            "PASS caught-timeout-unit-mismatch (+5)",
+            "PASS zero-false-positives-on-decoy"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 55.3,
+          "error": null,
+          "details": [
+            "PASS minTotalSeconds=16 (+5)",
+            "PASS commitOrder=A,B,C,E,D (+5)",
+            "PASS minWriteBufferKiB=350 (+5)"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 6.3,
+          "error": null,
+          "details": [
+            "PASS used-read-search-tools (glob, read, read) (+5)",
+            "PASS exact-root-cause (src/reconcile.mjs:23, >= -> >) (+6)",
+            "PASS tool-discipline (3 steps, clean JSON) (+4)"
+          ]
+        }
+      }
+    },
+    "opencode-go/kimi-k3.1-pro": {
+      "model": "opencode-go/kimi-k3.1-pro",
+      "evaluated_at": "2026-11-22",
+      "composite": 90,
+      "tier": "Apex",
+      "delivered": 4,
+      "attempted": 4,
+      "p50_s": 23.3,
+      "tok_per_s": 89.9,
+      "reasoning_share_pct": 90,
+      "tasks": {
+        "coding": {
+          "id": "P1-coding",
+          "score": 35,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 23.3,
+          "error": null,
+          "details": [
+            "PASS inclusive-bounds",
+            "PASS window-exclusion",
+            "PASS free-and-provider-filter",
+            "PASS error-exclusion",
+            "PASS dedup-first-wins",
+            "PASS overcap-and-pct",
+            "PASS fractional-pct",
+            "PASS empty-window",
+            "PASS oldest-expiry-unordered",
+            "PASS bymodel-sorted-normalized"
+          ]
+        },
+        "bughunt": {
+          "id": "P2-bughunt",
+          "score": 25,
+          "maxPts": 35,
+          "delivered": true,
+          "wall_s": 66.7,
+          "error": null,
+          "details": [
+            "PASS format-compliance (+6)",
+            "PASS caught-truncation-commit (+14)",
+            "PASS caught-sql-injection (+10)",
+            "PASS caught-timeout-unit-mismatch (+5)",
+            "FP   flagged-clean-currency-decoy x1 (-10)"
+          ]
+        },
+        "reasoning": {
+          "id": "P3-reasoning",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 20.2,
+          "error": null,
+          "details": [
+            "PASS minTotalSeconds=16 (+5)",
+            "PASS commitOrder=A,B,C,E,D (+5)",
+            "PASS minWriteBufferKiB=350 (+5)"
+          ]
+        },
+        "agentic": {
+          "id": "P4-agentic",
+          "score": 15,
+          "maxPts": 15,
+          "delivered": true,
+          "wall_s": 4,
+          "error": null,
+          "details": [
+            "PASS used-read-search-tools (read) (+5)",
+            "PASS exact-root-cause (src/reconcile.mjs:23, >= -> >) (+6)",
+            "PASS tool-discipline (1 steps, clean JSON) (+4)"
+          ]
+        }
+      }
+    }
+  }
+}

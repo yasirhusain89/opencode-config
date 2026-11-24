@@ -1,0 +1,71 @@
+{
+  "model": "opencode/longcat-2.5-free",
+  "task": "P1-coding",
+  "wall_ms": 30831,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  // 1) Deduplicate raw events by non-empty string id, keeping the FIRST occurrence.\n  const seenIds = new Set();\n  const deduped = [];\n  for (const ev of events) {\n    const id = ev && typeof ev === 'object' ? ev.id : undefined;\n    if (typeof id === 'string' && id.length > 0) {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n    deduped.push(ev);\n  }\n\n  // 2) Apply the qualifying filter.\n  const start = nowMs - windowMs;\n  const counts = new Map();\n  let used = 0;\n  let minTs = Infinity;\n\n  for (const ev of deduped) {\n    if (!ev || typeof ev !== 'object') continue;\n\n    const ts = ev.ts;\n    if (typeof ts !== 'number' || !Number.isFinite(ts)) continue;\n    if (ts < start || ts > nowMs) continue;\n\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue;\n\n    const model = ev.model;\n    if (typeof model !== 'string') continue;\n    if (model.toLowerCase().endsWith('-free')) continue;\n\n    used += 1;\n    if (ts < minTs) minTs = ts;\n\n    let short = model;\n    if (short.startsWith('opencode-go/')) {\n      short = short.slice('opencode-go/'.length);\n    }\n    short = short.toLowerCase();\n    counts.set(short, (counts.get(short) || 0) + 1);\n  }\n\n  // 3) Build byModel with alphabetically sorted keys.\n  const byModel = {};\n  for (const key of [...counts.keys()].sort()) {\n    byModel[key] = counts.get(key);\n  }\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+  "tokens": {
+    "input": 10310,
+    "output": 479,
+    "reasoning": 1403,
+    "cache": {
+      "read": 1792,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795317400831,
+      "sessionID": "ses_dfebe86b4ffeE1cKKQf55fw0M8",
+      "part": {
+        "id": "prt_2014184ff001mPtygswMkmawyU",
+        "sessionID": "ses_dfebe86b4ffeE1cKKQf55fw0M8",
+        "messageID": "msg_201417958001QLPHU0Uhp1QjFM",
+        "type": "step-start",
+        "snapshot": "7cb27d1247f350718a35317a59c29e8e013a679d"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795317428585,
+      "sessionID": "ses_dfebe86b4ffeE1cKKQf55fw0M8",
+      "part": {
+        "id": "prt_20141dc56002zDjrXmJjRSf9Ql",
+        "sessionID": "ses_dfebe86b4ffeE1cKKQf55fw0M8",
+        "messageID": "msg_201417958001QLPHU0Uhp1QjFM",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  // 1) Deduplicate raw events by non-empty string id, keeping the FIRST occurrence.\n  const seenIds = new Set();\n  const deduped = [];\n  for (const ev of events) {\n    const id = ev && typeof ev === 'object' ? ev.id : undefined;\n    if (typeof id === 'string' && id.length > 0) {\n      if (seenIds.has(id)) continue;\n      seenIds.add(id);\n    }\n    deduped.push(ev);\n  }\n\n  // 2) Apply the qualifying filter.\n  const start = nowMs - windowMs;\n  const counts = new Map();\n  let used = 0;\n  let minTs = Infinity;\n\n  for (const ev of deduped) {\n    if (!ev || typeof ev !== 'object') continue;\n\n    const ts = ev.ts;\n    if (typeof ts !== 'number' || !Number.isFinite(ts)) continue;\n    if (ts < start || ts > nowMs) continue;\n\n    if (ev.provider !== 'opencode-go') continue;\n    if (ev.error) continue;\n\n    const model = ev.model;\n    if (typeof model !== 'string') continue;\n    if (model.toLowerCase().endsWith('-free')) continue;\n\n    used += 1;\n    if (ts < minTs) minTs = ts;\n\n    let short = model;\n    if (short.startsWith('opencode-go/')) {\n      short = short.slice('opencode-go/'.length);\n    }\n    short = short.toLowerCase();\n    counts.set(short, (counts.get(short) || 0) + 1);\n  }\n\n  // 3) Build byModel with alphabetically sorted keys.\n  const byModel = {};\n  for (const key of [...counts.keys()].sort()) {\n    byModel[key] = counts.get(key);\n  }\n\n  return {\n    used,\n    remaining: Math.max(0, cap - used),\n    pct: Math.round((used / cap) * 1000) / 10,\n    overCap: used > cap,\n    oldestExpiresAt: used === 0 ? null : minTs + windowMs,\n    byModel,\n  };\n}\n```",
+        "time": {
+          "start": 1795317423190,
+          "end": 1795317428585
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795317428600,
+      "sessionID": "ses_dfebe86b4ffeE1cKKQf55fw0M8",
+      "part": {
+        "id": "prt_20141f178001evVtbzcQFdNt4o",
+        "sessionID": "ses_dfebe86b4ffeE1cKKQf55fw0M8",
+        "messageID": "msg_201417958001QLPHU0Uhp1QjFM",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "7cb27d1247f350718a35317a59c29e8e013a679d",
+        "cost": 0,
+        "tokens": {
+          "input": 10310,
+          "output": 479,
+          "reasoning": 1403,
+          "cache": {
+            "read": 1792,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

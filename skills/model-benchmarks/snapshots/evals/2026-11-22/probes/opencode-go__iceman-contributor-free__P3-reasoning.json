@@ -1,0 +1,71 @@
+{
+  "model": "opencode-go/iceman-contributor-free",
+  "task": "P3-reasoning",
+  "wall_ms": 57130,
+  "exit": 0,
+  "killed": false,
+  "response": "```json\n{\n  \"minTotalSeconds\": 16,\n  \"commitOrder\": [\"A\", \"B\", \"C\", \"E\", \"D\"],\n  \"minWriteBufferKiB\": 350\n}\n```",
+  "tokens": {
+    "input": 3020,
+    "output": 57,
+    "reasoning": 3388,
+    "cache": {
+      "read": 8192,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795317036449,
+      "sessionID": "ses_dfec41448ffe2VcXn0sywyPdDM",
+      "part": {
+        "id": "prt_2013bf5a1001oz4BvkajSpX3Wn",
+        "sessionID": "ses_dfec41448ffe2VcXn0sywyPdDM",
+        "messageID": "msg_2013bebc50017ITUiTNc6WL0LS",
+        "type": "step-start",
+        "snapshot": "5685503b38c9ab090aaa5572325ab31ccdd259f4"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795317089154,
+      "sessionID": "ses_dfec41448ffe2VcXn0sywyPdDM",
+      "part": {
+        "id": "prt_2013cc3770010K5uowKhNR5OqB",
+        "sessionID": "ses_dfec41448ffe2VcXn0sywyPdDM",
+        "messageID": "msg_2013bebc50017ITUiTNc6WL0LS",
+        "type": "text",
+        "text": "```json\n{\n  \"minTotalSeconds\": 16,\n  \"commitOrder\": [\"A\", \"B\", \"C\", \"E\", \"D\"],\n  \"minWriteBufferKiB\": 350\n}\n```",
+        "time": {
+          "start": 1795317089143,
+          "end": 1795317089154
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795317089165,
+      "sessionID": "ses_dfec41448ffe2VcXn0sywyPdDM",
+      "part": {
+        "id": "prt_2013cc38d001JcQ45dBlhj5Fme",
+        "sessionID": "ses_dfec41448ffe2VcXn0sywyPdDM",
+        "messageID": "msg_2013bebc50017ITUiTNc6WL0LS",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "5685503b38c9ab090aaa5572325ab31ccdd259f4",
+        "cost": 0,
+        "tokens": {
+          "input": 3020,
+          "output": 57,
+          "reasoning": 3388,
+          "cache": {
+            "read": 8192,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}

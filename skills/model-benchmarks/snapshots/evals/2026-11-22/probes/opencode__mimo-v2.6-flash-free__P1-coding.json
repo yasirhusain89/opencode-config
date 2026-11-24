@@ -1,0 +1,71 @@
+{
+  "model": "opencode/mimo-v2.6-flash-free",
+  "task": "P1-coding",
+  "wall_ms": 10489,
+  "exit": 0,
+  "killed": false,
+  "response": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const list = Array.isArray(events) ? events : [];\n\n  // Step 2: deduplicate raw events by non-empty string id, keeping the FIRST\n  // occurrence in input order, then apply the qualification filter.\n  const seen = new Set();\n  const deduped = [];\n  for (const ev of list) {\n    if (ev && typeof ev === 'object') {\n      const id = ev.id;\n      if (typeof id === 'string' && id !== '') {\n        if (seen.has(id)) continue;\n        seen.add(id);\n      }\n    }\n    deduped.push(ev);\n  }\n\n  const lo = nowMs - windowMs;\n  const qualifying = deduped.filter((ev) => {\n    if (!ev || typeof ev !== 'object') return false;\n    // window [nowMs - windowMs, nowMs], both endpoints inclusive\n    if (typeof ev.ts !== 'number' || !Number.isFinite(ev.ts)) return false;\n    if (ev.ts < lo || ev.ts > nowMs) return false;\n    // provider\n    if (ev.provider !== 'opencode-go') return false;\n    // rejected / unbilled rows are ignored\n    if (ev.error) return false;\n    // free-pool rows never burn Go quota\n    if (typeof ev.model !== 'string') return false;\n    if (ev.model.toLowerCase().endsWith('-free')) return false;\n    return true;\n  });\n\n  const used = qualifying.length;\n  const capNum = typeof cap === 'number' && Number.isFinite(cap) && cap > 0 ? cap : 1;\n  const remaining = Math.max(0, cap - used);\n  const pct = Math.round((used / capNum) * 1000) / 10;\n  const overCap = used > cap;\n\n  let oldestExpiresAt = null;\n  if (used > 0) {\n    let minTs = Infinity;\n    for (const ev of qualifying) {\n      if (ev.ts < minTs) minTs = ev.ts;\n    }\n    oldestExpiresAt = minTs + windowMs;\n  }\n\n  const counts = {};\n  for (const ev of qualifying) {\n    let name = ev.model;\n    if (name.toLowerCase().startsWith('opencode-go/')) {\n      name = name.slice('opencode-go/'.length);\n    }\n    name = name.toLowerCase();\n    counts[name] = (counts[name] || 0) + 1;\n  }\n  const byModel = {};\n  for (const key of Object.keys(counts).sort()) {\n    byModel[key] = counts[key];\n  }\n\n  return { used, remaining, pct, overCap, oldestExpiresAt, byModel };\n}\n```",
+  "tokens": {
+    "input": 9839,
+    "output": 590,
+    "reasoning": 140,
+    "cache": {
+      "read": 2432,
+      "write": 0
+    }
+  },
+  "error": null,
+  "events": [
+    {
+      "type": "step_start",
+      "timestamp": 1795315782225,
+      "sessionID": "ses_dfed7344bffeuckoT945PQpGbe",
+      "part": {
+        "id": "prt_20128d251001GQZ6nK9ih3cIkS",
+        "sessionID": "ses_dfed7344bffeuckoT945PQpGbe",
+        "messageID": "msg_20128cbc4001iZSLO1sICeoSzg",
+        "type": "step-start",
+        "snapshot": "ed40df5721f4e313a9f7ce37284500363f8a7d90"
+      }
+    },
+    {
+      "type": "text",
+      "timestamp": 1795315785905,
+      "sessionID": "ses_dfed7344bffeuckoT945PQpGbe",
+      "part": {
+        "id": "prt_20128d634002FoXSb2tpx6XnZ5",
+        "sessionID": "ses_dfed7344bffeuckoT945PQpGbe",
+        "messageID": "msg_20128cbc4001iZSLO1sICeoSzg",
+        "type": "text",
+        "text": "```js\nfunction summarizeWindow(events, nowMs, windowMs, cap) {\n  const list = Array.isArray(events) ? events : [];\n\n  // Step 2: deduplicate raw events by non-empty string id, keeping the FIRST\n  // occurrence in input order, then apply the qualification filter.\n  const seen = new Set();\n  const deduped = [];\n  for (const ev of list) {\n    if (ev && typeof ev === 'object') {\n      const id = ev.id;\n      if (typeof id === 'string' && id !== '') {\n        if (seen.has(id)) continue;\n        seen.add(id);\n      }\n    }\n    deduped.push(ev);\n  }\n\n  const lo = nowMs - windowMs;\n  const qualifying = deduped.filter((ev) => {\n    if (!ev || typeof ev !== 'object') return false;\n    // window [nowMs - windowMs, nowMs], both endpoints inclusive\n    if (typeof ev.ts !== 'number' || !Number.isFinite(ev.ts)) return false;\n    if (ev.ts < lo || ev.ts > nowMs) return false;\n    // provider\n    if (ev.provider !== 'opencode-go') return false;\n    // rejected / unbilled rows are ignored\n    if (ev.error) return false;\n    // free-pool rows never burn Go quota\n    if (typeof ev.model !== 'string') return false;\n    if (ev.model.toLowerCase().endsWith('-free')) return false;\n    return true;\n  });\n\n  const used = qualifying.length;\n  const capNum = typeof cap === 'number' && Number.isFinite(cap) && cap > 0 ? cap : 1;\n  const remaining = Math.max(0, cap - used);\n  const pct = Math.round((used / capNum) * 1000) / 10;\n  const overCap = used > cap;\n\n  let oldestExpiresAt = null;\n  if (used > 0) {\n    let minTs = Infinity;\n    for (const ev of qualifying) {\n      if (ev.ts < minTs) minTs = ev.ts;\n    }\n    oldestExpiresAt = minTs + windowMs;\n  }\n\n  const counts = {};\n  for (const ev of qualifying) {\n    let name = ev.model;\n    if (name.toLowerCase().startsWith('opencode-go/')) {\n      name = name.slice('opencode-go/'.length);\n    }\n    name = name.toLowerCase();\n    counts[name] = (counts[name] || 0) + 1;\n  }\n  const byModel = {};\n  for (const key of Object.keys(counts).sort()) {\n    byModel[key] = counts[key];\n  }\n\n  return { used, remaining, pct, overCap, oldestExpiresAt, byModel };\n}\n```",
+        "time": {
+          "start": 1795315783220,
+          "end": 1795315785905
+        }
+      }
+    },
+    {
+      "type": "step_finish",
+      "timestamp": 1795315785919,
+      "sessionID": "ses_dfed7344bffeuckoT945PQpGbe",
+      "part": {
+        "id": "prt_20128e0bf001zOLWRyoJONbRTf",
+        "sessionID": "ses_dfed7344bffeuckoT945PQpGbe",
+        "messageID": "msg_20128cbc4001iZSLO1sICeoSzg",
+        "type": "step-finish",
+        "reason": "stop",
+        "snapshot": "ed40df5721f4e313a9f7ce37284500363f8a7d90",
+        "cost": 0,
+        "tokens": {
+          "input": 9839,
+          "output": 590,
+          "reasoning": 140,
+          "cache": {
+            "read": 2432,
+            "write": 0
+          }
+        }
+      }
+    }
+  ]
+}
