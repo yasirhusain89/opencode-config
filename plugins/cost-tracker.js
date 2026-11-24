@@ -98,11 +98,11 @@ function writeLive(state) {
   }
 }
 function alertsFor(windows) {
-  // Keep in sync with sr-calc.mjs `alertsFor` (exported; tested there): only
-  // CALIBRATED windows may toast — an uncalibrated pct is a raw DB count over
-  // a cap and can differ from the console by 7x+ (midnight flood).
+  // Keep in sync with sr-calc.mjs `alertsFor` (exported; tested there): all
+  // three windows are formula-calibrated, rolling included (it warns before
+  // the 429 wall).
   const a = [];
-  for (const w of ["month", "week"]) {
+  for (const w of ["month", "week", "rolling"]) {
     const win = windows?.[w];
     if (!win || win.calibrated === false) continue;
     const p = win.pct ?? 0;
@@ -116,11 +116,17 @@ function alertsFor(windows) {
 async function createTracker({ shell, toast }) {
   async function fullRecompute() {
     // Primary: import sr-calc in-process (no `node` binary or shell quoting
-    // needed — the plugin host itself runs JS). Fallback: the old CLI spawn.
+    // needed — the plugin host itself runs JS). The `?v=` cache-buster
+    // defeats Node's process-lifetime ESM cache so sr-calc.mjs edits take
+    // effect without an opencode restart (stale cached code used to rewrite
+    // the state file with the old model after every fix). Fallback: CLI.
     let state = null;
+    let calc = null;
     try {
-      const { calcSR } = await import(pathToFileURL(SR_CALC).href);
-      state = calcSR(DB);
+      let v = 0;
+      try { v = fs.statSync(SR_CALC).mtimeMs; } catch { /* keep 0 */ }
+      calc = await import(pathToFileURL(SR_CALC).href + `?v=${v}`);
+      state = calc.calcSR(DB);
     } catch (e) {
       debug(`recompute import failed: ${(e && e.message) || e}; trying CLI`);
       try {
@@ -159,9 +165,23 @@ async function createTracker({ shell, toast }) {
   // `model` is "providerID/modelID". V1 passes the completed assistant
   // message; V2 passes one completed step (same one-LLM-call granularity as
   // a V1 assistant message — V2's `session.step.ended` carries cost).
-  async function onTurn({ model, cost }) {
+  // `tokens` is the event's token payload when present (V2 zero-cost rows
+  // carry cost 0 with tokens still flowing — estimate from tokens so the
+  // turn and the incremental patch are not blind). `failed` marks a
+  // rejected step (V2 `session.step.failed`, e.g. a 429): it must not
+  // increment quota counters, but it forces a recompute so a provider block
+  // flips the state immediately instead of at the next 60s tick.
+  async function onTurn({ model, cost, tokens, failed }) {
+    if (failed) {
+      try {
+        lastFull = 0; // force the recompute below past the throttle
+        await fullRecompute();
+      } catch { /* never break the session on cost bookkeeping */ }
+      return;
+    }
     try {
-      const turnCost = Number(cost) || 0;
+      let turnCost = Number(cost) || 0;
+      const isGoTurn = typeof model === "string" && model.startsWith("opencode-go/") && !/-free$/i.test(model);
 
       let state = readLive();
       let recomputed = false;
@@ -171,21 +191,47 @@ async function createTracker({ shell, toast }) {
         recomputed = state != null && lastFull !== before;
         if (!state) return;
       }
-      // Incremental patch: this turn counts against every account window
-      // until the next full recompute corrects for period boundaries.
+      // Incremental patch: a Go turn counts against every account window
+      // until the next full recompute corrects for period boundaries. Free /
+      // BYOK / trial turns do not consume the Go quota, so they must not
+      // increment these counters (sr-calc counts Go-product rows only).
       // Skipped when a recompute just ran in this event: the DB scan may
       // already include this turn, and adding it again double-counts. Worst
       // case the turn lands in the next recompute (≤60s), bounded to one
-      // turn instead of unbounded drift.
-      if (!recomputed) {
-        for (const w of Object.values(state.windows || {})) {
+      // turn instead of unbounded drift. V2 zero-cost rows are priced from
+      // the event's token payload so the patch is not blind; window pct
+      // moves by estimate/allowance for the turn's own model tier.
+      if (!recomputed && isGoTurn) {
+        // V2 zero-cost rows are priced from the event's token payload so the
+        // patch is not blind; window pct moves by estimate/allowance for the
+        // turn's own model tier. (One cached module import; best-effort.)
+        let est = null, allowFor = null;
+        if (!(turnCost > 0) && tokens) {
+          try {
+            let v = 0;
+            try { v = fs.statSync(SR_CALC).mtimeMs; } catch { /* keep 0 */ }
+            const calc = await import(pathToFileURL(SR_CALC).href + `?v=${v}`);
+            const shortId = String(model).split("/").pop();
+            if (typeof calc.estimateTurnUsd === "function") {
+              est = calc.estimateTurnUsd(shortId, tokens);
+              if (est != null && est > 0) { turnCost = est; allowFor = calc.allowanceFor; }
+            }
+          } catch { /* estimation is best-effort; counts still increment */ }
+        }
+        for (const [name, w] of Object.entries(state.windows || {})) {
           if (w.usedReq == null) continue;
           w.usedReq = w.usedReq + 1;
-          if (w.usedUsd != null) w.usedUsd = +(w.usedUsd + turnCost).toFixed(4);
-          if (w.capReq && w.allowedReq != null) {
-            w.allowedReq = Math.max(0, w.allowedReq - 1);
-            w.pct = +(100 * (w.capReq - w.allowedReq) / w.capReq).toFixed(1);
-            w.remainingPct = Math.max(0, +(100 - w.pct).toFixed(1));
+          if (est != null && est > 0 && typeof allowFor === "function") {
+            const allow = allowFor(String(model).split("/").pop(), name);
+            if (allow > 0 && w.pct != null) {
+              w.usedUsd = +((w.usedUsd || 0) + est).toFixed(4);
+              w.pct = +(w.pct + (est / allow) * 100).toFixed(3);
+              w.remainingPct = Math.max(0, +(100 - w.pct).toFixed(1));
+            } else if (w.usedUsd != null) {
+              w.usedUsd = +(w.usedUsd + est).toFixed(4);
+            }
+          } else if (w.usedUsd != null) {
+            w.usedUsd = +(w.usedUsd + turnCost).toFixed(4);
           }
         }
       }
@@ -211,7 +257,8 @@ async function createTracker({ shell, toast }) {
         } else if (a.endsWith("_90") || a.endsWith("_70")) {
           const w = a.split("_")[0];
           const win = state.windows[w];
-          await toast("Go cap pressure", `${w === "week" ? "Weekly" : "Monthly"} window ${Math.round(win.pct)}% used — ${Math.round(win.remainingPct ?? 0)}% left.`);
+          const label = w === "week" ? "Weekly" : w === "rolling" ? "Rolling 5h" : "Monthly";
+          await toast("Go cap pressure", `${label} window ${Math.round(win.pct)}% used — ${Math.round(win.remainingPct ?? 0)}% left.`);
         }
       }
     } catch {
@@ -221,9 +268,13 @@ async function createTracker({ shell, toast }) {
 
   return {
     onTurn,
+    async onFailed() {
+      // A rejected step (429 block, etc.): refresh ground truth immediately.
+      await onTurn({ model: "unknown", failed: true });
+    },
     async onAssistantMessage(info) {
       if (!info || info.role !== "assistant" || !info.time?.completed) return;
-      await onTurn({ model: `${info.providerID}/${info.modelID}`, cost: info.cost });
+      await onTurn({ model: `${info.providerID}/${info.modelID}`, cost: info.cost, tokens: info.tokens ?? info.usage ?? null });
     },
   };
 }
@@ -277,8 +328,13 @@ export default {
         const model = (id && models.get(id))
           || (data.model?.providerID ? `${data.model.providerID}/${data.model.id}` : "unknown");
         if (id) models.delete(id);
-        if (event.type === "session.step.ended") {
-          await tracker.onTurn({ model, cost: data.cost });
+        if (event.type === "session.step.failed") {
+          // A 429 lands here, not in step.ended: refresh ground truth now so
+          // a provider block flips the state instead of waiting for the tick.
+          // The mapping is still cleared (no stale attribution for retries).
+          await tracker.onFailed();
+        } else if (event.type === "session.step.ended") {
+          await tracker.onTurn({ model, cost: data.cost, tokens: data.tokens ?? data.usage ?? null });
         }
       }
     })().catch((error) => {

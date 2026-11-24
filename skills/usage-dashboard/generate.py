@@ -74,6 +74,7 @@ GO_PRICES = {
     "qwen3.8-max": (2.00, 6.00, 0.25),
     "qwen4-max": (1.50, 4.50, 0.18),  # postdates blog; price = AA 11-21 — verify
     "gemini-4-argon": (2.00, 10.00, 0.10),  # blog $30 tier (was 60)
+    "gemini-4-argon-contributor": (2.00, 10.00, 0.10),  # same tier as argon
     "grok-4.7": (2.00, 6.00, 0.50),  # blog $15 tier; price = AA 10-24 — verify
     "longcat-2.0": (0.30, 1.20, 0.06),  # blog $60 tier; price placeholder — verify
     "hy3": (0.30, 1.20, 0.06),  # blog $60 tier; price placeholder — verify

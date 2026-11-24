@@ -58,7 +58,10 @@ const fullAt = (sr && parseTs(sr.fullRecomputeAt)) || genAt;
 let stateAgeMs = Number.isFinite(fullAt) ? Date.now() - fullAt : NaN;
 let recomputedInline = false;
 // Recompute inline when the file is old OR was written by pre-v4 code.
-if (!sr || sr.schema !== 4 || !(stateAgeMs < 90000)) {
+// Recompute also when a pre-block-fix writer (same schema, no rolling.blocked)
+// last touched the file — otherwise /quota hides a 5h block until the plugin
+// host restarts and reloads sr-calc.
+if (!sr || sr.schema !== 4 || sr.windows?.rolling?.blocked === undefined || !(stateAgeMs < 90000)) {
   try {
     const { execFileSync } = await import("node:child_process");
     const fresh = execFileSync("node", [SR_CALC], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
@@ -72,13 +75,37 @@ if (sr?.windows) {
   const dur = (sec) => (sec == null || !Number.isFinite(sec) || sec < 0 ? null
     : sec >= 86400 ? `${(sec / 86400).toFixed(1)}d` : sec >= 3600 ? `${(sec / 3600).toFixed(1)}h` : `${Math.max(1, Math.round(sec / 60))}m`);
   const w = sr.windows;
+  const money1 = (x) => (x == null ? "n/a" : "$" + Number(x).toFixed(2));
+  // Project the month quota to the period end at today's burn rate
+  // (%-points/day at the current model mix): holds vs exhausts.
+  const projMonth = (() => {
+    const m = w.month;
+    if (!m || m.pct == null) return "";
+    const el = Math.max(1 / 24, m.elapsedDays || 0);
+    if (!(el > 0)) return "";
+    const qp = m.pct / el;
+    const reset = m.freesAt ? (parseTs(m.freesAt) - Date.now()) / 1000 : (m.freesInSec ?? null);
+    if (reset == null || !(reset >= 0)) return ` · pace ${qp.toFixed(1)}%/day`;
+    const daysLeft = reset / 86400;
+    const at = m.pct + qp * daysLeft;
+    if (at <= 100) return ` · pace ${qp.toFixed(1)}%/day → holds through reset (~${Math.round(at)}% at reset)`;
+    const run = qp > 0 ? (100 - m.pct) / qp : Infinity;
+    return ` · pace ${qp.toFixed(1)}%/day → exhausts in ~${run.toFixed(1)}d (${Math.max(0, daysLeft - run).toFixed(1)}d before reset)`;
+  })();
   const win = (x) => {
     if (!x) return `n/a`;
+    // Provider block: the reset is the provider's own blockedUntil — no pct
+    // exists to spend while the bucket is exhausted.
+    if (x.blocked) {
+      const kind = (x.label || "").startsWith("Monthly") ? "monthly" : (x.label || "").startsWith("Weekly") ? "weekly" : "5h";
+      const d = x.blockedUntil ? dur((parseTs(x.blockedUntil) - Date.now()) / 1000) : null;
+      return `${x.label || "?"}: ⛔ ${kind} limit hit — ${(x.usedReq || 0).toLocaleString("en-US")} reqs (${money1(x.usedUsd)}${d ? ` · resets in ${d}` : ""})`;
+    }
     const left = x.remainingPct == null ? "" : ` · ${p(x.remainingPct)} left`;
     const drop = x.freesAt ? dur((parseTs(x.freesAt) - Date.now()) / 1000) : null;
     const when = drop ? (x.label?.startsWith("Monthly") ? ` · resets in ${drop}` : ` · next drop in ${drop}`) : "";
-    const prov = x.capReq == null ? " · no cap yet" : x.calibrated ? "" : " · UNCALIBRATED";
-    return `${x.label || "?"}: ${x.pct == null ? `${(x.usedReq || 0).toLocaleString("en-US")} reqs` : `${p(x.pct)} used`}${left}${when}${prov}`;
+    const usd = x.usedUsd != null ? ` (${money1(x.usedUsd)})` : "";
+    return `${x.label || "?"}: ${x.pct == null ? `${(x.usedReq || 0).toLocaleString("en-US")} reqs` : `${p(x.pct)} used`}${usd}${left}${when}`;
   };
   // Freshness: idle time is not staleness. If nothing was spent since the last
   // full recompute, an hours-old file is still exact — only activity after the
@@ -92,15 +119,13 @@ if (sr?.windows) {
       : stale ? `STALE — full recompute ${ago(new Date(fullAt).toISOString())}, see ~/.local/share/opencode/sr-debug.log`
       : `as of ${stateAgeMs < 2000 ? "now" : ago(new Date(Date.now() - stateAgeMs).toISOString())}${drifted ? " (incremental)" : ""}`;
   lines.push(`Go burn (est.): ${win(w.month)} | ${win(w.week)} | ${win(w.rolling)} — ${stamp}`);
-  const leftReq = w.month.allowedReq != null ? w.month.allowedReq : null;
-  if (leftReq != null && sr.paceReqPerDay > 0) {
-    const days = leftReq / sr.paceReqPerDay;
-    lines.push(`  pace ${Math.round(sr.paceReqPerDay)} req/day (month) · monthly headroom ${leftReq.toLocaleString("en-US")} reqs → ${days < 30 ? `exhausts in ~${days.toFixed(1)}d at this pace` : "holds at this pace"}`);
+  if (sr.paceReqPerDay > 0) {
+    lines.push(`  pace ${Math.round(sr.paceReqPerDay)} req/day (month)${projMonth}`);
   }
-  const gos = (sr.perModel || []).filter((m) => m.provider === "opencode-go" && (m.msgs.month > 0 || m.msgs.week > 0));
-  for (const m of gos.sort((a, b) => b.msgs.month - a.msgs.month).slice(0, 6)) {
-    const sh = m.shareGo == null ? "" : ` (${Math.round(m.shareGo)}% of Go)`;
-    lines.push(`  ${m.model.split("/").pop()}: month ${m.msgs.month} reqs $${m.usd.month.toFixed(2)}${sh} · week ${m.msgs.week}`);
+  const gos = (sr.perModel || []).filter((m) => m.provider === "opencode-go" && !m.freePool && !String(m.model || "").endsWith("-free") && ((m.msgs?.month || 0) > 0 || (m.msgs?.week || 0) > 0));
+  for (const m of gos.sort((a, b) => (b.msgs?.month || 0) - (a.msgs?.month || 0)).slice(0, 6)) {
+    const sh = m.shareQuota != null ? ` (${m.shareQuota.toFixed(1)}% quota)` : (m.shareGo == null ? "" : ` (${Math.round(m.shareGo)}% of Go)`);
+    lines.push(`  ${String(m.model).split("/").pop()}: month ${m.msgs.month} reqs $${(m.usd?.month ?? 0).toFixed(2)}${sh} · week ${m.msgs.week}`);
   }
   if (sr.alerts?.length) lines.push(`⚠ alerts: ${sr.alerts.join(", ")}`);
   if (sr.lastTurn && sr.lastTurn.usd >= 0.05) lines.push(`  last heavy turn: ${sr.lastTurn.model} $${sr.lastTurn.usd}`);

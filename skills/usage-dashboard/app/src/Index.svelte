@@ -147,17 +147,18 @@
     </div>
     {#if go.live}
       <div class="s">
-        console-anchored request windows, as of {String(go.live.as_of || "").slice(0, 16).replace("T", " ")}:
+        tier-normalized quota windows, as of {String(go.live.as_of || "").slice(0, 16).replace("T", " ")}:
         {#if go.live.windows.month}
           month <b>{(go.live.windows.month.pct ?? 0).toFixed(0)}%</b>
-          {#if (go.live.windows.month.pct ?? 0) >= 100}· <b>BLOCKED until {String(go.live.windows.month.freesAt || "").slice(0, 16).replace("T", " ")} UTC</b>{/if}
+          {#if go.live.windows.month.blocked}· <b>BLOCKED until {String(go.live.windows.month.blockedUntil || "").slice(0, 16).replace("T", " ")} UTC</b>{/if}
         {/if}
         {#if go.live.windows.week}
-          · week {(go.live.windows.week.pct ?? 0).toFixed(0)}%{#if go.live.windows.week.capReq} of {num(go.live.windows.week.capReq)}{/if}
+          · week {(go.live.windows.week.pct ?? 0).toFixed(0)}%
+          {#if go.live.windows.week.blocked}· <b>BLOCKED until {String(go.live.windows.week.blockedUntil || "").slice(0, 16).replace("T", " ")} UTC</b>{/if}
         {/if}
         {#if go.live.windows.rolling && go.live.windows.rolling.usedReq != null}
-          · trailing 5h {num(go.live.windows.rolling.usedReq)} reqs
-        {/if}
+          · trailing 5h {(go.live.windows.rolling.pct ?? 0).toFixed(0)}% ({num(go.live.windows.rolling.usedReq)} reqs)
+          {#if go.live.windows.rolling.blocked}· <b>⛔ 5h BLOCKED until {String(go.live.windows.rolling.blockedUntil || "").slice(0, 16).replace("T", " ")} UTC</b>{/if}
         {/if}
       </div>
     {/if}

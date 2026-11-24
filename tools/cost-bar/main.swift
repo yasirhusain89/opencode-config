@@ -24,12 +24,17 @@ let dashPath = (NSHomeDirectory() as NSString).appendingPathComponent(".opencode
 struct Win: Decodable {
     var label: String?; var usedUsd: Double?; var usedReq: Int?
     var pct: Double?; var remainingPct: Double?; var freesAt: String?; var freesInSec: Double?
+    var periodStart: String?; var periodEnd: String?
     var capReq: Int?; var allowedReq: Int?; var calibrated: Bool?
+    var elapsedDays: Double?; var spanDays: Double?
+    var blocked: Bool?; var blockedAt: String?; var blockedUntil: String?
 }
 struct Model: Decodable {
     var model: String?; var provider: String?
-    var msgs: [String: Int]?; var usd: [String: Double]?
-    var costPerMsg: Double?; var shareMonth: Double?; var shareGo: Double?
+    var msgs: [String: Int]?; var msgsOk: [String: Int]?; var usd: [String: Double]?
+    var quotaPct: [String: Double]?
+    var costPerMsg: Double?; var shareMonth: Double?; var shareGo: Double?; var shareQuota: Double?
+    var freePool: Bool?
 }
 struct Turn: Decodable { var model: String?; var usd: Double?; var sr: Int? }
 struct State: Decodable {
@@ -106,6 +111,10 @@ func dur(_ s: Double?) -> String {
 // A pre-v4 writer is always suspect.
 func isStale(_ s: State) -> Bool {
     if s.schema != 4 { return true }
+    // A schema-4 file written by a pre-block-fix cost-tracker lacks the
+    // rolling block fields. Treat it as stale so the bar recomputes instead
+    // of hiding a 5h block while the plugin host awaits its restart.
+    if s.windows?["rolling"]?.blocked == nil { return true }
     guard let full = parseISO(s.fullRecomputeAt ?? s.generated_at) else { return true }
     let age = Date().timeIntervalSince(full)
     if age > 1800 { return true }
@@ -119,22 +128,35 @@ func dropIn(_ w: Win) -> Double? {
 }
 func shortModel(_ m: String) -> String { m.split(separator: "/").last.map(String.init) ?? m }
 
-// Pill tracks the binding window: whichever of week/month is closest to its
-// cap. Caps are account-wide (console 2026-10-26) — no model is named.
-// Uncalibrated windows are demoted below calibrated ones: their pct is a raw
-// DB count over a cap and can diverge from the console by 7x+ (midnight flood),
-// so they must not steal the pill when a calibrated window is available.
-func binding(_ week: Win, _ month: Win) -> (String, Win) {
-    let wkCal = week.calibrated != false
-    let moCal = month.calibrated != false
-    if wkCal != moCal { return wkCal ? ("week", week) : ("month", month) }
-    return (week.pct ?? 0) >= (month.pct ?? 0) ? ("week", week) : ("month", month)
+// Pill tracks the binding window: whichever of 5h/week/month is closest to
+// its quota. All three carry a live tier-normalized pct now, so rolling
+// competes instead of only stealing the pill when blocked. A provider block
+// outranks everything (rolling > month > week): no headroom in any window
+// can be spent while that bucket is exhausted.
+func binding(_ week: Win, _ month: Win, _ rolling: Win) -> (String, Win) {
+    if rolling.blocked == true { return ("rolling", rolling) }
+    if month.blocked == true { return ("month", month) }
+    if week.blocked == true { return ("week", week) }
+    let cands = [("week", week), ("month", month), ("rolling", rolling)]
+    let cals = cands.filter { $0.1.calibrated != false }
+    let pool = cals.isEmpty ? cands : cals
+    return pool.max(by: { ($0.1.pct ?? 0) < ($1.1.pct ?? 0) }) ?? ("month", month)
 }
+func shortName(_ name: String) -> String { name == "rolling" ? "5h" : name == "week" ? "W" : "M" }
 func winLine(_ w: Win) -> String {
     let name = w.label ?? "?"
+    // Provider block: the reset is the provider's own blockedUntil.
+    if w.blocked == true {
+        let kind = (name.hasPrefix("Monthly") ? "monthly" : name.hasPrefix("Weekly") ? "weekly" : "5h")
+        var s = "\(name): ⛔ \(kind) limit hit — \((w.usedReq ?? 0).formatted()) reqs"
+        if let u = w.usedUsd { s += String(format: " ($%.2f)", u) }
+        if let iso = w.blockedUntil, let d = parseISO(iso) { s += " · resets in \(dur(max(0, d.timeIntervalSinceNow)))" }
+        return s
+    }
     var s: String
     if let pct = w.pct {
         s = "\(name): \(Int(pct.rounded()))% used"
+        if let u = w.usedUsd { s += String(format: " ($%.2f)", u) }
         if let left = w.remainingPct { s += " · \(max(0, Int(left.rounded())))% left" }
     } else {
         s = "\(name): \((w.usedReq ?? 0).formatted()) reqs"
@@ -160,6 +182,9 @@ func nick(_ model: String) -> String {
 // headroom actually returns, so show that ("4.1d"). Falls back to the name on
 // a window with no spend inside it.
 func remainingLabel(_ name: String, _ w: Win) -> String {
+    if w.blocked == true, let iso = w.blockedUntil, let d = parseISO(iso) {
+        return dur(max(0, d.timeIntervalSinceNow))
+    }
     return dropIn(w).map(dur) ?? name
 }
 
@@ -168,14 +193,17 @@ if CommandLine.arguments.contains("--self-test") {
     guard let s = loadState(), let rolling = s.windows?["rolling"], let week = s.windows?["week"], let month = s.windows?["month"] else {
         print("SELF-TEST FAIL: cannot parse \(livePath)"); exit(1)
     }
-    let (bwLabel, bw) = binding(week, month)
-    print("PILL: ⚡ \(remainingLabel(bwLabel, bw)) \(Int(bw.pct ?? 0))%  (amber≥70 red≥90: \( (bw.pct ?? 0) >= 90 ? "RED" : (bw.pct ?? 0) >= 70 ? "AMBER" : "ok"), stale: \(isStale(s)), binding: \(bwLabel)")
+    let (bwLabel, bw) = binding(week, month, rolling)
+    let bp = bw.blocked == true ? 100 : Int((bw.pct ?? 0).rounded())
+    print("PILL: ⚡ \(shortName(bwLabel)) \(bp)% · \(remainingLabel(bwLabel, bw))  (amber≥70 red≥90: \( bp >= 90 ? "RED" : bp >= 70 ? "AMBER" : "ok"), stale: \(isStale(s)), binding: \(bwLabel)")
     for w in [month, week, rolling] {
         print("WIN: \(winLine(w))")
     }
     if let p = s.paceReqPerDay, p > 0 { print(String(format: "PACE: %.0f req/day", p)) }
-    for m in (s.perModel ?? []).filter({ ($0.provider == "opencode-go") && (($0.msgs?["month"] ?? 0) > 0) }).sorted(by: { ($0.msgs?["month"] ?? 0) > ($1.msgs?["month"] ?? 0) }).prefix(6) {
-        print("MODEL \(nick(m.model ?? "?")): month \(m.msgs?["month"] ?? 0) reqs (\(Int((m.shareGo ?? 0).rounded()))% of Go) · week \(m.msgs?["week"] ?? 0)")
+    for m in (s.perModel ?? []).filter({ ($0.provider == "opencode-go") && $0.freePool != true && !(($0.model ?? "").hasSuffix("-free")) && (($0.msgs?["month"] ?? 0) > 0) }).sorted(by: { ($0.msgs?["month"] ?? 0) > ($1.msgs?["month"] ?? 0) }).prefix(6) {
+        let usd = m.usd?["month"].map { String(format: "$%.2f", $0) } ?? "n/a"
+        let q = m.shareQuota.map { String(format: "%.1f%% quota", $0) } ?? "\(Int((m.shareGo ?? 0).rounded()))% of Go"
+        print("MODEL \(nick(m.model ?? "?")): month \(m.msgs?["month"] ?? 0) reqs \(usd) (\(q)) · week \(m.msgs?["week"] ?? 0)")
     }
     print("ALERTS: \((s.alerts ?? []).joined(separator: ", "))")
     if let t = s.lastTurn { print("LAST TURN: \(t.model ?? "?") $\(t.usd ?? 0)") }
@@ -198,14 +226,11 @@ final class Delegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.delegate = self
         item.menu = menu
         refresh()
-        // event-driven reload on file write (sr-calc/plugin rewrite in place)
-        fd = open(livePath, O_EVTONLY)
-        if fd >= 0 {
-            src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: .write, queue: .main)
-            src?.setEventHandler { [weak self] in self?.refresh() }
-            src?.setCancelHandler { [weak self] in if let f = self?.fd, f >= 0 { close(f) } }
-            src?.resume()
-        }
+        // Event-driven reload. Both writers (this bar, the plugin) update the
+        // file by atomic tmp-file + rename, which swaps the inode out from
+        // under an open fd — a pure [.write] watch dies after the first
+        // event. Watch delete/rename/attrib too and re-arm on them.
+        armWatcher()
         // mtime backup: catches inode replacement + quota.json changes
         _ = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             guard let self else { return }
@@ -220,6 +245,24 @@ final class Delegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         recomputeIfDue()
     }
+    func armWatcher() {
+        if let s = src { s.cancel(); src = nil }
+        if fd >= 0 { close(fd); fd = -1 }
+        fd = open(livePath, O_EVTONLY)
+        guard fd >= 0 else { return }
+        let f = fd
+        src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: f,
+            eventMask: [.write, .delete, .rename, .attrib], queue: .main)
+        src?.setEventHandler { [weak self] in
+            guard let self else { return }
+            let flags = self.src?.mask ?? []
+            self.refresh()
+            // The inode we watched is gone — watch the new one.
+            if flags.contains(.delete) || flags.contains(.rename) { self.armWatcher() }
+        }
+        src?.setCancelHandler { close(f) }
+        src?.resume()
+    }
     func recomputeIfDue() {
         let now = Date()
         if let last = lastRecompute, now.timeIntervalSince(last) < 60 { return }
@@ -233,12 +276,12 @@ final class Delegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     func menuWillOpen(_ m: NSMenu) { refresh() }
 
-    func pill(_ label: String, _ pct: Double, stale: Bool) -> NSAttributedString {
+    func pill(_ short: String, _ label: String, _ pct: Double, stale: Bool) -> NSAttributedString {
         let color: NSColor = stale ? .secondaryLabelColor
             : (pct >= 90 ? .systemRed : pct >= 70 ? .systemOrange : .labelColor)
-        // Schema 4: the pill is account-level — week or month, never a model
-        // name. Blocked shows only the time to unblock.
-        var text = "⚡ \(label) \(Int(pct))%"
+        // Schema 4: the pill is account-level — 5h, week or month, never a
+        // model name. Blocked shows only the time to unblock.
+        var text = "⚡ \(short) \(Int(pct))% · \(label)"
         if pct >= 100 { text = "⛔ BLOCKED · \(label)" }
         return NSAttributedString(string: text,
             attributes: [.foregroundColor: color, .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium)])
@@ -269,7 +312,14 @@ final class Delegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // recover immediately instead. The 60s throttle only bounds repeated
         // same-schema staleness. 70ms blocking, off the hot path.
         if !live {
-            if s?.schema != 4 || lastFallback.map({ Date().timeIntervalSince($0) > 60 }) ?? true {
+            // A pre-block-fix writer (same schema, no rolling.blocked — the
+            // opencode service predates the fix and rewrites the file on
+            // every turn) would hold the pill grey for up to 60s per turn
+            // under the throttle below, so recover immediately. Other
+            // same-schema staleness stays throttled: a failing recompute
+            // must not spin up node on every file event.
+            let preBlock = s?.windows?["rolling"]?.blocked == nil
+            if s?.schema != 4 || preBlock || lastFallback.map({ Date().timeIntervalSince($0) > 60 }) ?? true {
                 lastFallback = Date()
                 if let fresh = computeState() { s = fresh; live = true }
             }
@@ -279,19 +329,26 @@ final class Delegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(line("no usage data yet — send one turn"))
             menu.addItem(.separator()); menu.addItem(quitItem()); return
         }
-        let (bwLabel, bw) = binding(week, month)
+        let (bwLabel, bw) = binding(week, month, rolling)
         let drop = remainingLabel(bwLabel, bw)
-        item.button?.attributedTitle = pill(drop, bw.pct ?? 0, stale: !live)
+        item.button?.attributedTitle = pill(shortName(bwLabel), drop, bw.blocked == true ? 100 : (bw.pct ?? 0), stale: !live)
         for w in [month, week, rolling] {
             menu.addItem(line(winLine(w)))
         }
-        if let pace = s.paceReqPerDay, pace > 0 {
-            if let allowed = month.allowedReq, allowed > 0 {
-                let days = Double(allowed) / pace
-                menu.addItem(line(String(format: "pace %.0f req/day · monthly headroom %d reqs → %@", pace, allowed,
-                    days < 30 ? String(format: "~%.1fd at this pace", days) : "holds")))
-            } else if let d = dropIn(month) {
-                menu.addItem(line(String(format: "pace %.0f req/day · cap reached — resets %@", pace, dur(d))))
+        // Pace vs the actual reset: quota burns in %-points per day at the
+        // current mix, so project the month pct forward to the period end.
+        if let pace = s.paceReqPerDay, pace > 0, let mpct = month.pct {
+            let el = max(1.0/24.0, month.elapsedDays ?? 0)
+            let qpace = el > 0 ? mpct / el : 0
+            if let reset = dropIn(month) {
+                let daysLeft = reset / 86400
+                let proj = mpct + qpace * daysLeft
+                if proj <= 100 {
+                    menu.addItem(line(String(format: "pace %.0f req/day (%.1f%%/day) · holds through reset (~%.0f%% at reset)", pace, qpace, proj)))
+                } else {
+                    let runDays = qpace > 0 ? (100 - mpct) / qpace : .infinity
+                    menu.addItem(line(String(format: "pace %.0f req/day (%.1f%%/day) · exhausts in ~%.1fd (%.1fd before reset)", pace, qpace, runDays, max(0, daysLeft - runDays))))
+                }
             }
         }
         if !live {
@@ -301,14 +358,19 @@ final class Delegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 : "old cost-tracker state — restart OpenCode", mono: false))
         }
         menu.addItem(.separator())
-        let gos = (s.perModel ?? []).filter { $0.provider == "opencode-go" && (($0.msgs?["month"] ?? 0) > 0) }
+        let gos = (s.perModel ?? []).filter {
+            $0.provider == "opencode-go" && $0.freePool != true && !(($0.model ?? "").hasSuffix("-free")) && (($0.msgs?["month"] ?? 0) > 0)
+        }
             .sorted { ($0.msgs?["month"] ?? 0) > ($1.msgs?["month"] ?? 0) }.prefix(6)
         for m in gos {
-            menu.addItem(line("\(nick(m.model ?? "?")): month \(m.msgs?["month"] ?? 0) (\(Int((m.shareGo ?? 0).rounded()))%) · week \(m.msgs?["week"] ?? 0)"))
+            let usd = m.usd?["month"].map { String(format: "$%.2f", $0) } ?? "n/a"
+            let q = m.shareQuota.map { String(format: "%.1f%% quota", $0) } ?? "\(Int((m.shareGo ?? 0).rounded()))% of Go"
+            menu.addItem(line("\(nick(m.model ?? "?")): month \(m.msgs?["month"] ?? 0) \(usd) (\(q)) · week \(m.msgs?["week"] ?? 0)"))
         }
         let otherMonth = (s.perModel ?? []).filter { $0.provider != "opencode-go" }.reduce(0) { $0 + ($1.msgs?["month"] ?? 0) }
-        if otherMonth > 0 {
-            menu.addItem(line("non-Go this month: \(otherMonth) reqs (counted in caps)"))
+        let freeMonth = (s.perModel ?? []).filter { $0.freePool == true || (($0.model ?? "").hasSuffix("-free")) }.reduce(0) { $0 + ($1.msgs?["month"] ?? 0) }
+        if otherMonth + freeMonth > 0 {
+            menu.addItem(line("non-Go / free pool this month: \(otherMonth + freeMonth) reqs (not counted in Go quota)"))
         }
         if let a = s.alerts, !a.isEmpty {
             menu.addItem(.separator())

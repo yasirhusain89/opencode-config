@@ -548,6 +548,53 @@ distilled, still-true conclusions.
   Evidence: `skills/usage-dashboard/generate.py` (GO_PRICES/GO_ALLOWANCE/
   go_cycle), dashboard "OpenCode Go" card, sr-anchors.json month 18,000.
 
+- **2026-11-23 — the 5h Go limit is provider-enforced, not request-
+  calibrated; the bar now reflects it from the 429 itself.** The rolling
+  window showed "no cap yet" through a real block at 20:08:14Z (two
+  `provider.go-limit` 429s, "5 hour usage limit reached") while month/week
+  had headroom, so the pill never left week/month. The 429 row's
+  `error.retryAfterMs` is the provider's own reset (20:08:14Z + 3h2m44s =
+  23:10:58Z), and the body's `metadata.limitName` ("5 hour" vs "monthly")
+  separates 5h from monthly blocks (both share the type; the message is the
+  fallback). sr-calc emits `windows.rolling.blocked/blockedAt/blockedUntil`
+  only while no later successful Go row exists; no pct/cap is derived (the
+  console rolling % is not a request count). The bar binds the pill to rolling
+  when blocked (`⛔ BLOCKED · <reset>`), and /quota prints the same. A
+  schema-4 file lacking `rolling.blocked` is treated as stale by the bar and
+  /quota so a pre-fix plugin host cannot hide the block before its restart.
+  Evidence: `sr-calc.mjs:220-244,290-292`, live 429 row
+  2026-11-23T20:08:14.684Z, `sr-calc.test.mjs` (59 assertions),
+  `tools/cost-bar/main.swift` (`binding`/`winLine`/`isStale`),
+  `quota-status.mjs`.
+
+- **2026-11-23 — quota basis is tier-normalized token dollars, not flat
+  requests; the flat request-cap model is retired.** The 5h wall at 430
+  requests (vs 13% at 1,263 on Nov 16) proved requests are not the unit: one
+  `gemini-4-argon` request (~$0.040 vs $30/mo = 0.134% of monthly quota)
+  burns ~91x the quota of one `muse-spark-1.3-contributor` request (~$0.0009
+  vs $60/mo). `pct(window) = 100 * Σ_models USD/Allowance` with per-model $
+  tiers (5h = monthly/5, weekly = monthly/2) reproduces every console
+  reading and 429 block to ~1% with zero anchors (Oct-26 53.2 vs 52,
+  Nov-16 5h 13.3 vs 13 and week 13.4 vs 13, Nov-17 month block 99.2 vs 100,
+  Nov-23 5h block 99.2 vs 100). `sr-calc.mjs` now prices tokens at blog
+  GO_PRICES (max(recorded, token-est)) so V2 zero-cost rows are no longer
+  $0.00; request caps/anchors retired (`capReq`/`allowedReq` null,
+  `--anchor` records a console pct override, old count anchors ignored);
+  rolling carries a live pct and competes for the pill; `tRoll` floors at
+  the last expired 5h reset so dead-bucket requests stop inflating the fresh
+  bucket; monthly 429s mark the month window blocked. Bar pill names the
+  window (`M 69% · 25.0d`) with quota-vs-reset pace projection; plugin
+  hot-reloads sr-calc (`?v=mtimeMs`), excludes `-free` from increments,
+  estimates V2 zero-cost turns from event tokens, and recomputes on
+  `session.step.failed` so a 429 flips state immediately; the Swift
+  file-watcher re-arms after atomic renames. Live: month 69% ($21.54,
+  exhausts in ~2.2d at Argon-heavy mix), week 57%, rolling 13% fresh
+  bucket. Evidence: `sr-calc.mjs` (GO_PRICES/GO_ALLOWANCE/`calcSR`),
+  `sr-calc.test.mjs` (88 assertions), `cost-tracker.js`
+  (hot-reload/`onFailed`/token estimate), `main.swift`
+  (`binding`/`pill`/`armWatcher`/pace projection), `quota-status.mjs`,
+  `generate.py` (contributor price), `Index.svelte` (blocked badges).
+
 ## 5. How to add a lesson
 Append under the right section (or add one): `**YYYY-MM-DD — one-line
 claim.**` 1–2 lines of context, then `Evidence: <file:line / snapshot /
